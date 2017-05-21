@@ -1,0 +1,2 @@
+*.vs linguist-language=GLSL
+*.fs linguist-language=GLSL
