@@ -1,6 +1,7 @@
 
 
 #include <iostream>
+#include <math.h>
 
 // GLEW
 #define GLEW_STATIC
@@ -60,7 +61,7 @@ int main()
 
 
 
-
+    /*
     //Now onto compiling the shaders
     //First the vertexShader
     GLuint vertexShader;
@@ -91,15 +92,19 @@ int main()
     glDeleteShader(fragmentShader);
 
     //Shaders are now done, working on objects
+    */
+    Shader newShader("shader.vs","shader.fs");
+
+
 
     //Vertices are in the format {x1,y1,z1,x2,y2,z2,....,}
     //Can have more the 3 vertices
-    GLfloat vertices[] =
-    {
-      1.0f, 0.97f, 0.0f, //Point 1 of triangle
-      0.0f, 1.0f, 0.0f, //Point 2
-      -0.5, -0.5, 0.0f
-    };
+    GLfloat vertices[] = {
+         // Positions         // Colors
+         0.5f, -0.5f, 0.0f,   1.0f, 0.0f, 0.0f,  // Bottom Right
+        -0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,  // Bottom Left
+         0.0f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f   // Top
+     };
 
 
     //Now creating the buffer objects
@@ -132,8 +137,14 @@ int main()
     5.The size of one set of vertices aka sizeof(vertexType)*numberofdimensions per vertice
     6.??????
     */
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
+    //Vertices
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
+
+    //Colors
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -150,7 +161,8 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
+        newShader.Use();
+        //Telling the program to register the vertices as a triangle and draw a triangle using our shader program
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);

@@ -7,9 +7,9 @@ CC = g++
 CFLAGS  = -lglfw3 -lGLEW -lGL -lm -ldl -lXinerama -lXrandr -lXi -lXcursor -lX11 -lXxf86vm -lpthread -std=c++11
 
 # the build target executable:
-TARGET = test
+TARGET = test.cpp shader.cpp
 
 all: $(TARGET)
 
-$(TARGET): $(TARGET).cpp
-	$(CC)  $(TARGET).cpp $(CFLAGS) 
+
+	$(CC)  $(TARGET) $(CFLAGS)
