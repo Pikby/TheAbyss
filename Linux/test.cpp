@@ -162,11 +162,13 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        //Use the newly made shader
         newShader.Use();
 
-        x+= 0.01; std::cout <<x << "\n";
+        x+= 0.01;
         GLint uniformLocation = glGetUniformLocation(newShader.Program, "newPosition");
 
+        //Move the camera around the screen
         glUniform3f(uniformLocation,sin(x)/2,cos(x)/2,0.0f);
 
         //Telling the program to register the vertices as a triangle and draw a triangle using our shader program
