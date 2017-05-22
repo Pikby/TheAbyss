@@ -151,6 +151,7 @@ int main()
 
     // Main program loop
     // Runs until the window is told to close
+    float x = 0;
     while (!glfwWindowShouldClose(window))
     {
         // Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
@@ -162,6 +163,12 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         newShader.Use();
+
+        x+= 0.01; std::cout <<x << "\n";
+        GLint uniformLocation = glGetUniformLocation(newShader.Program, "newPosition");
+
+        glUniform3f(uniformLocation,sin(x)/2,cos(x)/2,0.0f);
+
         //Telling the program to register the vertices as a triangle and draw a triangle using our shader program
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
