@@ -5,7 +5,7 @@
 
 #include <GL/glew.h>
 
-#include "shader.h"
+#include "shaders.h"
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 {
@@ -15,15 +15,15 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
   std::string fragmentCode;
 
   //Variables to retrieve the code from the file path
-  std::ifStream vertexShaderFile;
-  std::ifStream fragmentShaderFile;
+  std::ifstream vertexShaderFile;
+  std::ifstream fragmentShaderFile;
 
   vertexShaderFile.open(vertexPath);
   fragmentShaderFile.open(fragmentPath);
 
   std::stringstream vertexShaderStream, fragmentShaderStream;
   vertexShaderStream << vertexShaderFile.rdbuf();
-  fragmentShaderStream << fragmentShaderFile.redbuf();
+  fragmentShaderStream << fragmentShaderFile.rdbuf();
 
   //Close the files
   vertexShaderFile.close();
@@ -46,8 +46,8 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
   glCompileShader(vertex);
 
   fragment = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(vertex, 1, &fragmentShaderCode, NULL);
-  glCompileShader(vertex);
+  glShaderSource(fragment, 1, &fragmentShaderCode, NULL);
+  glCompileShader(fragment);
 
   //Create the shader program
   this->Program = glCreateProgram();
