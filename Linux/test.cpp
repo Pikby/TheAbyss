@@ -1,5 +1,5 @@
 
-
+#include "SOIL.h"
 #include <iostream>
 #include <math.h>
 
@@ -55,56 +55,23 @@ int main()
     }
 
     // Define the viewport dimensions
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, WIDTH, HEIGHT);
 
-
-
-    /*
-    //Now onto compiling the shaders
-    //First the vertexShader
-    GLuint vertexShader;
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-    //Attach the custom made vertexShaderSource onto the the vertexShader
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    //Compile the shader
-    glCompileShader(vertexShader);
-
-    //Second, the fragmentShader, its the same process as the vertexShader
-    GLuint fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader,1 , &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    //Finally, the shader program which lins the multiple shaders we have
-    GLuint shaderProgram;
-    shaderProgram = glCreateProgram();
-
-    //Attach the shaders
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    //Link the shaderProgram
-    glLinkProgram(shaderProgram);
-    //Clean up the shaders since they will no longer be used
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    //Shaders are now done, working on objects
-    */
+    //Making a new Shader using the configure fragment and vertex shader
     Shader newShader("shader.vs","shader.fs");
 
 
 
     //Vertices are in the format {x1,y1,z1,x2,y2,z2,....,}
     //Can have more the 3 vertices
+    //In this example each point has an associated color to it
+
     GLfloat vertices[] = {
-         // Positions         // Colors
-         0.5f, -0.5f, 0.0f,   1.0f, 0.0f, 0.0f,  // Bottom Right
-        -0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,  // Bottom Left
-         0.0f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f   // Top
-     };
+        // Positions          // Colors           // Texture Coords
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // Top Right
+         0.5f, -0.0f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // Bottom Right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // Bottom Left
+    };
 
 
     //Now creating the buffer objects
@@ -137,17 +104,58 @@ int main()
     5.The size of one set of vertices aka sizeof(vertexType)*numberofdimensions per vertice
     6.??????
     */
-
     //Vertices
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
 
     //Colors
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
+
+    //Textures
+    glVertexAttribPointer(2, 2, GL_FLOAT,GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(2);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+
+    //Now for an attempt at the texture
+
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT (usually basic wrapping method)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // Set texture filtering parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    int imgWidth, imgHeight;
+    unsigned char* image = SOIL_load_image("textures/tilesf1.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_RGB);
+
+
+    /*
+    1. Specify the type of texture to be applied, can be between 1-3D
+    2. Specify the mimmap level if we want do to that manually, keep it 0 for automatic
+    3. The type of format of the texture etc. RBG or YRGB or smth idfk
+    4. Sets the width
+    5. Sets the Height
+    6. IDK it says legacy stuff that they havent removed so keep it 0
+    7. format of the image
+    8. Data type of the image
+    9.
+    */
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight,0,GL_RGB, GL_UNSIGNED_BYTE, image);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    SOIL_free_image_data(image);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
 
     // Main program loop
     // Runs until the window is told to close
@@ -165,6 +173,9 @@ int main()
         //Use the newly made shader
         newShader.Use();
 
+        glActiveTexture(GL_TEXTURE0);	// Activate the texture unit first before binding texture
+        glBindTexture(GL_TEXTURE_2D, texture);
+
         x+= 0.01;
         GLint uniformLocation = glGetUniformLocation(newShader.Program, "newPosition");
 
@@ -172,6 +183,7 @@ int main()
         glUniform3f(uniformLocation,sin(x)/2,cos(x)/2,0.0f);
 
         //Telling the program to register the vertices as a triangle and draw a triangle using our shader program
+        glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
