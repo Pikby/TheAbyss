@@ -10,6 +10,13 @@
 // GLFW
 #include <GLFW/glfw3.h>
 
+
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+
 //Add the shader configs
 #include "shaders.h"
 
@@ -78,7 +85,7 @@ int main()
     //VBO = vertex buffer object || VAO = Vertex Array Object
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
-    //Generates the buffer id aka VBO
+    //Generates the buffer id aka VAO
     glGenBuffers(1, &VBO);
     glBindVertexArray(VAO);
     //Binds the array to the buffer
@@ -137,8 +144,6 @@ int main()
 
     int imgWidth, imgHeight;
     unsigned char* image = SOIL_load_image("textures/tilesf1.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_RGB);
-
-
     /*
     1. Specify the type of texture to be applied, can be between 1-3D
     2. Specify the mimmap level if we want do to that manually, keep it 0 for automatic
@@ -170,25 +175,25 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        glActiveTexture(GL_TEXTURE0);	// Activate the texture unit first before binding texture
+        glBindTexture(GL_TEXTURE_2D, texture);
         //Use the newly made shader
         newShader.Use();
 
-        glActiveTexture(GL_TEXTURE0);	// Activate the texture unit first before binding texture
-        glBindTexture(GL_TEXTURE_2D, texture);
+        // Create transformations
+        glm::mat4 transform;
+        transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
+        transform = glm::rotate(transform, (GLfloat)glfwGetTime() * 2.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 
-        x+= 0.01;
-        GLint uniformLocation = glGetUniformLocation(newShader.Program, "newPosition");
-
-        //Move the camera around the screen
-        glUniform3f(uniformLocation,sin(x)/2,cos(x)/2,0.0f);
+        // Get matrix's uniform location and set matrix
+        GLint transformLoc = glGetUniformLocation(newShader.Program, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
         //Telling the program to register the vertices as a triangle and draw a triangle using our shader program
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
-
-
 
         // Swap the screen buffers
         glfwSwapBuffers(window);
