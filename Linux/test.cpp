@@ -25,6 +25,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
+glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+
 
 
 int main()
@@ -64,6 +68,8 @@ int main()
     // Define the viewport dimensions
     glViewport(0, 0, WIDTH, HEIGHT);
 
+    glEnable(GL_DEPTH_TEST);
+
     //Making a new Shader using the configure fragment and vertex shader
     Shader newShader("shader.vs","shader.fs");
 
@@ -73,18 +79,26 @@ int main()
     //Can have more the 3 vertices
     //In this example each point has an associated color to it
 
-    GLfloat vertices[] = {
+    GLfloat vertices[] =
+    {
         // Positions          // Colors           // Texture Coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // Top Right
+         0.5f,  0.5f, 0.25f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // Top Right
          0.5f, -0.0f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // Bottom Right
         -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // Bottom Left
+         0.0f, -0.5f, 1.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
     };
 
+    GLuint indices[] =
+    {
+      0,1,2,
+      1,2,3
+    };
 
     //Now creating the buffer objects
-    //VBO = vertex buffer object || VAO = Vertex Array Object
-    GLuint VBO, VAO;
+    //VBO = vertex buffer object || VAO = Vertex Array Object || EBO = Element Buffer Object
+    GLuint VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &EBO);
     //Generates the buffer id aka VAO
     glGenBuffers(1, &VBO);
     glBindVertexArray(VAO);
@@ -111,6 +125,10 @@ int main()
     5.The size of one set of vertices aka sizeof(vertexType)*numberofdimensions per vertice
     6.??????
     */
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(indices),indices, GL_STATIC_DRAW);
+
     //Vertices
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
@@ -173,17 +191,39 @@ int main()
         // Render
         // Clear the colorbuffer
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glActiveTexture(GL_TEXTURE0);	// Activate the texture unit first before binding texture
         glBindTexture(GL_TEXTURE_2D, texture);
         //Use the newly made shader
         newShader.Use();
 
+        glm::mat4 model;
+        glm::mat4 view;
+        glm::mat4 projection;
+
+
+
+
+
+        model = glm::rotate(model, (GLfloat)glfwGetTime() * 2.0f, glm::vec3(0.5f, 1.0f, 0.0f));
+        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        // Note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
+        projection = glm::perspective(45.0f, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
+        // Get their uniform location
+        GLint modelLoc = glGetUniformLocation(newShader.Program, "model");
+        GLint viewLoc = glGetUniformLocation(newShader.Program, "view");
+        GLint projLoc = glGetUniformLocation(newShader.Program, "projection");
+        // Pass them to the shaders
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
         // Create transformations
         glm::mat4 transform;
         transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
-        transform = glm::rotate(transform, (GLfloat)glfwGetTime() * 2.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+        transform = glm::rotate(transform,(GLfloat)glfwGetTime()* 2.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 
         // Get matrix's uniform location and set matrix
         GLint transformLoc = glGetUniformLocation(newShader.Program, "transform");
@@ -192,7 +232,7 @@ int main()
         //Telling the program to register the vertices as a triangle and draw a triangle using our shader program
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,0);
         glBindVertexArray(0);
 
         // Swap the screen buffers
@@ -210,4 +250,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     std::cout << key << std::endl;
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+        GLfloat cameraSpeed = 0.05f;
+    if(key == GLFW_KEY_W)
+        cameraPos += cameraSpeed * cameraFront;
+    if(key == GLFW_KEY_S)
+        cameraPos -= cameraSpeed * cameraFront;
+    if(key == GLFW_KEY_A)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if(key == GLFW_KEY_D)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 }
