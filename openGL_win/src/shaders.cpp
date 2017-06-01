@@ -5,6 +5,10 @@
 
 #include <GL/glew.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "shaders.h"
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
@@ -40,14 +44,31 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 
   //Compile the shaders
   GLuint vertex, fragment;
+  int success;
+  char infoLog[512];
 
   vertex = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex, 1, &vertexShaderCode, NULL);
   glCompileShader(vertex);
 
+  glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+  if(!success)
+  {
+    glGetShaderInfoLog(vertex, 512, NULL, infoLog);
+    std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+  }
+
   fragment = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragment, 1, &fragmentShaderCode, NULL);
   glCompileShader(fragment);
+
+  success = 0;
+  glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
+  if(!success)
+  {
+    glGetShaderInfoLog(vertex, 512, NULL, infoLog);
+    std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+  }
 
   //Create the shader program
   this->Program = glCreateProgram();
@@ -62,4 +83,9 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 void Shader::Use()
 {
   glUseProgram(this->Program);
+}
+
+void Shader::setMat4(const char* name, glm::mat4 value)
+{
+  glUniformMatrix4fv(glGetUniformLocation(this->Program, name), 1, GL_FALSE, glm::value_ptr(value));
 }
