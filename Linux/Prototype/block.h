@@ -1,4 +1,5 @@
 
+enum Type {STATIC,DYNAMIC,STREAM};
 
 class block
 {
@@ -10,8 +11,10 @@ public:
   float xpos;
   float ypos;
   const char* texture;
-  block(float x, float y, const char* newTexture);
+  //0 = STATIC, 1 = DYNAMIC, 2 = STREAM
+  int type;
+  block(float x, float y, const char* newTexture, int newType);
 
   void draw();
-  void init();
+  void refresh();
 };

@@ -32,34 +32,19 @@ int main()
   int winWidth = 800;
   int winHeight = 600;
   GLFWwindow* window = createWindow(winWidth,winHeight);
-  glfwMakeContextCurrent(window);
+
   glfwSetKeyCallback(window, key_callback);
+
+  //Intialize glew and all related settings
   glewExperimental = GL_TRUE;
   glewInit();
   glViewport(0,0,winWidth,winHeight);
   glEnable(GL_DEPTH_TEST);
 
-  std::cout << "flag one\n";
-  block testBlock(0,0,"textures/tilesf1.jpg");
-  block testBlock2(0.2,0.2,"textures/tilesf1.jpg");
-  std::cout << "flag two\n";
+  block testBlock(0,0,"textures/tilesf1.jpg",STATIC);
+  block testBlock2(0.2,0.2,"textures/tilesf1.jpg",STATIC);
   block* gameGrid;
-  /*
-  std::cout << "How many blocks do you want to lay?\n";
-  int answer;
-  std::cin << answer;
 
-  gameGrid = new block[answer];
-  int x;
-  for(int x = 0; x<answer, x++)
-  {
-    int xCord, yCord
-    std::cin >> xCord;
-    std::cin >> yCord;
-    gameGrid[x] = new block
-  }
-
-*/
 
 
   while(!glfwWindowShouldClose(window))
@@ -67,8 +52,12 @@ int main()
     glfwPollEvents();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    testBlock.xpos += 0.001;
+    testBlock.refresh();
     testBlock.draw();
     testBlock2.draw();
+
     glfwSwapBuffers(window);
   }
 }
