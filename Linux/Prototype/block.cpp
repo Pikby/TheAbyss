@@ -22,6 +22,12 @@
 #include "shaders.h"
 #include "block.h"
 
+
+glm::vec3 cameraPos   = glm::vec3(0.0f,0.0f,3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f,0.0f,-1.0f);
+glm::vec3 cameraUp    = glm::vec3(0.0f,1.0f,0.0f);
+
+
 block::block(float x, float y, const char* newTexture, int newType)
 {
   blockShader = new Shader("shaders/shader.vs","shaders/shader.fs");
@@ -123,8 +129,19 @@ void block::refresh()
 
 void block::draw()
 {
+  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800/ (float)600, 0.1f, 100.0f);
+  blockShader->setMat4("projection", projection);
+
+  glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+  blockShader->setMat4("view", view);
+
   glBindTexture(GL_TEXTURE_2D, glTexture);
   blockShader->Use();
+
+  glm::mat4 model;
+  model = glm::rotate(model, glm::radians(20.0f), glm::vec3(1.0f, 0.3f, 0.5f));
+  blockShader->setMat4("model", model);
+
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,0);
   glBindVertexArray(0);

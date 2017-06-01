@@ -5,6 +5,10 @@
 
 #include <GL/glew.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "shaders.h"
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
@@ -79,4 +83,9 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 void Shader::Use()
 {
   glUseProgram(this->Program);
+}
+
+void Shader::setMat4(const char* name, glm::mat4 value)
+{
+  glUniformMatrix4fv(glGetUniformLocation(this->Program, name), 1, GL_FALSE, glm::value_ptr(value));
 }
