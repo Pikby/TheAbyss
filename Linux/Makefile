@@ -7,7 +7,7 @@ CC = g++
 CFLAGS  = -lglfw3 -lGLEW -lGL -lm -ldl -lXinerama -lXrandr -lXi -lXcursor -lX11 -lXxf86vm -lpthread -lSOIL -std=c++11
 
 # the build target executable:
-TARGET = main.cpp shaders.cpp openGL.cpp block.cpp
+TARGET = ../src/main.cpp ../src/shaders.cpp ../src/openGL.cpp ../src/block.cpp
 
 all: $(TARGET)
 	$(CC) $(TARGET) $(CFLAGS)
