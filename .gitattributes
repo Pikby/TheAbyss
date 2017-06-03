@@ -1,3 +1,4 @@
 *.vs linguist-language=GLSL
 *.fs linguist-language=GLSL
-Linux/SOIL.h linguist-vendored
+v1/SOIL.h linguist-vendored
+src/headers/SOIL.h
