@@ -15,6 +15,6 @@ public:
   int type;
   Block(float x, float y, const char* newTexture, int newType);
 
-  void draw();
+  void draw(glm::mat4 camera);
   void refresh();
 };

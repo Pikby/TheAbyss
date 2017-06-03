@@ -152,12 +152,12 @@ void Block::refresh()
 
 }
 
-void Block::draw()
+void Block::draw(glm::mat4 camera)
 {
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800/ (float)600, 0.1f, 100.0f);
   blockShader->setMat4("projection", projection);
 
-  glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+  glm::mat4 view = camera;
   blockShader->setMat4("view", view);
 
   glBindTexture(GL_TEXTURE_2D, glTexture);

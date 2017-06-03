@@ -20,12 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\block.cpp" />
+    <ClCompile Include="..\src\camera.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\openGL.cpp" />
     <ClCompile Include="..\src\shaders.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\headers\block.h" />
+    <ClInclude Include="..\src\headers\camera.h" />
     <ClInclude Include="..\src\headers\openGL.h" />
     <ClInclude Include="..\src\headers\shaders.h" />
   </ItemGroup>
