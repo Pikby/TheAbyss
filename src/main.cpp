@@ -41,7 +41,7 @@ int main()
   glViewport(0, 0, winWidth, winHeight);
   glEnable(GL_DEPTH_TEST);
 
-  Block testBlock(0,0,"../assets/textures/tilesf1.jpg",STATIC);
+  Block testBlock(0,0,"../assets/textures/tilesf1.jpg",STREAM);
   Block testBlock2(0.2,0.2,"../assets/textures/tilesf1.jpg",STATIC);
   Block* gameGrid;
 
@@ -54,8 +54,8 @@ int main()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    testBlock.xpos += 0.001;
-    testBlock.refresh();
+    //testBlock.xpos += 0.001;
+    //testBlock.refresh();
     testBlock.draw();
     testBlock2.draw();
 
