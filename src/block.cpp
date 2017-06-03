@@ -28,7 +28,7 @@ glm::vec3 cameraFront = glm::vec3(0.0f,0.0f,-1.0f);
 glm::vec3 cameraUp    = glm::vec3(0.0f,1.0f,0.0f);
 
 
-block::block(float x, float y, const char* newTexture, int newType)
+Block::Block(float x, float y, const char* newTexture, int newType)
 {
   blockShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
   xpos = x;
@@ -38,7 +38,7 @@ block::block(float x, float y, const char* newTexture, int newType)
   refresh();
 }
 
-void block::refresh()
+void Block::refresh()
 {
   float scrPosX = xpos;
   float scrPosY = ypos;
@@ -127,7 +127,7 @@ void block::refresh()
 
 }
 
-void block::draw()
+void Block::draw()
 {
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800/ (float)600, 0.1f, 100.0f);
   blockShader->setMat4("projection", projection);

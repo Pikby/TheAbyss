@@ -41,9 +41,9 @@ int main()
   glViewport(0,0,winWidth,winHeight);
   glEnable(GL_DEPTH_TEST);
 
-  block testBlock(0,0,"../assets/textures/tilesf1.jpg",STATIC);
-  block testBlock2(0.2,0.2,"../assets/textures/tilesf1.jpg",STATIC);
-  block* gameGrid;
+  Block testBlock(0,0,"../assets/textures/tilesf1.jpg",STATIC);
+  Block testBlock2(0.2,0.2,"../assets/textures/tilesf1.jpg",STATIC);
+  Block* gameGrid;
 
 
 
