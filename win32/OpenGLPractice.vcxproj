@@ -18,6 +18,17 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\block.cpp" />
+    <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\openGL.cpp" />
+    <ClCompile Include="..\src\shaders.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\headers\block.h" />
+    <ClInclude Include="..\src\headers\openGL.h" />
+    <ClInclude Include="..\src\headers\shaders.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{46838EFA-7BD2-488B-A6F0-75B63918AE24}</ProjectGuid>
@@ -123,17 +134,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="src\block.cpp" />
-    <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\openGL.cpp" />
-    <ClCompile Include="src\shaders.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="src\headers\block.h" />
-    <ClInclude Include="src\headers\openGL.h" />
-    <ClInclude Include="src\headers\shaders.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

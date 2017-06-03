@@ -1,4 +1,5 @@
 libs/
 *.dll
 .vs/
-
+*.user
+win32/Debug/

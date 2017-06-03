@@ -15,27 +15,27 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\block.cpp">
+    <ClCompile Include="..\src\block.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\main.cpp">
+    <ClCompile Include="..\src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\openGL.cpp">
+    <ClCompile Include="..\src\openGL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\shaders.cpp">
+    <ClCompile Include="..\src\shaders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\headers\block.h">
+    <ClInclude Include="..\src\headers\block.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\headers\openGL.h">
+    <ClInclude Include="..\src\headers\openGL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\headers\shaders.h">
+    <ClInclude Include="..\src\headers\shaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
