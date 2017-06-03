@@ -1,5 +1,5 @@
 #include <string>
-#include "SOIL.h"
+#include "headers/SOIL.h"
 #include <iostream>
 #include <math.h>
 
@@ -9,7 +9,7 @@
 
 // GLFW
 #include <GLFW/glfw3.h>
-#include "openGL.h"
+#include "headers/openGL.h"
 
 GLFWwindow* createWindow(int width, int height)
 {

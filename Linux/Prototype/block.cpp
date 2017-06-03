@@ -5,7 +5,7 @@
 #include <math.h>
 
 // GLEW
-// #define GLEW_STATIC
+#define GLEW_STATIC
 #include <GL/glew.h>
 
 // GLFW
@@ -50,6 +50,14 @@ void block::refresh()
     scrPosX+0.125f,     scrPosY,    0.0f,1.0f,0.0f,
     scrPosX,       scrPosY+0.167f,  0.0f,0.0f,1.0f,
     scrPosX+0.125f,  scrPosY+0.167f,0.0f,0.0f,0.0f
+
+
+
+
+
+
+
+
   };
 
   GLuint indices[] =

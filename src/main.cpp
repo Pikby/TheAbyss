@@ -1,4 +1,4 @@
-#include "SOIL.h"
+#include "headers/SOIL.h"
 #include <iostream>
 #include <math.h>
 
@@ -17,9 +17,9 @@
 
 
 //Add the shader configs
-#include "shaders.h"
-#include "openGL.h"
-#include "block.h"
+#include "headers/shaders.h"
+#include "headers/openGL.h"
+#include "headers/block.h"
 
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -41,8 +41,8 @@ int main()
   glViewport(0,0,winWidth,winHeight);
   glEnable(GL_DEPTH_TEST);
 
-  block testBlock(0,0,"textures/tilesf1.jpg",STATIC);
-  block testBlock2(0.2,0.2,"textures/tilesf1.jpg",STATIC);
+  block testBlock(0,0,"../assets/textures/tilesf1.jpg",STATIC);
+  block testBlock2(0.2,0.2,"../assets/textures/tilesf1.jpg",STATIC);
   block* gameGrid;
 
 
