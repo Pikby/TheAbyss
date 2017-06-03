@@ -30,7 +30,7 @@ glm::vec3 cameraUp    = glm::vec3(0.0f,1.0f,0.0f);
 
 block::block(float x, float y, const char* newTexture, int newType)
 {
-  blockShader = new Shader("shaders/shader.vs","shaders/shader.fs");
+  blockShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
   xpos = x;
   ypos = y;
   texture = newTexture;
