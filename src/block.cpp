@@ -46,16 +46,41 @@ void Block::refresh()
 
   GLfloat vertices[] =
   {
-    scrPosX,            scrPosY,    0.0f,1.0f,1.0f,
-    scrPosX+0.125f,     scrPosY,    0.0f,1.0f,0.0f,
-    scrPosX,       scrPosY+0.167f,  0.0f,0.0f,1.0f,
-    scrPosX+0.125f,  scrPosY+0.167f,0.0f,0.0f,0.0f
+    scrPosX,            scrPosY,     0.0f,  0.0f,0.0f,
+    scrPosX+0.125f,     scrPosY,     0.0f,  0.0f,1.0f,
+    scrPosX,       scrPosY+0.125f,   0.0f,  1.0f,0.0f,
+    scrPosX+0.125f,  scrPosY+0.125f, 0.0f,  1.0f,1.0f,
+    scrPosX,            scrPosY,     0.125f,1.0f,1.0f,
+    scrPosX+0.125f,     scrPosY,     0.125f,1.0f,0.0f,
+    scrPosX,       scrPosY+0.125f,   0.125f,0.0f,1.0f,
+    scrPosX+0.125f,  scrPosY+0.125f, 0.125f,0.0f,0.0f
   };
 
   GLuint indices[] =
   {
+    //front
     0,1,2,
-    1,2,3
+    1,2,3,
+
+    //top
+    2,6,7,
+    2,3,7,
+
+    //bottom
+    0,4,5,
+    1,4,5,
+
+    //lside
+    0,2,6,
+    0,4,6,
+
+    //rside
+    1,3,7,
+    1,5,6,
+
+    //back
+    4,5,6,
+    5,6,7
   };
 
   //Generate and bind the buffers
@@ -143,7 +168,7 @@ void Block::draw()
   blockShader->setMat4("model", model);
 
   glBindVertexArray(VAO);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,0);
+  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
 
 
