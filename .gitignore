@@ -1,5 +1,4 @@
 libs/
-openGL_win/.vs/
-openGL_win/Debug/
-openGL_win/*.dll
-openGL_win/openGL_win.vcxproj.user
+*.dll
+.vs/
+

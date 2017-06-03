@@ -1,0 +1,4 @@
+﻿  block.cpp
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+  OpenGLPractice.vcxproj -> C:\Users\ianw3214\workspace\OpenGLPractice\Debug\OpenGLPractice.exe
+  OpenGLPractice.vcxproj -> C:\Users\ianw3214\workspace\OpenGLPractice\Debug\OpenGLPractice.pdb (Partial PDB)
