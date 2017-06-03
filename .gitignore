@@ -3,3 +3,4 @@ libs/
 .vs/
 *.user
 win32/Debug/
+src/headers/SOIL.h
