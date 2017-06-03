@@ -38,7 +38,7 @@ int main()
   //Intialize glew and all related settings
   glewExperimental = GL_TRUE;
   glewInit();
-  glViewport(0,0,winWidth,winHeight);
+  glViewport(0, 0, winWidth, winHeight);
   glEnable(GL_DEPTH_TEST);
 
   Block testBlock(0,0,"../assets/textures/tilesf1.jpg",STATIC);
@@ -65,5 +65,6 @@ int main()
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
 }
