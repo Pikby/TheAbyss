@@ -38,6 +38,16 @@ Block::Block(float x, float y, const char* newTexture, int newType)
   refresh();
 }
 
+Block::Block(const char* newTexture, int newType)
+{
+  blockShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
+  texture = newTexture;
+  type = newType;
+  xpos = 0.0f;
+  ypos = 0.0f;
+  refresh();
+}
+
 void Block::refresh()
 {
   float scrPosX = xpos;
@@ -68,7 +78,7 @@ void Block::refresh()
 
     //bottom
     0,4,5,
-    1,4,5,
+    0,1,5,
 
     //lside
     0,2,6,
@@ -76,7 +86,7 @@ void Block::refresh()
 
     //rside
     1,3,7,
-    1,5,6,
+    1,5,7,
 
     //back
     4,5,6,
@@ -154,14 +164,16 @@ void Block::refresh()
 
 void Block::draw(glm::mat4 camera)
 {
+  glBindTexture(GL_TEXTURE_2D, glTexture);
+  blockShader->Use();
+
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800/ (float)600, 0.1f, 100.0f);
   blockShader->setMat4("projection", projection);
 
   glm::mat4 view = camera;
   blockShader->setMat4("view", view);
 
-  glBindTexture(GL_TEXTURE_2D, glTexture);
-  blockShader->Use();
+
 
   glm::mat4 model;
   model = glm::rotate(model, glm::radians(20.0f), glm::vec3(1.0f, 0.3f, 0.5f));

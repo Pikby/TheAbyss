@@ -21,6 +21,7 @@
 #include "headers/openGL.h"
 #include "headers/block.h"
 #include "headers/camera.h"
+#include "headers/blockarray.h"
 
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -58,10 +59,14 @@ int main()
   glViewport(0, 0, winWidth, winHeight);
   glEnable(GL_DEPTH_TEST);
 
-  Block testBlock(0,0,"../assets/textures/tilesf1.jpg",STREAM);
+  //Block testBlock(0,0,"../assets/textures/tilesf1.jpg",STREAM);
   Block testBlock2(0.2,0.2,"../assets/textures/tilesf1.jpg",STATIC);
-  Block* gameGrid;
 
+  BlockArray testArray("../assets/textures/tilesf1.jpg",STATIC);
+  for(float x=0;x<10;x++)
+  {
+    testArray.addBlock(x/10,x/10,x/10);
+  }
 
   while(!glfwWindowShouldClose(window))
   {
@@ -75,11 +80,8 @@ int main()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
+    testArray.draw(camera.GetViewMatrix());
 
-    //testBlock.xpos += 0.001;
-    //testBlock.refresh();
-    testBlock.draw(camera.GetViewMatrix());
-    testBlock2.draw(camera.GetViewMatrix());
 
     glfwSwapBuffers(window);
   }
