@@ -1,10 +1,10 @@
-
 enum Type {STATIC,DYNAMIC,STREAM};
 
 #include <string>
 #include "headers/SOIL.h"
 #include <iostream>
 #include <math.h>
+#include <vector>
 
 // GLEW
 // #define GLEW_STATIC
@@ -24,20 +24,24 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/shaders.h"
 #include "headers/block.h"
 
+#include "headers/mainchar.h"
 
-Block::Block(float x, float y, const char* newTexture, int newType)
+
+float gravity = 0.01;
+
+MainChar::MainChar(float x, float y, const char* newTexture)
 {
-  blockShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
-  xpos = x;
-  ypos = y;
+  mainCharShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
+  xpos = x/10;
+  ypos = y/10;
   texture = newTexture;
-  type = newType;
+  type = STREAM;
   refresh();
 }
 
-Block::Block(const char* newTexture, int newType)
+MainChar::MainChar(const char* newTexture, int newType)
 {
-  blockShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
+  mainCharShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
   texture = newTexture;
   type = newType;
   xpos = 0.0f;
@@ -45,48 +49,35 @@ Block::Block(const char* newTexture, int newType)
   refresh();
 }
 
-void Block::refresh()
+void MainChar::refresh()
 {
-
-
 
   GLfloat vertices[] =
   {
-    0.0f, 0.0f,   0.0f,0.0f,0.0f,
-    0.1f, 0.0f,   0.0f,0.0f,1.0f,
-    0.0f, 0.1f,   0.0f,1.0f,0.0f,
-    0.1f, 0.1f,   0.0f,1.0f,1.0f,
-    0.0f, 0.0f,   0.1f,1.0f,1.0f,
-    0.1f, 0.0f,   0.1f,1.0f,0.0f,
-    0.0f, 0.1f,   0.1f,0.0f,1.0f,
-    0.1f, 0.1f,   0.1f,0.0f,0.0f
+    0.0f, 0.0f, 0.0f,0.0f,0.0f,
+    0.1f, 0.0f, 0.0f,0.0f,0.0f,
+    0.0f, 0.0f, 0.1f,0.0f,0.0f,
+    0.1f, 0.0f, 0.1f,0.0f,0.0f,
+    0.05f,0.05f,0.05f,0.1f,0.5f,1.0f,
+
   };
 
   GLuint indices[] =
   {
     //front
-    0,1,2,
-    1,2,3,
-
-    //top
-    2,6,7,
-    2,3,7,
-
-    //bottom
-    0,4,5,
-    0,1,5,
-
-    //lside
-    0,2,6,
-    0,4,6,
+    0,1,4,
 
     //rside
-    1,3,7,
-    1,5,7,
+    0,2,4,
 
     //back
-    4,5,6,
-    5,6,7
+    2,3,4,
+    //lside
+    1,3,4,
+
+    //bottom
+    0,1,2,
+    1,2,3
   };
 
   //Generate and bind the buffers
@@ -158,17 +149,16 @@ void Block::refresh()
 
 }
 
-void Block::draw(glm::mat4 camera)
+void MainChar::draw(glm::mat4 camera)
 {
   glBindTexture(GL_TEXTURE_2D, glTexture);
-  blockShader->Use();
+  mainCharShader->Use();
 
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800/ (float)600, 0.1f, 100.0f);
-  blockShader->setMat4("projection", projection);
+  mainCharShader->setMat4("projection", projection);
 
   glm::mat4 view = camera;
-  blockShader->setMat4("view", view);
-
+  mainCharShader->setMat4("view", view);
 
 
   glm::mat4 model;
@@ -177,11 +167,26 @@ void Block::draw(glm::mat4 camera)
   newPos.y = ypos;
   newPos.z = 0.0f;
   model = glm::translate(model, newPos);
-  blockShader->setMat4("model", model);
-
+  mainCharShader->setMat4("model", model);
   glBindVertexArray(VAO);
-  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
+  glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
 
 
+}
+
+void MainChar::update(std::vector <Block> blkArray)
+{
+  bool isBlocked = false;
+  for(int i = 0 ; i<blkArray.size();i++)
+  {
+    if(xpos >= blkArray.at(i).xpos && xpos <= blkArray.at(i).xpos + 0.1f)
+    {
+      if(ypos - gravity >= blkArray.at(i).ypos && ypos - gravity <= blkArray.at(i).ypos + 0.1f)
+      {
+        isBlocked = true;
+      }
+    }
+  }
+  if(!isBlocked) ypos = ypos - gravity;
 }
