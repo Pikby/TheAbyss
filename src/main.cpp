@@ -31,6 +31,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 // create a camera using the camera class
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+MainChar* testMain;
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -63,8 +64,12 @@ int main()
 
 
   std::vector <Block> levelBlocks;
-  MainChar main(0,10,"../assets/textures/tilesf1.jpg");
-  levelBlocks.push_back(Block(0.0f,0.0f,"../assets/textures/tilesf1.jpg",STATIC));
+  testMain = new MainChar(0,10,"../assets/textures/tilesf1.jpg",&levelBlocks);
+  levelBlocks.push_back(Block(0,0,"../assets/textures/tilesf1.jpg",STATIC));
+  levelBlocks.push_back(Block(1,0,"../assets/textures/tilesf1.jpg",STATIC));
+  levelBlocks.push_back(Block(-1,1,"../assets/textures/tilesf1.jpg",STATIC));
+  levelBlocks.push_back(Block(2,1,"../assets/textures/tilesf1.jpg",STATIC));
+
 
   while(!glfwWindowShouldClose(window))
   {
@@ -82,8 +87,8 @@ int main()
       levelBlocks.at(x).draw(camera.GetViewMatrix());
     }
 
-    main.draw(camera.GetViewMatrix());
-    main.update(levelBlocks);
+    testMain->draw(camera.GetViewMatrix());
+    testMain->update();
     glfwSwapBuffers(window);
   }
 }
@@ -97,9 +102,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		camera.ProcessKeyBoard(BACKWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyBoard(LEFT, deltaTime);
+		testMain->moveLeft();
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyBoard(RIGHT, deltaTime);
+		testMain->moveRight();
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)

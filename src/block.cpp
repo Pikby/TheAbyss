@@ -28,8 +28,8 @@ enum Type {STATIC,DYNAMIC,STREAM};
 Block::Block(float x, float y, const char* newTexture, int newType)
 {
   blockShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
-  xpos = x;
-  ypos = y;
+  xpos = x/10;
+  ypos = y/10;
   texture = newTexture;
   type = newType;
   refresh();

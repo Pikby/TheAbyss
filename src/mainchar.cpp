@@ -27,15 +27,16 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/mainchar.h"
 
 
-float gravity = 0.01;
-
-MainChar::MainChar(float x, float y, const char* newTexture)
+MainChar::MainChar(float x, float y, const char* newTexture,std::vector<Block> *newArray )
 {
   mainCharShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
   xpos = x/10;
   ypos = y/10;
+  deltax = 0;
+  deltay = 0;
   texture = newTexture;
   type = STREAM;
+  blkArray = newArray;
   refresh();
 }
 
@@ -175,18 +176,74 @@ void MainChar::draw(glm::mat4 camera)
 
 }
 
-void MainChar::update(std::vector <Block> blkArray)
+void MainChar::update()
 {
   bool isBlocked = false;
-  for(int i = 0 ; i<blkArray.size();i++)
+  for(int i = 0 ; i<blkArray->size();i++)
   {
-    if(xpos >= blkArray.at(i).xpos && xpos <= blkArray.at(i).xpos + 0.1f)
+    if(xpos >= blkArray->at(i).xpos && xpos <= blkArray->at(i).xpos + 0.1f
+    || xpos + 0.1 >= blkArray->at(i).xpos && xpos + 0.1 <= blkArray->at(i).xpos + 0.1f)
     {
-      if(ypos - gravity >= blkArray.at(i).ypos && ypos - gravity <= blkArray.at(i).ypos + 0.1f)
+      if(ypos - deltay >= blkArray->at(i).ypos && ypos - deltay <= blkArray->at(i).ypos + 0.1f)
       {
         isBlocked = true;
       }
     }
   }
-  if(!isBlocked) ypos = ypos - gravity;
+  if(!isBlocked)
+  {
+    ypos = ypos - deltay;
+    deltay += 0.001;
+  }
+  else deltay = 0;
+}
+
+void MainChar::moveRight()
+{
+  bool isBlocked = false;
+  for(int i = 0 ; i<blkArray->size();i++)
+  {
+    if(xpos + deltax >= blkArray->at(i).xpos && xpos + deltax <= blkArray->at(i).xpos + 0.1f
+    || xpos + 0.1 + deltax >= blkArray->at(i).xpos && xpos + 0.1 + deltax <= blkArray->at(i).xpos + 0.1f  )
+    {
+      if(ypos>= blkArray->at(i).ypos && ypos <= blkArray->at(i).ypos + 0.1f)
+      {
+        isBlocked = true;
+      }
+    }
+  }
+  if(!isBlocked)
+  {
+    xpos += deltax;
+    deltax += 0.001;
+  }
+  else
+  {
+    deltax = 0;
+  }
+}
+
+void MainChar::moveLeft()
+{
+  bool isBlocked = false;
+  for(int i = 0 ; i<blkArray->size();i++)
+  {
+    if(xpos + deltax >= blkArray->at(i).xpos && xpos + deltax <= blkArray->at(i).xpos + 0.1f
+    || xpos + 0.1 + deltax >= blkArray->at(i).xpos && xpos + 0.1 + deltax <= blkArray->at(i).xpos + 0.1f  )
+    {
+      if(ypos >= blkArray->at(i).ypos && ypos <= blkArray->at(i).ypos + 0.1f)
+      {
+        isBlocked = true;
+      }
+    }
+  }
+  if(!isBlocked)
+  {
+    xpos += deltax;
+    deltax -= 0.001;
+  }
+  else
+  {
+    deltax = 0;
+  }
 }
