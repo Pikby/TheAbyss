@@ -105,6 +105,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		testMain->moveLeft();
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		testMain->moveRight();
+  if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    testMain->jump();
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)

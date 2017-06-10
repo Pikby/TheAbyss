@@ -40,16 +40,6 @@ MainChar::MainChar(float x, float y, const char* newTexture,std::vector<Block> *
   refresh();
 }
 
-MainChar::MainChar(const char* newTexture, int newType)
-{
-  mainCharShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
-  texture = newTexture;
-  type = newType;
-  xpos = 0.0f;
-  ypos = 0.0f;
-  refresh();
-}
-
 void MainChar::refresh()
 {
 
@@ -184,18 +174,21 @@ void MainChar::update()
     if(xpos >= blkArray->at(i).xpos && xpos <= blkArray->at(i).xpos + 0.1f
     || xpos + 0.1 >= blkArray->at(i).xpos && xpos + 0.1 <= blkArray->at(i).xpos + 0.1f)
     {
-      if(ypos - deltay >= blkArray->at(i).ypos && ypos - deltay <= blkArray->at(i).ypos + 0.1f)
+      if(ypos + deltay >= blkArray->at(i).ypos && ypos + deltay <= blkArray->at(i).ypos + 0.1f)
       {
         isBlocked = true;
+        grounded = true;
       }
     }
   }
   if(!isBlocked)
   {
-    ypos = ypos - deltay;
-    deltay += 0.001;
+    ypos = ypos + deltay;
+    deltay -= 0.001;
   }
   else deltay = 0;
+
+
 }
 
 void MainChar::moveRight()
@@ -215,7 +208,7 @@ void MainChar::moveRight()
   if(!isBlocked)
   {
     xpos += deltax;
-    deltax += 0.001;
+    deltax += 0.01;
   }
   else
   {
@@ -246,4 +239,9 @@ void MainChar::moveLeft()
   {
     deltax = 0;
   }
+}
+
+void MainChar::jump()
+{
+  if(grounded) deltay = 0.1f;
 }

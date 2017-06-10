@@ -13,8 +13,6 @@ enum Type {STATIC,DYNAMIC,STREAM};
 // GLFW
 #include <GLFW/glfw3.h>
 
-
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -47,9 +45,6 @@ Block::Block(const char* newTexture, int newType)
 
 void Block::refresh()
 {
-
-
-
   GLfloat vertices[] =
   {
     0.0f, 0.0f,   0.0f,0.0f,0.0f,
@@ -122,7 +117,6 @@ void Block::refresh()
     default :
     std::cout << "INVALID DRAW TYPE  \n STOPPING REFRESH\n";
     return;
-
   }
 
   //Position
@@ -135,7 +129,6 @@ void Block::refresh()
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
-
 
   glGenTextures(1, &glTexture);
   glBindTexture(GL_TEXTURE_2D, glTexture);
@@ -155,7 +148,6 @@ void Block::refresh()
 
   SOIL_free_image_data(image);
   glBindTexture(GL_TEXTURE_2D, 0);
-
 }
 
 void Block::draw(glm::mat4 camera)
@@ -168,8 +160,6 @@ void Block::draw(glm::mat4 camera)
 
   glm::mat4 view = camera;
   blockShader->setMat4("view", view);
-
-
 
   glm::mat4 model;
   glm::vec3 newPos;

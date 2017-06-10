@@ -12,6 +12,7 @@ private:
   float maxSpeed;
   float deltax;
   float deltay;
+  bool grounded;
 public:
   float xpos;
   float ypos;
@@ -19,10 +20,10 @@ public:
   //0 = STATIC, 1 = DYNAMIC, 2 = STREAM
   int type;
   MainChar(float x, float y, const char* newTexture, std::vector<Block> *newArray);
-  MainChar(const char* newTexture, int newType);
   void draw(glm::mat4 camera);
   void refresh();
   void update();
   void moveLeft();
   void moveRight();
+  void jump();
 };
