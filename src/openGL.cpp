@@ -1,7 +1,9 @@
 #include <string>
 #include "headers/SOIL.h"
 #include <iostream>
+#include <fstream>
 #include <math.h>
+#include <vector>
 
 // GLEW
 #define GLEW_STATIC
@@ -9,7 +11,16 @@
 
 // GLFW
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+
+
+#include "headers/shaders.h"
+#include "headers/block.h"
 #include "headers/openGL.h"
+
 
 GLFWwindow* createWindow(int width, int height)
 {
@@ -24,4 +35,49 @@ GLFWwindow* createWindow(int width, int height)
   glfwMakeContextCurrent(window);
 
   return window;
+}
+
+void saveLevel(std::vector<Block>* level, const char* path)
+{
+  std::ofstream levelFile;
+  levelFile.open(path);
+  int numItems;
+  numItems = level->size();
+  levelFile << numItems;
+  levelFile << "\n";
+  for(int i = 0; i<numItems;i++)
+  {
+    levelFile << level->at(i).xpos*10 << "\n";
+    levelFile << level->at(i).ypos*10 << "\n";
+    levelFile << level->at(i).texture << "\n";
+  }
+  levelFile.close();
+}
+
+std::vector <Block> loadLevel( const char* path)
+{
+  std::vector <Block> level;
+  std::ifstream levelFile;
+  levelFile.open(path);
+
+  unsigned int numItems;
+  levelFile >> numItems;
+
+  //std::cout << "numItems is: " << numItems << "\n";
+  for(int i=0;i<numItems;i++)
+  {
+    float xpos,ypos;
+    char texture[100];
+
+    levelFile >> xpos;
+    levelFile >> ypos;
+    levelFile >> texture;
+
+    //std::cout << "xPos is :" << xpos << " yPos is : " << ypos << texture << "\n";
+    level.push_back(Block(xpos,ypos,texture,0));
+  }
+
+
+  levelFile.close();
+  return level;
 }

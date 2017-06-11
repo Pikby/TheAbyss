@@ -20,8 +20,8 @@ enum Type {STATIC,DYNAMIC,STREAM};
 
 //Add the shader configs
 #include "headers/shaders.h"
-#include "headers/openGL.h"
 #include "headers/block.h"
+#include "headers/openGL.h"
 #include "headers/camera.h"
 #include "headers/mainchar.h"
 
@@ -64,11 +64,16 @@ int main()
 
 
   std::vector <Block> levelBlocks;
-  testMain = new MainChar(0,10,"../assets/textures/tilesf1.jpg",&levelBlocks);
+  std::vector <Block> levelBlocks2;
   levelBlocks.push_back(Block(0,0,"../assets/textures/tilesf1.jpg",STATIC));
   levelBlocks.push_back(Block(1,0,"../assets/textures/tilesf1.jpg",STATIC));
   levelBlocks.push_back(Block(-1,1,"../assets/textures/tilesf1.jpg",STATIC));
   levelBlocks.push_back(Block(2,1,"../assets/textures/tilesf1.jpg",STATIC));
+
+
+  saveLevel(&levelBlocks,"../assets/levels/testlv.lvl");
+  levelBlocks2 = loadLevel("../assets/levels/testlv.lvl");
+  testMain = new MainChar(0,10,"../assets/textures/tilesf1.jpg",&levelBlocks2);
 
 
   while(!glfwWindowShouldClose(window))
@@ -82,9 +87,9 @@ int main()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for(int x = 0 ; x<levelBlocks.size();x++)
+    for(int x = 0 ; x<levelBlocks2.size();x++)
     {
-      levelBlocks.at(x).draw(camera.GetViewMatrix());
+      levelBlocks2.at(x).draw(camera.GetViewMatrix());
     }
 
     testMain->draw(camera.GetViewMatrix());
