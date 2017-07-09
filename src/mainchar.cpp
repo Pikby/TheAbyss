@@ -29,7 +29,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 
 MainChar::MainChar(float x, float y, const char* newTexture,std::vector<Block> *newArray )
 {
-  mainCharShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
+  mainCharShader = new Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
   xpos = x/10;
   ypos = y/10;
   deltax = 0;
@@ -243,5 +243,5 @@ void MainChar::moveLeft()
 
 void MainChar::jump()
 {
-  if(grounded) deltay = 0.1f;
+  if(grounded) deltay = 0.05f;
 }

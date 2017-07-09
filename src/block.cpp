@@ -25,7 +25,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 
 Block::Block(float x, float y, const char* newTexture, int newType)
 {
-  blockShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
+  blockShader = new Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
   xpos = x/10;
   ypos = y/10;
   texture = newTexture;
@@ -35,7 +35,7 @@ Block::Block(float x, float y, const char* newTexture, int newType)
 
 Block::Block(const char* newTexture, int newType)
 {
-  blockShader = new Shader("../src/shaders/shader.vs","../src/shaders/shader.fs");
+  blockShader = new Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
   texture = newTexture;
   type = newType;
   xpos = 0.0f;
@@ -170,7 +170,7 @@ void Block::draw(glm::mat4 camera)
   blockShader->setMat4("model", model);
 
   glBindVertexArray(VAO);
-  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT,0);
+  glDrawElements(GL_TRIANGLES, 72, GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
 
 

@@ -4,6 +4,12 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include <iostream>
 #include <math.h>
 #include <vector>
+#include <map>
+#include <string>
+
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 // GLEW
 // #define GLEW_STATIC
 #include <GL/glew.h>
@@ -11,12 +17,9 @@ enum Type {STATIC,DYNAMIC,STREAM};
 // GLFW
 #include <GLFW/glfw3.h>
 
-
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 
 //Add the shader configs
 #include "headers/shaders.h"
@@ -24,6 +27,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/openGL.h"
 #include "headers/camera.h"
 #include "headers/mainchar.h"
+#include "headers/text.h"
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -54,17 +58,23 @@ int main()
   glfwSetKeyCallback(window, key_callback);
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
-
+  glfwSwapInterval(1);
   //Intialize glew and all related settings
   glewExperimental = GL_TRUE;
   glewInit();
   glViewport(0, 0, winWidth, winHeight);
+
+  //glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
 
-  std::vector <Block> levelBlocks;
   std::vector <Block> levelBlocks2;
+  /*
+  std::vector <Block> levelBlocks;
+
   levelBlocks.push_back(Block(0,0,"../assets/textures/tilesf1.jpg",STATIC));
   levelBlocks.push_back(Block(1,0,"../assets/textures/tilesf1.jpg",STATIC));
   levelBlocks.push_back(Block(-1,1,"../assets/textures/tilesf1.jpg",STATIC));
@@ -72,28 +82,54 @@ int main()
 
 
   saveLevel(&levelBlocks,"../assets/levels/testlv.lvl");
+  */
   levelBlocks2 = loadLevel("../assets/levels/testlv.lvl");
+
   testMain = new MainChar(0,10,"../assets/textures/tilesf1.jpg",&levelBlocks2);
 
+  CharRenderer text;
 
+  long long totalFrame = 0;
+  std::string fpsString;
   while(!glfwWindowShouldClose(window))
   {
+    std::cout << totalFrame << "\n";
+    totalFrame++;
 	// update the delta time each frame
-	float currentFrame = glfwGetTime();
+	 float currentFrame = glfwGetTime();
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
+
+    float timer = glfwGetTime();
+    int timerInt = glfwGetTime();
+    float timerDec = timer - timerInt;
+    std::cout << timerDec << "\n";
+    if(timerDec+deltaTime>=1.0f)
+    {
+      fpsString = "FPS: ";
+      fpsString.append(std::to_string(totalFrame));
+      totalFrame = 0;
+
+    }
     glfwPollEvents();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    text.RenderText("This is sample text", 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+    text.RenderText(fpsString, 50.0f, 550.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
     for(int x = 0 ; x<levelBlocks2.size();x++)
     {
       levelBlocks2.at(x).draw(camera.GetViewMatrix());
     }
 
+
+
     testMain->draw(camera.GetViewMatrix());
     testMain->update();
+
+
+
     glfwSwapBuffers(window);
   }
 }
