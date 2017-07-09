@@ -6,7 +6,7 @@ private:
   GLuint VBO, VAO, EBO;
   GLuint glTexture;
   Shader* mainCharShader;
-  std::vector<Block> *blkArray;
+  std::vector<WorldBlk> *blkArray;
 
   float gravity;
   float maxSpeed;
@@ -19,7 +19,7 @@ public:
   const char* texture;
   //0 = STATIC, 1 = DYNAMIC, 2 = STREAM
   int type;
-  MainChar(float x, float y, const char* newTexture, std::vector<Block> *newArray);
+  MainChar(float x, float y, const char* newTexture, std::vector<WorldBlk> *newArray);
   void draw(glm::mat4 camera);
   void refresh();
   void update();

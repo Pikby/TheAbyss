@@ -27,7 +27,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/mainchar.h"
 
 
-MainChar::MainChar(float x, float y, const char* newTexture,std::vector<Block> *newArray )
+MainChar::MainChar(float x, float y, const char* newTexture,std::vector<WorldBlk> *newArray )
 {
   mainCharShader = new Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
   xpos = x/10;

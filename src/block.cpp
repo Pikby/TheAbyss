@@ -23,23 +23,11 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/block.h"
 
 
-Block::Block(float x, float y, const char* newTexture, int newType)
-{
-  blockShader = new Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
-  xpos = x/10;
-  ypos = y/10;
-  texture = newTexture;
-  type = newType;
-  refresh();
-}
-
 Block::Block(const char* newTexture, int newType)
 {
   blockShader = new Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
   texture = newTexture;
   type = newType;
-  xpos = 0.0f;
-  ypos = 0.0f;
   refresh();
 }
 
@@ -150,26 +138,35 @@ void Block::refresh()
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Block::draw(glm::mat4 camera)
+WorldBlk::WorldBlk(int x, int y ,int z, Block* newId)
 {
-  glBindTexture(GL_TEXTURE_2D, glTexture);
-  blockShader->Use();
+  xpos = (float)x/(float)10;
+  ypos = (float)y/(float)10;
+  zpos = (float)z/(float)10;
+  id = newId;
+}
+
+void WorldBlk::draw(glm::mat4 camera)
+{
+  glBindTexture(GL_TEXTURE_2D, id->glTexture);
+  id->blockShader->Use();
 
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800/ (float)600, 0.1f, 100.0f);
-  blockShader->setMat4("projection", projection);
+  id->blockShader->setMat4("projection", projection);
 
   glm::mat4 view = camera;
-  blockShader->setMat4("view", view);
+  id->blockShader->setMat4("view", view);
 
   glm::mat4 model;
   glm::vec3 newPos;
   newPos.x = xpos;
   newPos.y = ypos;
-  newPos.z = 0.0f;
+  newPos.z = zpos;
+  std::cout << xpos << ypos << zpos << "\n";
   model = glm::translate(model, newPos);
-  blockShader->setMat4("model", model);
+  id->blockShader->setMat4("model", model);
 
-  glBindVertexArray(VAO);
+  glBindVertexArray(id->VAO);
   glDrawElements(GL_TRIANGLES, 72, GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
 

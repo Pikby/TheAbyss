@@ -37,7 +37,8 @@ GLFWwindow* createWindow(int width, int height)
   return window;
 }
 
-void saveLevel(std::vector<Block>* level, const char* path)
+/*
+void saveLevel(std::vector<WorldBlk>* level, const char* path)
 {
   std::ofstream levelFile;
   levelFile.open(path);
@@ -49,14 +50,16 @@ void saveLevel(std::vector<Block>* level, const char* path)
   {
     levelFile << level->at(i).xpos*10 << "\n";
     levelFile << level->at(i).ypos*10 << "\n";
-    levelFile << level->at(i).texture << "\n";
+    levelFile << level->at(i).zpos*10 << "\n";
+    levelFile << level->at(i).id << "\n";
   }
   levelFile.close();
 }
 
-std::vector <Block> loadLevel( const char* path)
+
+std::vector <WorldBlk> loadLevel( const char* path)
 {
-  std::vector <Block> level;
+  std::vector <WorldBlk> level;
   std::ifstream levelFile;
   levelFile.open(path);
 
@@ -66,18 +69,20 @@ std::vector <Block> loadLevel( const char* path)
   //std::cout << "numItems is: " << numItems << "\n";
   for(int i=0;i<numItems;i++)
   {
-    float xpos,ypos;
+    float xpos,ypos,zpos;
     char texture[100];
 
     levelFile >> xpos;
     levelFile >> ypos;
-    levelFile >> texture;
+    levelFile >> zpos;
+    levelFile >> id;
 
     //std::cout << "xPos is :" << xpos << " yPos is : " << ypos << texture << "\n";
-    level.push_back(Block(xpos,ypos,texture,0));
+    level.push_back(Block(xpos,ypos,zpos,texture,0));
   }
 
 
   levelFile.close();
   return level;
 }
+*/
