@@ -5,6 +5,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/SOIL.h"
 #include <iostream>
 #include <math.h>
+#include <vector>
 
 // GLEW
 // #define GLEW_STATIC
@@ -39,10 +40,12 @@ void Block::refresh()
     0.1f, 0.0f,   0.0f,0.0f,1.0f,
     0.0f, 0.1f,   0.0f,1.0f,0.0f,
     0.1f, 0.1f,   0.0f,1.0f,1.0f,
+    /*
     0.0f, 0.0f,   0.1f,1.0f,1.0f,
     0.1f, 0.0f,   0.1f,1.0f,0.0f,
     0.0f, 0.1f,   0.1f,0.0f,1.0f,
     0.1f, 0.1f,   0.1f,0.0f,0.0f
+    */
   };
 
   GLuint indices[] =
@@ -58,7 +61,7 @@ void Block::refresh()
     //bottom
     0,4,5,
     0,1,5,
-
+    /*
     //lside
     0,2,6,
     0,4,6,
@@ -70,6 +73,7 @@ void Block::refresh()
     //back
     4,5,6,
     5,6,7
+    */
   };
 
   //Generate and bind the buffers
@@ -125,7 +129,7 @@ void Block::refresh()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   //Load and bind the texture from the class

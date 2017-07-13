@@ -17,9 +17,7 @@ public:
 class WorldBlk
 {
 public:
-  float xpos;
-  float ypos;
-  float zpos;
+  float xpos, ypos,zpos;
   Block* id;
   WorldBlk(int x, int y, int z, Block* newId);
   void draw(glm::mat4 camera);

@@ -27,11 +27,12 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/mainchar.h"
 
 
-MainChar::MainChar(float x, float y, const char* newTexture,std::vector<WorldBlk> *newArray )
+MainChar::MainChar(float x, float y, float z, const char* newTexture,std::vector<WorldBlk> *newArray )
 {
   mainCharShader = new Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
   xpos = x/10;
   ypos = y/10;
+  zpos = z/10;
   deltax = 0;
   deltay = 0;
   texture = newTexture;

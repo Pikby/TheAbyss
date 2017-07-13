@@ -28,6 +28,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/camera.h"
 #include "headers/mainchar.h"
 #include "headers/text.h"
+#include "headers/bsp.h"
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -58,7 +59,7 @@ int main()
   glfwSetKeyCallback(window, key_callback);
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
-  glfwSwapInterval(0);//FPS Capping
+  glfwSwapInterval(1);//FPS Capping
   //Intialize glew and all related settings
   glewExperimental = GL_TRUE;
   glewInit();
@@ -67,12 +68,14 @@ int main()
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
   std::vector <Block> blockIds;
   blockIds.push_back(Block("../assets/textures/tilesf1.jpg",0));
   blockIds.push_back(Block("../assets/textures/tilesf1.jpg",0));
   std::vector <WorldBlk> levelBlocks;
+
+  /*
   levelBlocks.push_back(WorldBlk(0,0,0,&(blockIds.at(0))));
   levelBlocks.push_back(WorldBlk(1,1,1,&(blockIds.at(1))));
 
@@ -83,9 +86,20 @@ int main()
       levelBlocks.push_back(WorldBlk(x,0,y,&blockIds.at(0)));
     }
   }
+  */
+  BSP newWorld;
+  newWorld.add(0,0,0,0);
+  newWorld.add(1,0,0,0);
+  //newWorld.add(1,0,0,0);
+  /*
+  for( int x = 0; x< 16; x++)
+    for(int y = 0; y< 60; y++)
+      for(int z = 0; z< 16; z++)
+      newWorld.add(x,y,z,0);
+  */
+  newWorld.render();
 
-
-  testMain = new MainChar(0,10,"../assets/textures/tilesf1.jpg",&levelBlocks);
+  testMain = new MainChar(0,1,0,"../assets/textures/tilesf1.jpg",&levelBlocks);
 
   //Intializes the text rendering object
   CharRenderer text;
@@ -115,11 +129,15 @@ int main()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //Render the fps string
-    text.RenderText(fpsString, 50.0f, 550.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+
 
     //Render each individual item on screen
     for(int x = 0 ; x<levelBlocks.size();x++)
     {
+      int xpos = levelBlocks.at(x).xpos;
+      int ypos = levelBlocks.at(x).ypos;
+      int zpos = levelBlocks.at(x).zpos;
+      if(sqrt(pow(testMain->xpos - xpos,2) + pow(testMain->ypos-ypos,2) + pow(testMain->zpos-zpos,2))<= 5.0f)
       levelBlocks.at(x).draw(camera.GetViewMatrix());
     }
 
@@ -127,7 +145,9 @@ int main()
     testMain->draw(camera.GetViewMatrix());
     testMain->update();
 
+    newWorld.draw(camera.GetViewMatrix());
 
+    text.RenderText(fpsString, 50.0f, 550.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 
     glfwSwapBuffers(window);
   }
@@ -142,9 +162,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		camera.ProcessKeyBoard(BACKWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		testMain->moveLeft();
+		camera.ProcessKeyBoard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		testMain->moveRight();
+			camera.ProcessKeyBoard(RIGHT, deltaTime);
   if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     testMain->jump();
 }
