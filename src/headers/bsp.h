@@ -16,9 +16,11 @@ private:
   long int totalVertices;
 public:
   BSP();
-  bool add(int x, int y, int z,int id);
+  bool addBlock(int x, int y, int z,int id);
   int addVertex(float x, float y, float z,float texX, float texY);
   void addIndices(int index1, int index2, int index3, int index4);
+  int removeBlock(int x, int y, int z);
   void render();
   void draw(glm::mat4 camera);
+  bool existsAt(int x,int y,int z);
 };

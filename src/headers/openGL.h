@@ -5,3 +5,5 @@ GLFWwindow* createWindow(int width, int height);
 void saveLevel(std::vector<Block>* level, const char* path);
 
 std::vector <Block> loadLevel(const char* path);
+
+int perlinNoise(int x, int y);

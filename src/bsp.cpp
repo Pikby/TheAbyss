@@ -42,7 +42,6 @@ int BSP::addVertex(float x, float y, float z, float texX, float texY)
     {
       if(vertMap[x][y].count(z) == 1)
       {
-        std::cout << "Found vertice at index: " << vertMap[x][y][z] << "\n";
         return vertMap[x][y][z];
       }
     }
@@ -53,12 +52,50 @@ int BSP::addVertex(float x, float y, float z, float texX, float texY)
   vertices.push_back(x);
   vertices.push_back(y);
   vertices.push_back(z);
+  if((int)(z*10) % 2 == 1)
+  {
+    if((int)(x*10) % 2 == 0)
+    {
+      vertices.push_back(0.0f);
+    }
+    else vertices.push_back(1.0f);
 
-  vertices.push_back(texX);
-  vertices.push_back(texY);
-  std::cout << "total verts so far: " << vertices.size()/5 << "\n";
+    if((int)(y*10) % 2 == 0)
+    {
+      vertices.push_back(0.0f);
+    }
+    else vertices.push_back(1.0f);
+  }
+  else
+  {
+    if((int)(x*10) % 2 == 1)
+    {
+      vertices.push_back(0.0f);
+    }
+    else vertices.push_back(1.0f);
+
+    if((int)(y*10) % 2 == 1)
+    {
+      vertices.push_back(0.0f);
+    }
+    else vertices.push_back(1.0f);
+  }
+
   return numbVert;
+}
 
+bool BSP::existsAt(int x, int y, int z)
+{
+  if(worldMap.count(x) == 1)
+  {
+    if(worldMap[x].count(y) == 1)
+    {
+      if(worldMap[x][y].count(z) == 1)
+      {
+        return true;
+      }
+    }
+  }
 }
 
 void BSP::addIndices(int index1, int index2, int index3, int index4)
@@ -73,108 +110,117 @@ void BSP::addIndices(int index1, int index2, int index3, int index4)
 }
 
 
-bool BSP::add(int x, int y, int z, int id)
+bool BSP::addBlock(int x, int y, int z, int id)
 {
   worldMap[x][y][z] = id;
-  float realX = x/10.0f;
-  float realY = y/10.0f;
-  float realZ = z/10.0f;
-
-  bool topNeigh = false;
-  bool bottomNeigh = false;
-  bool leftNeigh = false;
-  bool rightNeigh = false;
-  bool frontNeigh = false;
-  bool backNeigh = false;
-
-  if(worldMap[x+1][y][z] >= 1) rightNeigh = true;
-  if(worldMap[x-1][y][z] >= 1) leftNeigh = true;
-  if(worldMap[x][y+1][z] >= 1) topNeigh = true;
-  if(worldMap[x][y-1][z] >= 1) bottomNeigh = true;
-  if(worldMap[x][y][z+1] >= 1) frontNeigh = true;
-  if(worldMap[x][y][z-1] >= 1) backNeigh = true;
-
-  if(!rightNeigh)
-  {
-
-    int index1 = addVertex(realX+0.1f, realY,      realZ,     1.0f,1.0f);
-    int index2 = addVertex(realX+0.1f, realY+0.1f, realZ,     0.0f,1.0f);
-    int index3 = addVertex(realX+0.1f, realY,      realZ+0.1f,1.0f,0.0f);
-    int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,0.0f,0.0f);
-
-    addIndices(index1,index2,index3,index4);
-  }
-
-  if(!leftNeigh)
-  {
-
-    int index1 = addVertex(realX, realY,      realZ,     0.0f,0.0f);
-    int index2 = addVertex(realX, realY+0.1f, realZ,     1.0f,0.0f);
-    int index3 = addVertex(realX, realY,      realZ+0.1f,0.0f,1.0f);
-    int index4 = addVertex(realX, realY+0.1f, realZ+0.1f,1.0f,1.0f);
-
-    addIndices(index1,index2,index3,index4);
-  }
-
-  if(!topNeigh)
-  {
-    int index1 = addVertex(realX     , realY+0.1f, realZ,     0.0f,0.0f);
-    int index2 = addVertex(realX+0.1f, realY+0.1f, realZ,     1.0f,0.0f);
-    int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,0.0f,1.0f);
-    int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,1.0f,1.0f);
-
-    addIndices(index1,index2,index3,index4);
-  }
-
-  if(!bottomNeigh)
-  {
-    int index1 = addVertex(realX     , realY, realZ,     0.0f,0.0f);
-    int index2 = addVertex(realX+0.1f, realY, realZ,     1.0f,0.0f);
-    int index3 = addVertex(realX     , realY, realZ+0.1f,0.0f,1.0f);
-    int index4 = addVertex(realX+0.1f, realY, realZ+0.1f,1.0f,1.0f);
-
-    addIndices(index1,index2,index3,index4);
-  }
-
-  if(!backNeigh)
-  {
-    int index1 = addVertex(realX     , realY,      realZ+0.1f,0.0f,0.0f);
-    int index2 = addVertex(realX+0.1f, realY,      realZ+0.1f,1.0f,0.0f);
-    int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,0.0f,1.0f);
-    int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,1.0f,1.0f);
-
-    addIndices(index1,index2,index3,index4);
-  }
-
-  if(!frontNeigh)
-  {
-    int index1 = addVertex(realX     , realY,      realZ,0.0f,0.0f);
-    int index2 = addVertex(realX+0.1f, realY,      realZ,1.0f,0.0f);
-    int index3 = addVertex(realX     , realY+0.1f, realZ,0.0f,1.0f);
-    int index4 = addVertex(realX+0.1f, realY+0.1f, realZ,1.0f,1.0f);
-    addIndices(index1,index2,index3,index4);
-  }
-
-
 }
 
-
+int BSP::removeBlock(int x, int y, int z)
+{
+  worldMap[x][y].erase(z);
+}
 
 void BSP::render()
 {
+  vertices.clear();
+  indices.clear();
+  typedef std::map< int, int>  z_t;
+  typedef std::map< int, z_t > y_t;
+  typedef std::map< int, y_t > x_t;
+  typedef z_t::iterator        z_iter_t;
+  typedef y_t::iterator        y_iter_t;
+  typedef x_t::iterator        x_iter_t;
+
+  for(x_iter_t xIndex = worldMap.begin(); xIndex!= worldMap.end();xIndex++)
+  {
+     for(y_iter_t yIndex = xIndex->second.begin(); yIndex!= xIndex->second.end();yIndex++)
+     {
+       for(z_iter_t zIndex = yIndex->second.begin(); zIndex != yIndex->second.end();zIndex++)
+       {
+         int x = xIndex->first;
+         int y = yIndex->first;
+         int z = zIndex->first;
 
 
+         float realX = x/10.0f;
+         float realY = y/10.0f;
+         float realZ = z/10.0f;
 
+         bool topNeigh = false;
+         bool bottomNeigh = false;
+         bool leftNeigh = false;
+         bool rightNeigh = false;
+         bool frontNeigh = false;
+         bool backNeigh = false;
 
+         if(existsAt(x+1,y,z)) rightNeigh = true;
+         if(existsAt(x-1,y,z)) leftNeigh = true;
+         if(existsAt(x,y+1,z)) topNeigh = true;
+         if(existsAt(x,y-1,z)) bottomNeigh = true;
+         if(existsAt(x,y,z+1)) backNeigh = true;
+         if(existsAt(x,y,z-1)) frontNeigh = true;
 
+         if(!rightNeigh)
+         {
+           int index1 = addVertex(realX+0.1f, realY,      realZ,     0.0f,0.0f);
+           int index2 = addVertex(realX+0.1f, realY+0.1f, realZ,     1.0f,0.0f);
+           int index3 = addVertex(realX+0.1f, realY,      realZ+0.1f,0.0f,1.0f);
+           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,0.0f,0.0f);
 
+           addIndices(index1,index2,index3,index4);
+         }
 
+         if(!leftNeigh)
+         {
+           int index1 = addVertex(realX, realY,      realZ,     0.0f,0.0f);
+           int index2 = addVertex(realX, realY+0.1f, realZ,     1.0f,0.0f);
+           int index3 = addVertex(realX, realY,      realZ+0.1f,0.0f,1.0f);
+           int index4 = addVertex(realX, realY+0.1f, realZ+0.1f,1.0f,1.0f);
 
+           addIndices(index1,index2,index3,index4);
+         }
 
+         if(!topNeigh)
+         {
+           int index1 = addVertex(realX     , realY+0.1f, realZ,     0.0f,0.0f);
+           int index2 = addVertex(realX+0.1f, realY+0.1f, realZ,     1.0f,0.0f);
+           int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,0.0f,1.0f);
+           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,1.0f,1.0f);
 
+           addIndices(index1,index2,index3,index4);
+         }
 
+         if(!bottomNeigh)
+         {
+           int index1 = addVertex(realX     , realY, realZ,     0.0f,0.0f);
+           int index2 = addVertex(realX+0.1f, realY, realZ,     1.0f,0.0f);
+           int index3 = addVertex(realX     , realY, realZ+0.1f,0.0f,1.0f);
+           int index4 = addVertex(realX+0.1f, realY, realZ+0.1f,1.0f,1.0f);
 
+           addIndices(index1,index2,index3,index4);
+         }
 
+         if(!backNeigh)
+         {
+           int index1 = addVertex(realX     , realY,      realZ+0.1f,0.0f,0.0f);
+           int index2 = addVertex(realX+0.1f, realY,      realZ+0.1f,1.0f,0.0f);
+           int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,0.0f,1.0f);
+           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,1.0f,1.0f);
+
+           addIndices(index1,index2,index3,index4);
+         }
+
+         if(!frontNeigh)
+         {
+           int index1 = addVertex(realX     , realY,      realZ,0.0f,0.0f);
+           int index2 = addVertex(realX+0.1f, realY,      realZ,1.0f,0.0f);
+           int index3 = addVertex(realX     , realY+0.1f, realZ,0.0f,1.0f);
+           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ,1.0f,1.0f);
+           addIndices(index1,index2,index3,index4);
+         }
+       }
+     }
+  }
 
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &EBO);
@@ -195,7 +241,6 @@ void BSP::render()
 
   glBindBuffer(GL_ARRAY_BUFFER,0);
   glBindVertexArray(0);
-
 
   glGenTextures(1, &glTexture);
   glBindTexture(GL_TEXTURE_2D, glTexture);

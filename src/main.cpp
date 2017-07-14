@@ -75,28 +75,10 @@ int main()
   blockIds.push_back(Block("../assets/textures/tilesf1.jpg",0));
   std::vector <WorldBlk> levelBlocks;
 
-  /*
-  levelBlocks.push_back(WorldBlk(0,0,0,&(blockIds.at(0))));
-  levelBlocks.push_back(WorldBlk(1,1,1,&(blockIds.at(1))));
-
-  for(int x = 0;x<100;x++)
-  {
-    for(int y = 0;y<100;y++)
-    {
-      levelBlocks.push_back(WorldBlk(x,0,y,&blockIds.at(0)));
-    }
-  }
-  */
   BSP newWorld;
-  newWorld.add(0,0,0,0);
-  newWorld.add(1,0,0,0);
-  //newWorld.add(1,0,0,0);
-  /*
-  for( int x = 0; x< 16; x++)
-    for(int y = 0; y< 60; y++)
-      for(int z = 0; z< 16; z++)
-      newWorld.add(x,y,z,0);
-  */
+
+  newWorld.addBlock(1,0,0,0);
+
   newWorld.render();
 
   testMain = new MainChar(0,1,0,"../assets/textures/tilesf1.jpg",&levelBlocks);
@@ -167,6 +149,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 			camera.ProcessKeyBoard(RIGHT, deltaTime);
   if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     testMain->jump();
+  if(glfwGetKey(window, GLFW_KEY_E)== GLFW_PRESS);
+
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
