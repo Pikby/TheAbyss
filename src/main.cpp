@@ -26,7 +26,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/block.h"
 #include "headers/openGL.h"
 #include "headers/camera.h"
-#include "headers/mainchar.h"
+//#include "headers/mainchar.h"
 #include "headers/text.h"
 #include "headers/bsp.h"
 
@@ -36,7 +36,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 // create a camera using the camera class
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-MainChar* testMain;
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -70,18 +69,18 @@ int main()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-  std::vector <Block> blockIds;
-  blockIds.push_back(Block("../assets/textures/tilesf1.jpg",0));
-  blockIds.push_back(Block("../assets/textures/tilesf1.jpg",0));
-  std::vector <WorldBlk> levelBlocks;
 
   BSP newWorld;
 
-  newWorld.addBlock(1,0,0,0);
 
+  for(int x =0;x < 64;x++)
+    for(int y = 0;y< 64;y++)
+      for(int z = 0; z<64;z++)
+        if(rand()%2 == 0)
+        newWorld.addBlock(x,y,z,1);
+
+  //newWorld.addBlock(0,0,0,0);
   newWorld.render();
-
-  testMain = new MainChar(0,1,0,"../assets/textures/tilesf1.jpg",&levelBlocks);
 
   //Intializes the text rendering object
   CharRenderer text;
@@ -110,22 +109,6 @@ int main()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //Render the fps string
-
-
-    //Render each individual item on screen
-    for(int x = 0 ; x<levelBlocks.size();x++)
-    {
-      int xpos = levelBlocks.at(x).xpos;
-      int ypos = levelBlocks.at(x).ypos;
-      int zpos = levelBlocks.at(x).zpos;
-      if(sqrt(pow(testMain->xpos - xpos,2) + pow(testMain->ypos-ypos,2) + pow(testMain->zpos-zpos,2))<= 5.0f)
-      levelBlocks.at(x).draw(camera.GetViewMatrix());
-    }
-
-
-    testMain->draw(camera.GetViewMatrix());
-    testMain->update();
 
     newWorld.draw(camera.GetViewMatrix());
 
@@ -147,9 +130,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		camera.ProcessKeyBoard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 			camera.ProcessKeyBoard(RIGHT, deltaTime);
-  if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-    testMain->jump();
-  if(glfwGetKey(window, GLFW_KEY_E)== GLFW_PRESS);
+  if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS);
 
 }
 

@@ -6,7 +6,7 @@ private:
   GLuint VBO, VAO, EBO;
   GLuint glTexture;
   Shader* mainCharShader;
-  std::vector<WorldBlk> *blkArray;
+  //std::vector<WorldBlk> *blkArray;
 
   float gravity;
   float maxSpeed;

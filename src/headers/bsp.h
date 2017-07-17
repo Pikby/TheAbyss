@@ -5,6 +5,7 @@ class BSP
 private:
   std::vector<GLfloat> vertices;
   std::vector<GLuint> indices;
+  std::vector<Block> dictionary;
 
   std::map<float, std::map<float, std::map<float, int>>> vertMap;
   std::map<int, std::map<int, std::map<int, int>>> worldMap;
