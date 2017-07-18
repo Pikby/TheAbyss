@@ -8,6 +8,8 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <fstream>
+#include <sstream>
 // GLEW
 // #define GLEW_STATIC
 #include <GL/glew.h>
@@ -33,18 +35,66 @@ BSP::BSP()
   texture = "../assets/textures/atlas.png";
   totalVertices = 0;
 
-  Block tempBlock;
-  tempBlock.id = 1;
+  loadDictionary("../assets/dictionary.dat");
+}
+
+Block::Block(int newId, int* array, int newWidth,int newHeight,int newAtlasWidth, int newAtlasHeight)
+{
+  std::cout << "making new block class \n";
+  id = newId;
   for(int x=0;x<12;x++)
   {
-    tempBlock.texArray[x]=0;
+    texArray[x] = array[x];
   }
-  tempBlock.width = 128;
-  tempBlock.height = 128;
-  tempBlock.atlasWidth = 128*2;
-  tempBlock.atlasHeight = 128;
-  dictionary.push_back(tempBlock);
-  dictionary.push_back(tempBlock);
+  width = newWidth;
+  height = newHeight;
+  atlasWidth = newAtlasWidth;
+  atlasHeight = newAtlasHeight;
+  std::cout << atlasWidth << "\n";
+  std::cout << atlasHeight << "\n";
+}
+
+bool BSP::loadDictionary(const char* file)
+{
+  std::cout << "loading dictionary\n";
+  int id = 0;
+  using namespace std;
+  string line;
+  ifstream dictionaryf (file);
+  if(dictionaryf.is_open())
+  {
+    getline(dictionaryf,line);
+    int atlasWidth = stoi(line);
+    getline(dictionaryf,line);
+    int atlasHeight = stoi(line);
+
+    while(getline(dictionaryf,line))
+    {
+      std::cout << "starting with blockid: " << id << "\n";
+      int texNumb;
+      int texArray[12];
+      stringstream ss;
+      ss << line;
+      for(int x = 0;x<12;x++)
+      {
+        ss >> texNumb;
+        //cout <<texNumb;
+        texArray[x] = texNumb;
+        if(ss.peek() == ',') ss.ignore();
+      }
+      getline(dictionaryf,line);
+      int width = stoi(line);
+      getline(dictionaryf,line);
+      int height = stoi(line);
+
+      dictionary.push_back(Block(id++,texArray,width,height,atlasWidth,atlasHeight) );
+      for(int x = 0;x<12;x++)
+      {
+        std::cout << dictionary.at(id-1).texArray[x] << "\n";
+      }
+    }
+  }
+
 }
 
 int BSP::addVertex(float x, float y, float z, float texX, float texY)
@@ -143,6 +193,7 @@ void BSP::render()
          {
            tempBlock.getTop(&x1,&y1,&x2,&y2);
 
+           std::cout <<x1<<y1<<x2<<y2<<"\n";
            int index1 = addVertex(realX     , realY+0.1f, realZ,     x1,y1);
            int index2 = addVertex(realX+0.1f, realY+0.1f, realZ,     x2,y1);
            int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,x1,y2);

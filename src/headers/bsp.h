@@ -24,4 +24,5 @@ public:
   void render();
   void draw(glm::mat4 camera);
   bool existsAt(int x,int y,int z);
+  bool loadDictionary(const char* file);
 };

@@ -11,6 +11,9 @@ public:
   int atlasWidth;
   int atlasHeight;
 
+  Block(int newId, int* array, int newWidth,
+    int newHeight,int newAtlasWidth, int newAtlasHeight);
+
   void getTop(float* x1, float* y1, float* x2, float* y2)
   {
     *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[0]);
@@ -18,7 +21,6 @@ public:
     *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[0]+1);
     *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[1]+1);
   };
-
 
   void getBottom(float* x1, float* y1, float* x2, float* y2)
   {
@@ -59,5 +61,6 @@ public:
     *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[10]+1);
     *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[11]+1);
   };
+
 
 };

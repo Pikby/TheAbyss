@@ -74,12 +74,11 @@ int main()
 
 
   for(int x =0;x < 64;x++)
-    for(int y = 0;y< 64;y++)
+    for(int y = 0;y< 10;y++)
       for(int z = 0; z<64;z++)
         if(rand()%2 == 0)
-        newWorld.addBlock(x,y,z,1);
-
-  //newWorld.addBlock(0,0,0,0);
+          if(rand()%2 == 0) newWorld.addBlock(x,y,z,1);
+            else newWorld.addBlock(x,y,z,2);
   newWorld.render();
 
   //Intializes the text rendering object
