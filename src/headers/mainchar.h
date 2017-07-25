@@ -6,25 +6,26 @@ private:
   GLuint VBO, VAO, EBO;
   GLuint glTexture;
   Shader* mainCharShader;
-  //std::vector<WorldBlk> *blkArray;
+  World* zaWarudo;
 
   float gravity;
-  float maxSpeed;
+  float moveSpeed;
   float deltax;
   float deltay;
+  float deltaz;
   bool grounded;
 public:
+  Camera mainCam;
   float xpos;
   float ypos;
   float zpos;
-  const char* texture;
   //0 = STATIC, 1 = DYNAMIC, 2 = STREAM
   int type;
-  MainChar(float x, float y, float z, const char* newTexture, std::vector<WorldBlk> *newArray);
-  void draw(glm::mat4 camera);
-  void refresh();
+  MainChar(float x, float y, float z, World* curWorld );
   void update();
   void moveLeft();
   void moveRight();
+  void moveForward();
+  void moveBackward();
   void jump();
 };

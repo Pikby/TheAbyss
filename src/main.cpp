@@ -23,19 +23,19 @@ enum Type {STATIC,DYNAMIC,STREAM};
 
 //Add the shader configs
 #include "headers/shaders.h"
-#include "headers/block.h"
-#include "headers/openGL.h"
+
 #include "headers/camera.h"
-//#include "headers/mainchar.h"
-#include "headers/text.h"
 #include "headers/bsp.h"
+#include "headers/openGL.h"
+#include "headers/mainchar.h"
+#include "headers/text.h"
+
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
-// create a camera using the camera class
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+MainChar* mainCharacter;
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -66,23 +66,22 @@ int main()
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_FRONT);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  //glPolygonMode(ST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  //glPolygonMode(GL_F, GL_LINE);
 
 
-  BSP newWorld;
-
-
-  for(int x =0;x < 64;x++)
-    for(int y = 0;y< 10;y++)
-      for(int z = 0; z<64;z++)
-        if(rand()%2 == 0)
-          if(rand()%2 == 0) newWorld.addBlock(x,y,z,1);
-            else newWorld.addBlock(x,y,z,2);
-  newWorld.render();
+  World newWorld;
+  mainCharacter = new MainChar(0,65,1,&newWorld);
 
   //Intializes the text rendering object
   CharRenderer text;
+
+
 
   long long totalFrame = 0;
   std::string fpsString;
@@ -108,8 +107,10 @@ int main()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    mainCharacter->update();
 
-    newWorld.draw(camera.GetViewMatrix());
+    newWorld.renderWorld(round(mainCharacter->xpos*10/16),round(mainCharacter->zpos*10/16));
+    newWorld.drawWorld(round(mainCharacter->xpos*10/16),round(mainCharacter->zpos*10/16),mainCharacter->mainCam.getViewMatrix());
 
     text.RenderText(fpsString, 50.0f, 550.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 
@@ -122,13 +123,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyBoard(FORWARD, deltaTime);
+		mainCharacter->moveForward();
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyBoard(BACKWARD, deltaTime);
+		mainCharacter->moveBackward();
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyBoard(LEFT, deltaTime);
+		mainCharacter->moveLeft();
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-			camera.ProcessKeyBoard(RIGHT, deltaTime);
+		mainCharacter->moveRight();
   if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS);
 
 }
@@ -147,10 +148,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	lastX = xpos;
 	lastY = ypos;
 
-	camera.ProcessMouseMovement(xoffset, yoffset, false);
+	mainCharacter->mainCam.processMouseMovement(xoffset, yoffset, false);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	camera.ProcessMouseScroll(yoffset);
+	mainCharacter->mainCam.processMouseScroll(yoffset);
 }

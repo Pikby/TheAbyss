@@ -17,8 +17,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "headers/shaders.h"
-#include "headers/block.h"
+#include "headers/bsp.h"
 #include "headers/openGL.h"
+
 
 
 
@@ -37,53 +38,67 @@ GLFWwindow* createWindow(int width, int height)
   return window;
 }
 
-/*
-void saveLevel(std::vector<WorldBlk>* level, const char* path)
+
+void generateWhiteNoise(int width, int height, float** array)
 {
-  std::ofstream levelFile;
-  levelFile.open(path);
-  int numItems;
-  numItems = level->size();
-  levelFile << numItems;
-  levelFile << "\n";
-  for(int i = 0; i<numItems;i++)
-  {
-    levelFile << level->at(i).xpos*10 << "\n";
-    levelFile << level->at(i).ypos*10 << "\n";
-    levelFile << level->at(i).zpos*10 << "\n";
-    levelFile << level->at(i).id << "\n";
-  }
-  levelFile.close();
+    for (int x = 0; x < width; x++)
+    {
+        for (int y = 0; y<width; y++)
+        {
+            array[x][y] = (float)(rand()%1000)/(float)1000;
+        }
+    }
 }
 
-
-std::vector <WorldBlk> loadLevel( const char* path)
+void generateSmoothNoise(int width, int height, float** array, int octave)
 {
-  std::vector <WorldBlk> level;
-  std::ifstream levelFile;
-  levelFile.open(path);
+  int period = pow(2,octave);
+  float freq = 1.0f/period;
 
-  unsigned int numItems;
-  levelFile >> numItems;
+  float** newArray;
+  newArray = new float *[width];
+  for(int i = 0; i <height; i++)
+    newArray[i] = new float[16];
 
-  //std::cout << "numItems is: " << numItems << "\n";
-  for(int i=0;i<numItems;i++)
+  for(int x = 0;x<width;x++)
   {
-    float xpos,ypos,zpos;
-    char texture[100];
+    int x0 = (x/period)*period;
+    int x1 = (x0+period) % width;
+    float horzBlend = (x-x0) * freq;
 
-    levelFile >> xpos;
-    levelFile >> ypos;
-    levelFile >> zpos;
-    levelFile >> id;
+    for(int y = 0; y<height;y++)
+    {
+      int y0 = (y/period)*period;
+      int y1 = (y0+period) % height;
+      float vertBlend = (y-y0) * freq;
 
-    //std::cout << "xPos is :" << xpos << " yPos is : " << ypos << texture << "\n";
-    level.push_back(Block(xpos,ypos,zpos,texture,0));
+      float top = interpolate(array[x0][y0],array[x1][y0],horzBlend);
+      float bottom = interpolate(array[x0][y1],array[x1][y1],horzBlend);
+
+      newArray[x][y] = interpolate(top,bottom,vertBlend);
+      std::cout << newArray[x][y] << "\n";
+    }
   }
 
+  for(int x=0;x<width;x++)
+    for(int y=0;y<height;y++)
+    {
+      array[x][y] = newArray[x][y];
+    }
 
-  levelFile.close();
-  return level;
 }
 
-*/
+void generateLand(int width, int height, float** array, int octCount)
+{
+  generateWhiteNoise(width,height,array);
+  for(int i = 0; i<octCount;i++)
+  {
+    generateSmoothNoise(width,height,array,i);
+  }
+}
+
+float interpolate(float x0,float x1, float alpha)
+{
+  std::cout << "x0 is: " << x0 << "x1: " <<x1 << "alpha: " << alpha << "\n";
+  return x0*(1-alpha) + alpha*x1;
+}
