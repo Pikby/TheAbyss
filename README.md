@@ -13,7 +13,7 @@ Well this was a practice, but now im turning it into a minecraft like game
 # Todo:
 
 	Decent lighting
-	Design and create actually blocks
+	Design and create actual blocks
 	Inventory system
 	In game storage system 
 	Possibly change from a 2d chunk map to a 3d chunk map
