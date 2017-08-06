@@ -28,32 +28,53 @@ enum Type {STATIC,DYNAMIC,STREAM};
 
 #define PI 3.14159265
 
-MainChar::MainChar(float x, float y, float z, World* curWorld )
+MainChar::MainChar(float x, float y, float z, World* world )
 {
   mainCharShader = new Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
-  xpos = x/10;
-  ypos = y/10;
-  zpos = z/10;
+  xpos = x;
+  ypos = y;
+  zpos = z;
   deltax = 0;
   deltay = 0;
   deltaz = 0;
   moveSpeed = 0.1f;
-  zaWarudo = curWorld;
+  curWorld = world;
 
   mainCam = Camera(glm::vec3(xpos/10,ypos/10,zpos/10));
 }
 
 void MainChar::update()
 {
+  std::cout << xpos<<":"<<ypos<<":"<<zpos<<"\n";
+  deltay -= 0.1;
+
+  if(!curWorld->blockExists(floor(xpos+deltax),floor(ypos),floor(zpos)))
+  {
     xpos += deltax;
+  }
+
+  if(!curWorld->blockExists(floor(xpos),floor(ypos),floor(zpos+deltaz)))
+  {
     zpos += deltaz;
+  }
+
+  if(!curWorld->blockExists(floor(xpos),floor(ypos+deltay),floor(zpos)))
+  {
+    ypos += deltay;
+    grounded = false;
+  }
+  else
+  {
+    deltay = 0;
+    grounded = true;
+  }
 
     deltax /= 5;
     deltay /= 5;
     deltaz /= 5;
-  std::cout << xpos*10 << "," << ypos*10 << "," << zpos*10 << "\n";
 
-  mainCam.setPosition(xpos,ypos,zpos);
+
+  mainCam.setPosition(xpos/10,ypos/10+0.1,zpos/10);
 }
 
 void MainChar::moveRight()
@@ -82,5 +103,5 @@ void MainChar::moveBackward()
 
 void MainChar::jump()
 {
-  if(grounded) deltay = 0.05f;
+  if(grounded) deltay = 5.0f;
 }

@@ -2,14 +2,10 @@
 //Creates a window using GLFW and turns on all the settings
 GLFWwindow* createWindow(int width, int height);
 
-void saveLevel(std::vector<Block>* level, const char* path);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
-std::vector <Block> loadLevel(const char* path);
-
-void generateWhiteNoise(int width, int height, float** array);
-
-void generateSmoothNoise(int width, int height, float** array, int octave);
-
-void generateLand(int width, int height, float** array, int octCount);
-
-float interpolate(float x0,float x1, float alpha);
+void* draw(void* );
+void* render(void *);
+void initWorld();

@@ -17,88 +17,140 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "headers/shaders.h"
+#include "headers/camera.h"
 #include "headers/bsp.h"
+
 #include "headers/openGL.h"
+#include "headers/mainchar.h"
+#include "headers/text.h"
+#include <assert.h>
 
+//Global maincharacter reference which encapsulates the camera
 
+World* newWorld;
+MainChar* mainCharacter;
+GLFWwindow* window;
+CharRenderer* text;
+
+// timing
+float deltaTime = 0.0f;	// time between current frame and last frame
+float lastFrame = 0.0f;
+
+// mouse position variables
+float lastX = 400;
+float lastY = 300;
+bool firstMouse = true;
 
 
 GLFWwindow* createWindow(int width, int height)
 {
   //Initial windows configs
+
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-
   //Create the window
-  GLFWwindow* window = glfwCreateWindow(width, height, "Prototype 1.000", nullptr, nullptr);
-  glfwMakeContextCurrent(window);
+  window = glfwCreateWindow(width, height, "Prototype 1.000", nullptr, nullptr);
 
   return window;
 }
 
-
-void generateWhiteNoise(int width, int height, float** array)
+void initWorld()
 {
-    for (int x = 0; x < width; x++)
-    {
-        for (int y = 0; y<width; y++)
-        {
-            array[x][y] = (float)(rand()%1000)/(float)1000;
-        }
-    }
+  //glfwMakeContextCurrent(window);
+  newWorld = new World;
+  mainCharacter = new MainChar(-1,65,-1,newWorld);
+  text = new CharRenderer;
+  newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->zpos/16));
 }
 
-void generateSmoothNoise(int width, int height, float** array, int octave)
+void* draw(void* )
 {
-  int period = pow(2,octave);
-  float freq = 1.0f/period;
+  glfwMakeContextCurrent(window);
+  long long totalFrame = 0;
+  std::string fpsString;
 
-  float** newArray;
-  newArray = new float *[width];
-  for(int i = 0; i <height; i++)
-    newArray[i] = new float[16];
 
-  for(int x = 0;x<width;x++)
+
+  while(!glfwWindowShouldClose(window))
   {
-    int x0 = (x/period)*period;
-    int x1 = (x0+period) % width;
-    float horzBlend = (x-x0) * freq;
 
-    for(int y = 0; y<height;y++)
+    totalFrame++;
+	   // update the delta time each frame
+	 float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+
+    //Create a time for every second and displays the FPS
+    float timer = glfwGetTime();
+    float timerDec = timer - floor(timer);
+    if(timerDec+deltaTime>=1.0f)
     {
-      int y0 = (y/period)*period;
-      int y1 = (y0+period) % height;
-      float vertBlend = (y-y0) * freq;
+      fpsString = "FPS: ";
+      fpsString.append(std::to_string(totalFrame));
+      totalFrame = 0;
 
-      float top = interpolate(array[x0][y0],array[x1][y0],horzBlend);
-      float bottom = interpolate(array[x0][y1],array[x1][y1],horzBlend);
-
-      newArray[x][y] = interpolate(top,bottom,vertBlend);
-      std::cout << newArray[x][y] << "\n";
-    }
-  }
-
-  for(int x=0;x<width;x++)
-    for(int y=0;y<height;y++)
-    {
-      array[x][y] = newArray[x][y];
     }
 
-}
+    glfwPollEvents();
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-void generateLand(int width, int height, float** array, int octCount)
-{
-  generateWhiteNoise(width,height,array);
-  for(int i = 0; i<octCount;i++)
-  {
-    generateSmoothNoise(width,height,array,i);
+    mainCharacter->update();
+    newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->zpos/16));
+    //Draw and render the world centered around the player
+    newWorld->drawWorld(round(mainCharacter->xpos/16),round(mainCharacter->zpos/16),&(mainCharacter->mainCam));
+    //std::cout << glGetError() << "update loop\n";
+    text->RenderText(fpsString, 50.0f, 550.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+    glfwSwapBuffers(window);
   }
 }
 
-float interpolate(float x0,float x1, float alpha)
+void* render(void* )
 {
-  std::cout << "x0 is: " << x0 << "x1: " <<x1 << "alpha: " << alpha << "\n";
-  return x0*(1-alpha) + alpha*x1;
+  glfwMakeContextCurrent(window);
+  while(!glfwWindowShouldClose(window))
+  {
+    newWorld->renderWorld(round(mainCharacter->xpos*10/16),round(mainCharacter->zpos*10/16));
+  }
+}
+
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		mainCharacter->moveForward();
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		mainCharacter->moveBackward();
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		mainCharacter->moveLeft();
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		mainCharacter->moveRight();
+  if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    mainCharacter->jump();
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (firstMouse)
+  {
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
+	}
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos;
+
+	lastX = xpos;
+	lastY = ypos;
+
+	mainCharacter->mainCam.processMouseMovement(xoffset, yoffset, false);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	mainCharacter->mainCam.processMouseScroll(yoffset);
 }

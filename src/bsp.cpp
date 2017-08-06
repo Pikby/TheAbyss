@@ -26,16 +26,35 @@ enum Type {STATIC,DYNAMIC,STREAM};
 
 //Add the shader configs
 #include "headers/shaders.h"
+#include "headers/camera.h"
 #include "headers/bsp.h"
+#include "headers/perlinnoise.h"
+
 
 World::World()
 {
+
   blockShader = new Shader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
   const char* texture = "../assets/textures/atlas.png";
   loadDictionary("../assets/dictionary.dat");
-  renderDistance = 20;
 
+  for(int x=0 ;x<dictionary.size();x++)
+  {
+    for(int i =0;i<12;i++)
+    {
+      std::cout << dictionary[x].texArray[i] << ",";
+    }
+    std::cout <<  dictionary[x].width <<"\n";
+    std::cout <<  dictionary[x].height <<"\n";
+    std::cout <<  dictionary[x].atlasWidth <<"\n";
+    std::cout <<  dictionary[x].atlasHeight <<"\n";
+  }
+
+  renderDistance = 5;
   totalChunks = 0;
+  lightposx = -10.0f;
+  lightposy = 10.0f;
+  lightposz = 0.0f;
 
   glGenTextures(1, &glTexture);
   glBindTexture(GL_TEXTURE_2D, glTexture);
@@ -68,13 +87,6 @@ void World::renderWorld(int x, int z)
       if(!chunkExists(i,j))
       {
         BSPmap[i][j] = BSP(blockShader,&dictionary,&glTexture,i,j);
-        totalChunks++;
-        for(int x1=0;x1<16;x1++)
-          for(int y1=0;y1<60;y1++)
-            for(int z1 = 0;z1<16;z1++)
-            {
-                     BSPmap[i][j].addBlock(x1,y1,z1,1);
-            }
 
         BSPmap[i][j].render(this);
       }
@@ -82,8 +94,20 @@ void World::renderWorld(int x, int z)
   }
 }
 
-void World::drawWorld(int x, int z, glm::mat4 camera)
+
+
+void World::delChunk(int x, int z)
 {
+  BSPmap[x].erase(z);
+  if(BSPmap[x].empty())
+  {
+    BSPmap.erase(x);
+  }
+}
+
+void World::drawWorld(int x, int z, Camera* camera)
+{
+  lightposx += 0.01;
   typedef std::map <int, BSP> z_t;
   typedef std::map <int, z_t> x_t;
   typedef x_t::iterator x_iter_t;
@@ -96,7 +120,23 @@ void World::drawWorld(int x, int z, glm::mat4 camera)
       int i = xi->first;
       int j = zi->first;
 
-      zi->second.draw(camera);
+      //std::cout << ":" <<i << ":" << j << "\n";
+      if(sqrt(pow(x-i,2)+pow(z-j,2)) >renderDistance+5)
+      {
+
+        if(zi == xi->second.begin())
+        {
+          delChunk(i,j);
+          zi = xi->second.begin();
+          if(zi == xi->second.end()) break;
+        }
+        else
+        {
+          zi--;
+          delChunk(i,j);
+        }
+      }
+      else zi->second.draw(camera,lightposx,lightposy,lightposz);
     }
 
   }
@@ -117,27 +157,41 @@ bool World::chunkExists(int x , int z)
 
 bool World::blockExists(int x, int y, int z)
 {
-  if(chunkExists(x/16,z/16))
+  std::cout << "checking for block" << x << ":" << y << ":" << z << "\n";
+  int xlocal = x >= 0 ? x % 16 : 16 + (x % 16);
+  int zlocal = z >= 0 ? z % 16 : 16 + (z % 16);
+
+  if(xlocal == 16)xlocal = 0;
+  if(zlocal == 16)zlocal = 0;
+  int xchunk = floor((float)x/(float)16);
+  int zchunk = floor((float)z/(float)16);
+
+  std::cout << "checking for block in chunk: " << xchunk <<":" << zchunk << "withCoords: " << xlocal << ":" <<y << ":" << zlocal << "\n";
+
+  if(chunkExists(xchunk,zchunk))
   {
-    if(BSPmap[x/16][z/16].blockExists(x,y,z))
+    if(BSPmap[xchunk][zchunk].blockExists(xlocal,y, zlocal))
     {
+      std::cout << "found block ahead\n";
       return true;
     }
   }
-
+      std::cout << "no block ahead\n";
   return false;
 }
 
-BSP::BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int y)
+BSP::BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int z)
 {
 
   for(int x = 0;x<16*256*16;x++)
     worldMap[x] = 0;
 
+  generateTerrain();
+
   blockShader = shader;
   dictionary = dict;
   xCoord = x;
-  yCoord = y;
+  zCoord = z;
   glTexture = newglTexture;
 }
 
@@ -192,16 +246,41 @@ bool World::loadDictionary(const char* file)
       dictionary.push_back(Block(id++,texArray,width,height,atlasWidth,atlasHeight) );
     }
   }
-
 }
 
-int BSP::addVertex(float x, float y, float z, float texX, float texY)
+void BSP::generateTerrain()
 {
-  int numbVert = vertices.size()/5;
+  double freq = 64;
+  int oct = 8;
+  int seed = 1337;
+
+  siv::PerlinNoise perlin(seed);
+
+  for(int x=0;x<16;x++)
+  {
+    for(int z=0;z<16;z++)
+    {
+        int height = 60*perlin.octaveNoise0_1((x+xCoord*16)/freq,(z+zCoord*16)/freq,oct);
+        for(int y = 0; y<height; y++)
+        {
+          if(y == height - 1) addBlock(x,y,z,2);
+          else addBlock(x,y,z,1);
+        }
+    }
+  }
+}
+
+int BSP::addVertex(float x, float y, float z, float xn, float yn, float zn, float texX, float texY)
+{
+  int numbVert = vertices.size()/8;
 
   vertices.push_back(x);
   vertices.push_back(y);
   vertices.push_back(z);
+
+  vertices.push_back(xn);
+  vertices.push_back(yn);
+  vertices.push_back(zn);
 
   vertices.push_back(texX);
   vertices.push_back(texY);
@@ -221,9 +300,9 @@ void BSP::addIndices(int index1, int index2, int index3, int index4)
   indices.push_back(index2);
   indices.push_back(index3);
 
-  indices.push_back(index3);
   indices.push_back(index2);
   indices.push_back(index4);
+  indices.push_back(index3);
 }
 
 
@@ -256,7 +335,7 @@ void BSP::render(World* curWorld)
          if(!blockExists(x,y,z)) continue;
          float realX = x/10.0f+16*xCoord/10.0f;
          float realY = y/10.0f;
-         float realZ = z/10.0f+16*yCoord/10.0f;
+         float realZ = z/10.0f+16*zCoord/10.0f;
 
          bool topNeigh = false;
          bool bottomNeigh = false;
@@ -274,16 +353,18 @@ void BSP::render(World* curWorld)
 
 
          Block tempBlock = dictionary->at(getBlock(x,y,z));
+
+
          float x1, y1, x2, y2;
 
          if(!topNeigh)
          {
            tempBlock.getTop(&x1,&y1,&x2,&y2);
 
-           int index1 = addVertex(realX     , realY+0.1f, realZ,     x1,y1);
-           int index2 = addVertex(realX+0.1f, realY+0.1f, realZ,     x2,y1);
-           int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,x1,y2);
-           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,x2,y2);
+           int index1 = addVertex(realX     , realY+0.1f, realZ     ,0.0f,1.0f,0.0f,x1,y1);
+           int index2 = addVertex(realX+0.1f, realY+0.1f, realZ     ,0.0f,1.0f,0.0f,x2,y1);
+           int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,0.0f,1.0f,0.0f,x1,y2);
+           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,0.0f,1.0f,0.0f,x2,y2);
 
            addIndices(index1,index2,index3,index4);
          }
@@ -291,10 +372,10 @@ void BSP::render(World* curWorld)
          if(!bottomNeigh)
          {
            tempBlock.getBottom(&x1,&y1,&x2,&y2);
-           int index1 = addVertex(realX     , realY, realZ,     x1,y1);
-           int index2 = addVertex(realX+0.1f, realY, realZ,     x2,y1);
-           int index3 = addVertex(realX     , realY, realZ+0.1f,x1,x2);
-           int index4 = addVertex(realX+0.1f, realY, realZ+0.1f,x2,x2);
+           int index1 = addVertex(realX     , realY, realZ     ,0.0f,-1.0f,0.0f,x1,y1);
+           int index3 = addVertex(realX+0.1f, realY, realZ     ,0.0f,-1.0f,0.0f,x2,y1);
+           int index2 = addVertex(realX     , realY, realZ+0.1f,0.0f,-1.0f,0.0f,x1,x2);
+           int index4 = addVertex(realX+0.1f, realY, realZ+0.1f,0.0f,-1.0f,0.0f,x2,x2);
 
            addIndices(index1,index2,index3,index4);
          }
@@ -302,10 +383,10 @@ void BSP::render(World* curWorld)
          if(!rightNeigh)
          {
            tempBlock.getRight(&x1,&y1,&x2,&y2);
-           int index1 = addVertex(realX+0.1f, realY,      realZ,     x1,y1);
-           int index2 = addVertex(realX+0.1f, realY+0.1f, realZ,     x2,y1);
-           int index3 = addVertex(realX+0.1f, realY,      realZ+0.1f,x1,y2);
-           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,x2,y2);
+           int index1 = addVertex(realX+0.1f, realY,      realZ     ,1.0f,0.0f,0.0f,x1,y1);
+           int index2 = addVertex(realX+0.1f, realY+0.1f, realZ     ,1.0f,0.0f,0.0f,x2,y1);
+           int index3 = addVertex(realX+0.1f, realY,      realZ+0.1f,1.0f,0.0f,0.0f,x1,y2);
+           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,1.0f,0.0f,0.0f,x2,y2);
 
            addIndices(index1,index2,index3,index4);
          }
@@ -313,20 +394,20 @@ void BSP::render(World* curWorld)
          if(!leftNeigh)
          {
            tempBlock.getLeft(&x1,&y1,&x2,&y2);
-           int index1 = addVertex(realX, realY,      realZ,     x1,y1);
-           int index2 = addVertex(realX, realY+0.1f, realZ,     x2,y1);
-           int index3 = addVertex(realX, realY,      realZ+0.1f,x1,y2);
-           int index4 = addVertex(realX, realY+0.1f, realZ+0.1f,x2,y2);
+           int index1 = addVertex(realX, realY,      realZ     ,-1.0f,0.0f,0.0f,x1,y1);
+           int index3 = addVertex(realX, realY+0.1f, realZ     ,-1.0f,0.0f,0.0f,x2,y1);
+           int index2 = addVertex(realX, realY,      realZ+0.1f,-1.0f,0.0f,0.0f,x1,y2);
+           int index4 = addVertex(realX, realY+0.1f, realZ+0.1f,-1.0f,0.0f,0.0f,x2,y2);
 
            addIndices(index1,index2,index3,index4);
          }
          if(!backNeigh)
          {
            tempBlock.getBack(&x1,&y1,&x2,&y2);
-           int index1 = addVertex(realX     , realY,      realZ+0.1f,x1,y1);
-           int index2 = addVertex(realX+0.1f, realY,      realZ+0.1f,x2,y1);
-           int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,x1,y2);
-           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,x2,y2);
+           int index1 = addVertex(realX     , realY,      realZ+0.1f,0.0f,0.0f,1.0f,x1,y1);
+           int index2 = addVertex(realX+0.1f, realY,      realZ+0.1f,0.0f,0.0f,1.0f,x2,y1);
+           int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,0.0f,0.0f,1.0f,x1,y2);
+           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,0.0f,0.0f,1.0f,x2,y2);
 
            addIndices(index1,index2,index3,index4);
          }
@@ -334,10 +415,10 @@ void BSP::render(World* curWorld)
          if(!frontNeigh)
          {
            tempBlock.getFront(&x1,&y1,&x2,&y2);
-           int index1 = addVertex(realX     , realY,      realZ,x1,y1);
-           int index2 = addVertex(realX+0.1f, realY,      realZ,x2,y1);
-           int index3 = addVertex(realX     , realY+0.1f, realZ,x1,y2);
-           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ,x2,y2);
+           int index1 = addVertex(realX     , realY,      realZ,0.0f,0.0f,-1.0f,x1,y1);
+           int index3 = addVertex(realX+0.1f, realY,      realZ,0.0f,0.0f,-1.0f,x2,y1);
+           int index2 = addVertex(realX     , realY+0.1f, realZ,0.0f,0.0f,-1.0f,x1,y2);
+           int index4 = addVertex(realX+0.1f, realY+0.1f, realZ,0.0f,0.0f,-1.0f,x2,y2);
            addIndices(index1,index2,index3,index4);
          }
        }
@@ -355,11 +436,14 @@ void BSP::render(World* curWorld)
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(GLuint),&indices.front(), GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (GLvoid*)0);
+  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)0);
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1,2,GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+  glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
   glEnableVertexAttribArray(1);
+
+  glVertexAttribPointer(2,2,GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(6*sizeof(GLfloat)));
+  glEnableVertexAttribArray(2);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
@@ -368,17 +452,21 @@ void BSP::render(World* curWorld)
 
 }
 
-void BSP::draw(glm::mat4 camera)
+void BSP::draw(Camera* camera,float lightposx,float lightposy,float lightposz)
 {
   glBindTexture(GL_TEXTURE_2D, *glTexture);
   blockShader->Use();
 
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800/ (float)600, 0.1f, 100.0f);
+  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1920/ (float)1080, 0.1f, 100.0f);
   blockShader->setMat4("projection", projection);
 
-  glm::mat4 view = camera;
+  glm::mat4 view = camera->getViewMatrix();
   blockShader->setMat4("view", view);
 
+  blockShader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+  blockShader->setVec3("lightColor",  1.0f, 1.0f, 1.0f);
+  blockShader->setVec3("lightPos",  lightposx, lightposx, lightposx);
+  blockShader->setVec3("viewPos", camera->position);
   glm::mat4 model;
   glm::vec3 newPos;
   newPos.x = 0.0f;

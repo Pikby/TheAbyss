@@ -6,7 +6,7 @@ private:
   GLuint VBO, VAO, EBO;
   GLuint glTexture;
   Shader* mainCharShader;
-  World* zaWarudo;
+  World* curWorld;
 
   float gravity;
   float moveSpeed;

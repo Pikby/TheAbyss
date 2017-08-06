@@ -1,13 +1,67 @@
 class World;
 class BSP;
+class Block;
 
+//Class which encapsulates all the chunks as well as the shaders and dicionary
+class World
+{
+private:
+  unsigned int totalChunks;
+  GLuint glTexture;
+  Shader* blockShader;
+  const char* texture;
+  int renderDistance;
+  std::vector<Block> dictionary;
+  float lightposx,lightposy,lightposz;
+public:
+  bool loadDictionary(const char* file);
+  World();
+  void renderWorld(int x, int z);
+  void drawWorld(int x, int z, Camera* camera);
+  bool chunkExists(int x, int z);
+  bool blockExists(int x, int y, int z);
+  void delChunk(int x, int z);
+  std::map<int, std::map<int, BSP>> BSPmap;
+};
+
+//Class which holds the data for each individual chunk
+class BSP
+{
+private:
+  Shader* blockShader;
+  const char* texture;
+  std::vector<Block>* dictionary;
+  std::vector<GLfloat> vertices;
+  std::vector<GLuint> indices;
+
+  char worldMap[16*256*16];
+
+  GLuint VBO, EBO, VAO;
+  GLuint* glTexture;
+
+  long int xCoord;
+  long int zCoord;
+  int addVertex(float x, float y, float z,float xn, float yn, float zn, float texX, float texY);
+  void addIndices(int index1, int index2, int index3, int index4);
+
+public:
+  BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int z);
+  BSP();
+  bool addBlock(int x, int y, int z,int id);
+  bool blockExists(int x,int y,int z);
+  int getBlock(int x, int y, int z);
+  int removeBlock(int x, int y, int z);
+  void render(World* curWorld);
+  void draw(Camera* camera,float lightposx,float lightposy,float lightposz);
+  void generateTerrain();
+};
 
 //The class for each individual block in the dictionary
 class Block
 {
 public:
   int id;
-  int texArray[12];
+  int texArray[12]; //array of coordinates of all sides of the block from the texture array
   int width;
   int height;
   int atlasWidth;
@@ -63,59 +117,6 @@ public:
     *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[10]+1);
     *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[11]+1);
   };
-
-
-};
-
-//Class which encapsulates all the chunks as well as the shaders and dicionary
-class World
-{
-public:
-  unsigned int totalChunks;
-  GLuint glTexture;
-  Shader* blockShader;
-  const char* texture;
-  int renderDistance;
-  std::vector<Block> dictionary;
-  bool loadDictionary(const char* file);
-  World();
-  void renderWorld(int x, int z);
-  void drawWorld(int x, int z, glm::mat4 camera);
-  bool chunkExists(int x, int z);
-  bool blockExists(int x, int y, int z);
-  std::map<int, std::map<int, BSP>> BSPmap;
-};
-
-//Class which holds the data for each individual chunk
-class BSP
-{
-private:
-  Shader* blockShader;
-  const char* texture;
-  std::vector<Block> * dictionary;
-  std::vector<GLfloat> vertices;
-  std::vector<GLuint> indices;
-
-  char worldMap[16*256*16];
-
-
-  GLuint VBO, EBO, VAO;
-  GLuint* glTexture;
-
-
-  long int xCoord;
-  long int yCoord;
-  int addVertex(float x, float y, float z,float texX, float texY);
-  void addIndices(int index1, int index2, int index3, int index4);
-public:
-  BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int y);
-  BSP();
-  bool addBlock(int x, int y, int z,int id);
-  bool blockExists(int x,int y,int z);
-  int getBlock(int x, int y, int z);
-  int removeBlock(int x, int y, int z);
-  void render(World* curWorld);
-  void draw(glm::mat4 camera);
 
 
 };
