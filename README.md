@@ -2,12 +2,13 @@
 Well this was a practice, but now im turning it into a minecraft like game
 
 # Finished
-*Very basic lighting
-*Basic procedural generation with chunks
-*2 Base block types
-*Main character class with camera
-*Text rendering
-*Setup for a block dictionary and texture atlas for easy implementation of more blocks
+
+	*Very basic lighting
+	*Basic procedural generation with chunks
+	*2 Base block types
+	*Main character class with camera
+	*Text rendering
+	*Setup for a block dictionary and texture atlas for easy implementation of more blocks
 
 # Todo:
 
