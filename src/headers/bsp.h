@@ -1,3 +1,5 @@
+#include "perlinnoise.h"
+
 class World;
 class BSP;
 class Block;
@@ -9,19 +11,22 @@ private:
   unsigned int totalChunks;
   GLuint glTexture;
   Shader* blockShader;
+  siv::PerlinNoise* perlin;
   const char* texture;
-  int renderDistance;
+  int horzRenderDistance;
+  int vertRenderDistance;
   std::vector<Block> dictionary;
   float lightposx,lightposy,lightposz;
 public:
   bool loadDictionary(const char* file);
   World();
-  void renderWorld(int x, int z);
-  void drawWorld(int x, int z, Camera* camera);
-  bool chunkExists(int x, int z);
+  void renderWorld(int x, int y, int z);
+  void drawWorld(int x, int y, int z, Camera* camera);
+  bool chunkExists(int x, int y, int z);
   bool blockExists(int x, int y, int z);
-  void delChunk(int x, int z);
-  std::map<int, std::map<int, BSP>> BSPmap;
+  void delChunk(int x, int y, int z);
+  void drawShadows();
+  std::map<int, std::map<int, std::map<int, BSP>>> BSPmap;
 };
 
 //Class which holds the data for each individual chunk
@@ -34,26 +39,38 @@ private:
   std::vector<GLfloat> vertices;
   std::vector<GLuint> indices;
 
-  char worldMap[16*256*16];
+  char worldMap[16*16*16];
+
 
   GLuint VBO, EBO, VAO;
+  GLuint depthMapFBO;
   GLuint* glTexture;
 
-  long int xCoord;
-  long int zCoord;
+
   int addVertex(float x, float y, float z,float xn, float yn, float zn, float texX, float texY);
   void addIndices(int index1, int index2, int index3, int index4);
 
 public:
-  BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int z);
+  BSP* leftChunk;
+  BSP* rightChunk;
+  BSP* frontChunk;
+  BSP* backChunk;
+  BSP* topChunk;
+  BSP* bottomChunk;
+  bool isRendered;
+  long int xCoord;
+  long int zCoord;
+  long int yCoord;
+  BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int y, long int z,  siv::PerlinNoise* perlin);
   BSP();
+  ~BSP();
   bool addBlock(int x, int y, int z,int id);
   bool blockExists(int x,int y,int z);
   int getBlock(int x, int y, int z);
   int removeBlock(int x, int y, int z);
   void render(World* curWorld);
   void draw(Camera* camera,float lightposx,float lightposy,float lightposz);
-  void generateTerrain();
+  void generateTerrain(  siv::PerlinNoise* perlin);
 };
 
 //The class for each individual block in the dictionary

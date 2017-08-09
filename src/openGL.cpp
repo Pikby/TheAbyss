@@ -60,9 +60,9 @@ void initWorld()
 {
   //glfwMakeContextCurrent(window);
   newWorld = new World;
-  mainCharacter = new MainChar(-1,65,-1,newWorld);
+  mainCharacter = new MainChar(0,150,0,newWorld);
   text = new CharRenderer;
-  newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->zpos/16));
+  newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
 }
 
 void* draw(void* )
@@ -98,9 +98,9 @@ void* draw(void* )
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     mainCharacter->update();
-    newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->zpos/16));
+    //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
     //Draw and render the world centered around the player
-    newWorld->drawWorld(round(mainCharacter->xpos/16),round(mainCharacter->zpos/16),&(mainCharacter->mainCam));
+    newWorld->drawWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16),&(mainCharacter->mainCam));
     //std::cout << glGetError() << "update loop\n";
     text->RenderText(fpsString, 50.0f, 550.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
     glfwSwapBuffers(window);
@@ -109,10 +109,9 @@ void* draw(void* )
 
 void* render(void* )
 {
-  glfwMakeContextCurrent(window);
   while(!glfwWindowShouldClose(window))
   {
-    newWorld->renderWorld(round(mainCharacter->xpos*10/16),round(mainCharacter->zpos*10/16));
+    //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->zpos/16));
   }
 }
 
@@ -147,7 +146,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	lastX = xpos;
 	lastY = ypos;
 
-	mainCharacter->mainCam.processMouseMovement(xoffset, yoffset, false);
+	mainCharacter->mainCam.processMouseMovement(xoffset, yoffset, true);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)

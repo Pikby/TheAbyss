@@ -28,11 +28,14 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include "headers/shaders.h"
 #include "headers/camera.h"
 #include "headers/bsp.h"
-#include "headers/perlinnoise.h"
+
 
 
 World::World()
 {
+  int seed = 1737;
+
+   perlin = new siv::PerlinNoise(seed);
 
   blockShader = new Shader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
   const char* texture = "../assets/textures/atlas.png";
@@ -50,7 +53,8 @@ World::World()
     std::cout <<  dictionary[x].atlasHeight <<"\n";
   }
 
-  renderDistance = 5;
+  horzRenderDistance = 5;
+  vertRenderDistance = 3;
   totalChunks = 0;
   lightposx = -10.0f;
   lightposy = 10.0f;
@@ -78,17 +82,60 @@ World::World()
 
 }
 
-void World::renderWorld(int x, int z)
+void World::renderWorld(int x, int y, int z)
 {
-  for(int i = x - renderDistance; i < x + renderDistance;i++)
+  for(int i = x - horzRenderDistance; i < x + horzRenderDistance;i++)
   {
-    for(int j = z - renderDistance; j < z + renderDistance;j++)
+    for(int j = y - vertRenderDistance; j < y + vertRenderDistance;j++)
     {
-      if(!chunkExists(i,j))
+      for(int k = z - horzRenderDistance; k < z + horzRenderDistance;k++)
       {
-        BSPmap[i][j] = BSP(blockShader,&dictionary,&glTexture,i,j);
+        if(!chunkExists(i,j,k))
+        {
+          BSPmap[i][j][k] = BSP(blockShader,&dictionary,&glTexture,i,j,k,perlin);
+          BSP* tempChunk = &BSPmap[i][j][k];
+          if(chunkExists(i,j,k-1))
+          {
+            tempChunk->frontChunk = &(BSPmap[i][j][k-1]);
+            tempChunk->frontChunk->backChunk = tempChunk;
+            tempChunk->frontChunk->render(this);
+          }
+          if(chunkExists(i,j,k+1))
+          {
+            tempChunk->backChunk = &(BSPmap[i][j][k+1]);
+            tempChunk->backChunk->frontChunk = tempChunk;
+            tempChunk->backChunk->render(this);
+          }
 
-        BSPmap[i][j].render(this);
+          if(chunkExists(i,j-1,k))
+          {
+            tempChunk->bottomChunk = &(BSPmap[i][j-1][k]);
+            tempChunk->bottomChunk->topChunk = tempChunk;
+            tempChunk->bottomChunk->render(this);
+          }
+          if(chunkExists(i,j+1,k))
+          {
+            tempChunk->topChunk = &(BSPmap[i][j+1][k]);
+            tempChunk->topChunk->bottomChunk = tempChunk;
+            tempChunk->topChunk->render(this);
+          }
+
+          if(chunkExists(i-1,j,k))
+          {
+            tempChunk->leftChunk = &(BSPmap[i-1][j][k]);
+            tempChunk->leftChunk->rightChunk = tempChunk;
+            tempChunk->leftChunk->render(this);
+          }
+
+          if(chunkExists(i+1,j,k))
+          {
+            tempChunk->rightChunk = &(BSPmap[i+1][j][k]);
+            tempChunk->rightChunk->leftChunk = tempChunk;
+            tempChunk->rightChunk->render(this);
+          }
+
+          tempChunk->render(this);
+        }
       }
     }
   }
@@ -96,60 +143,67 @@ void World::renderWorld(int x, int z)
 
 
 
-void World::delChunk(int x, int z)
+void World::delChunk(int x, int y, int z)
 {
-  BSPmap[x].erase(z);
-  if(BSPmap[x].empty())
+  BSPmap[x][y].erase(z);
+  if(BSPmap[x][y].empty())
   {
-    BSPmap.erase(x);
+    BSPmap[x].erase(y);
+    if(BSPmap[x].empty())
+    {
+      BSPmap.erase(x);
+    }
   }
 }
 
-void World::drawWorld(int x, int z, Camera* camera)
+void World::drawWorld(int x, int y, int z, Camera* camera)
 {
   lightposx += 0.01;
   typedef std::map <int, BSP> z_t;
-  typedef std::map <int, z_t> x_t;
+  typedef std::map <int, z_t> y_t;
+  typedef std::map <int, y_t> x_t;
   typedef x_t::iterator x_iter_t;
+  typedef y_t::iterator y_iter_t;
   typedef z_t::iterator z_iter_t;
+
+  std::vector<BSP*> toDelete;
 
   for(x_iter_t xi = BSPmap.begin(); xi != BSPmap.end(); xi++)
   {
-    for(z_iter_t zi = xi->second.begin(); zi != xi->second.end(); zi++)
+    for(y_iter_t yi = xi->second.begin(); yi != xi->second.end(); yi++)
     {
-      int i = xi->first;
-      int j = zi->first;
-
-      //std::cout << ":" <<i << ":" << j << "\n";
-      if(sqrt(pow(x-i,2)+pow(z-j,2)) >renderDistance+5)
+      for(z_iter_t zi = yi->second.begin(); zi != yi->second.end(); zi++)
       {
-
-        if(zi == xi->second.begin())
+        int i = xi->first;
+        int j = yi->first;
+        int k = zi->first;
+        if(sqrt(pow(x-i,2)+pow(z-k,2)) > horzRenderDistance+2 || abs(j-y) > vertRenderDistance +5)
         {
-          delChunk(i,j);
-          zi = xi->second.begin();
-          if(zi == xi->second.end()) break;
+          toDelete.push_back(&zi->second);
         }
-        else
-        {
-          zi--;
-          delChunk(i,j);
-        }
+        else if(zi->second.isRendered) zi->second.draw(camera,lightposx,lightposy,lightposz);
       }
-      else zi->second.draw(camera,lightposx,lightposy,lightposz);
     }
-
   }
+
+  for(int x=0;x<toDelete.size();x++)
+  {
+    delChunk(toDelete[x]->xCoord,toDelete[x]->yCoord,toDelete[x]->zCoord);
+  }
+
 }
 
 
-bool World::chunkExists(int x , int z)
+bool World::chunkExists(int x ,int y, int z)
 {
   if(BSPmap.count(x) == 1)
   {
-    if(BSPmap[x].count(z) == 1)
+    if(BSPmap[x].count(y) == 1)
     {
-      return true;
+      if(BSPmap[x][y].count(z) == 1)
+      {
+        return true;
+      }
     }
   }
   return false;
@@ -159,18 +213,23 @@ bool World::blockExists(int x, int y, int z)
 {
   std::cout << "checking for block" << x << ":" << y << ":" << z << "\n";
   int xlocal = x >= 0 ? x % 16 : 16 + (x % 16);
+  int ylocal = y >= 0 ? y % 16 : 16 + (y % 16);
   int zlocal = z >= 0 ? z % 16 : 16 + (z % 16);
 
   if(xlocal == 16)xlocal = 0;
+  if(ylocal == 16)ylocal = 0;
   if(zlocal == 16)zlocal = 0;
+
   int xchunk = floor((float)x/(float)16);
+  int ychunk = floor((float)y/(float)16);
   int zchunk = floor((float)z/(float)16);
 
   std::cout << "checking for block in chunk: " << xchunk <<":" << zchunk << "withCoords: " << xlocal << ":" <<y << ":" << zlocal << "\n";
 
-  if(chunkExists(xchunk,zchunk))
+  if(chunkExists(xchunk,ychunk,zchunk))
   {
-    if(BSPmap[xchunk][zchunk].blockExists(xlocal,y, zlocal))
+    //std::cout << BSPmap[xchunk][zchunk].xCoord << BSPmap[xchunk][zchunk].zCoord << "\n";
+    if(BSPmap[xchunk][ychunk][zchunk].blockExists(xlocal,ylocal, zlocal))
     {
       std::cout << "found block ahead\n";
       return true;
@@ -180,25 +239,44 @@ bool World::blockExists(int x, int y, int z)
   return false;
 }
 
-BSP::BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int z)
+BSP::BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int y, long int z,  siv::PerlinNoise* perlin)
 {
-
-  for(int x = 0;x<16*256*16;x++)
+  bool isRendered = false;
+  for(int x = 0;x<16*16*16;x++)
     worldMap[x] = 0;
 
-  generateTerrain();
+  xCoord = x;
+  yCoord = y;
+  zCoord = z;
+
+  generateTerrain(perlin);
+
 
   blockShader = shader;
   dictionary = dict;
-  xCoord = x;
-  zCoord = z;
   glTexture = newglTexture;
+
+  leftChunk = NULL;
+  rightChunk = NULL;
+  frontChunk = NULL;
+  backChunk = NULL;
+  topChunk = NULL;
+  bottomChunk = NULL;
 }
 
-BSP::BSP()
+BSP::~BSP()
 {
 
+  if(leftChunk != NULL) leftChunk->rightChunk = NULL;
+  if(rightChunk != NULL) rightChunk->leftChunk = NULL;
+  if(frontChunk != NULL) frontChunk->backChunk = NULL;
+  if(backChunk != NULL) backChunk->frontChunk = NULL;
+  if(topChunk != NULL) topChunk->bottomChunk = NULL;
+  if(bottomChunk != NULL) bottomChunk->topChunk = NULL;
+
 }
+
+BSP::BSP(){}
 
 Block::Block(int newId, int* array, int newWidth,int newHeight,int newAtlasWidth, int newAtlasHeight)
 {
@@ -248,27 +326,30 @@ bool World::loadDictionary(const char* file)
   }
 }
 
-void BSP::generateTerrain()
+void BSP::generateTerrain(siv::PerlinNoise* perlin)
 {
-  double freq = 64;
+  double freq = 128;
   int oct = 8;
-  int seed = 1337;
 
-  siv::PerlinNoise perlin(seed);
 
   for(int x=0;x<16;x++)
   {
-    for(int z=0;z<16;z++)
+    for(int y=0;y<16;y++)
     {
-        int height = 60*perlin.octaveNoise0_1((x+xCoord*16)/freq,(z+zCoord*16)/freq,oct);
-        for(int y = 0; y<height; y++)
-        {
-          if(y == height - 1) addBlock(x,y,z,2);
-          else addBlock(x,y,z,1);
-        }
+      for(int z=0;z<16;z++)
+      {
+          int height = 16+200*perlin->octaveNoise0_1((x+xCoord*16)/freq,(z+zCoord*16)/freq,oct);
+
+          if(yCoord*16+y <height)
+          {
+            if(yCoord*16+y == height - 1) addBlock(x,y,z,2);
+            else addBlock(x,y,z,1);
+          }
+      }
     }
   }
 }
+
 
 int BSP::addVertex(float x, float y, float z, float xn, float yn, float zn, float texX, float texY)
 {
@@ -289,8 +370,8 @@ int BSP::addVertex(float x, float y, float z, float xn, float yn, float zn, floa
 
 bool BSP::blockExists(int x, int y, int z)
 {
-  if(x>=16 || y >=256 || z >= 16 || x<0 || y<0 || z<0) return false;
-  if(worldMap[x+16*y+z*16*256] == 0) return false;
+  if(x>=16 || y >=16 || z >= 16 || x<0 || y<0 || z<0) return false;
+  if(worldMap[x+16*y+z*16*16] == 0) return false;
   else return true;
 }
 
@@ -308,33 +389,34 @@ void BSP::addIndices(int index1, int index2, int index3, int index4)
 
 bool BSP::addBlock(int x, int y, int z, int id)
 {
-  worldMap[x+y*16+z*16*256] = id;
+  worldMap[x+y*16+z*16*16] = id;
 }
 
 int BSP::removeBlock(int x, int y, int z)
 {
-  worldMap[x + y*16 + z*16*256] = 0;
+  worldMap[x + y*16 + z*16*16] = 0;
 }
 
 int BSP::getBlock(int x, int y, int z)
 {
-  return worldMap[x+y*16+z*16*256];
+  return worldMap[x+y*16+z*16*16];
 }
 
 void BSP::render(World* curWorld)
 {
+  isRendered = false;
   vertices.clear();
   indices.clear();
 
   for(int x = 0; x<16;x++)
   {
-     for(int y = 0;y<256;y++)
+     for(int y = 0;y<16;y++)
      {
        for(int z = 0;z<16;z++)
        {
          if(!blockExists(x,y,z)) continue;
          float realX = x/10.0f+16*xCoord/10.0f;
-         float realY = y/10.0f;
+         float realY = y/10.0f+16*yCoord/10.0f;
          float realZ = z/10.0f+16*zCoord/10.0f;
 
          bool topNeigh = false;
@@ -344,16 +426,50 @@ void BSP::render(World* curWorld)
          bool frontNeigh = false;
          bool backNeigh = false;
 
-         if(blockExists(x+1,y,z)) rightNeigh = true;
-         if(blockExists(x-1,y,z)) leftNeigh = true;
-         if(blockExists(x,y+1,z)) topNeigh = true;
-         if(blockExists(x,y-1,z)) bottomNeigh = true;
-         if(blockExists(x,y,z+1)) backNeigh = true;
-         if(blockExists(x,y,z-1)) frontNeigh = true;
+         if(x+1 >= 16)
+         {
+           if(rightChunk != NULL)
+              if(rightChunk->blockExists(0,y,z)) rightNeigh = true;
+         }
+         else if(blockExists(x+1,y,z)) rightNeigh = true;
+
+         if(x-1 < 0)
+         {
+          if(leftChunk != NULL)
+            if(leftChunk->blockExists(15,y,z)) leftNeigh = true;
+         }
+         else if(blockExists(x-1,y,z)) leftNeigh = true;
+
+         if(z+1 >= 16)
+         {
+           if(topChunk != NULL)
+              if(topChunk->blockExists(x,0,z)) topNeigh = true;
+         }
+         else if(blockExists(x,y+1,z)) topNeigh = true;
+
+         if(z-1 < 0)
+         {
+          if(bottomChunk != NULL)
+            if(bottomChunk->blockExists(x,15,z)) bottomNeigh = true;
+         }
+         else if(blockExists(x,y-1,z)) bottomNeigh = true;
+
+         if(z+1 >= 16)
+         {
+           if(backChunk != NULL)
+             if(backChunk->blockExists(x,y,0)) backNeigh = true;
+         }
+         else if(blockExists(x,y,z+1)) backNeigh = true;
+
+         if(z-1 < 0)
+         {
+           if(frontChunk != NULL)
+             if(frontChunk->blockExists(x,y,15)) frontNeigh = true;
+         }
+         else if(blockExists(x,y,z-1)) frontNeigh = true;
 
 
          Block tempBlock = dictionary->at(getBlock(x,y,z));
-
 
          float x1, y1, x2, y2;
 
@@ -384,8 +500,8 @@ void BSP::render(World* curWorld)
          {
            tempBlock.getRight(&x1,&y1,&x2,&y2);
            int index1 = addVertex(realX+0.1f, realY,      realZ     ,1.0f,0.0f,0.0f,x1,y1);
-           int index2 = addVertex(realX+0.1f, realY+0.1f, realZ     ,1.0f,0.0f,0.0f,x2,y1);
-           int index3 = addVertex(realX+0.1f, realY,      realZ+0.1f,1.0f,0.0f,0.0f,x1,y2);
+           int index3 = addVertex(realX+0.1f, realY+0.1f, realZ     ,1.0f,0.0f,0.0f,x2,y1);
+           int index2 = addVertex(realX+0.1f, realY,      realZ+0.1f,1.0f,0.0f,0.0f,x1,y2);
            int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,1.0f,0.0f,0.0f,x2,y2);
 
            addIndices(index1,index2,index3,index4);
@@ -395,8 +511,8 @@ void BSP::render(World* curWorld)
          {
            tempBlock.getLeft(&x1,&y1,&x2,&y2);
            int index1 = addVertex(realX, realY,      realZ     ,-1.0f,0.0f,0.0f,x1,y1);
-           int index3 = addVertex(realX, realY+0.1f, realZ     ,-1.0f,0.0f,0.0f,x2,y1);
-           int index2 = addVertex(realX, realY,      realZ+0.1f,-1.0f,0.0f,0.0f,x1,y2);
+           int index2 = addVertex(realX, realY+0.1f, realZ     ,-1.0f,0.0f,0.0f,x2,y1);
+           int index3 = addVertex(realX, realY,      realZ+0.1f,-1.0f,0.0f,0.0f,x1,y2);
            int index4 = addVertex(realX, realY+0.1f, realZ+0.1f,-1.0f,0.0f,0.0f,x2,y2);
 
            addIndices(index1,index2,index3,index4);
@@ -405,8 +521,8 @@ void BSP::render(World* curWorld)
          {
            tempBlock.getBack(&x1,&y1,&x2,&y2);
            int index1 = addVertex(realX     , realY,      realZ+0.1f,0.0f,0.0f,1.0f,x1,y1);
-           int index2 = addVertex(realX+0.1f, realY,      realZ+0.1f,0.0f,0.0f,1.0f,x2,y1);
-           int index3 = addVertex(realX     , realY+0.1f, realZ+0.1f,0.0f,0.0f,1.0f,x1,y2);
+           int index3 = addVertex(realX+0.1f, realY,      realZ+0.1f,0.0f,0.0f,1.0f,x2,y1);
+           int index2 = addVertex(realX     , realY+0.1f, realZ+0.1f,0.0f,0.0f,1.0f,x1,y2);
            int index4 = addVertex(realX+0.1f, realY+0.1f, realZ+0.1f,0.0f,0.0f,1.0f,x2,y2);
 
            addIndices(index1,index2,index3,index4);
@@ -416,14 +532,16 @@ void BSP::render(World* curWorld)
          {
            tempBlock.getFront(&x1,&y1,&x2,&y2);
            int index1 = addVertex(realX     , realY,      realZ,0.0f,0.0f,-1.0f,x1,y1);
-           int index3 = addVertex(realX+0.1f, realY,      realZ,0.0f,0.0f,-1.0f,x2,y1);
-           int index2 = addVertex(realX     , realY+0.1f, realZ,0.0f,0.0f,-1.0f,x1,y2);
+           int index2 = addVertex(realX+0.1f, realY,      realZ,0.0f,0.0f,-1.0f,x2,y1);
+           int index3 = addVertex(realX     , realY+0.1f, realZ,0.0f,0.0f,-1.0f,x1,y2);
            int index4 = addVertex(realX+0.1f, realY+0.1f, realZ,0.0f,0.0f,-1.0f,x2,y2);
            addIndices(index1,index2,index3,index4);
          }
        }
      }
   }
+
+
 
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &EBO);
@@ -448,7 +566,7 @@ void BSP::render(World* curWorld)
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
-
+  isRendered = true;
 
 }
 

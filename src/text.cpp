@@ -23,7 +23,7 @@
 CharRenderer::CharRenderer()
 {
   textShader = new Shader("../src/shaders/shaderText.vs","../src/shaders/shaderText.fs");
-  glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+  glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 0.0f, 1080.0f);
   textShader->Use();
   textShader->setMat4("projection",projection);
 

@@ -46,7 +46,7 @@ int main()
   glfwSetKeyCallback(newWindow, key_callback);
   glfwSetCursorPosCallback(newWindow, mouse_callback);
   glfwSetScrollCallback(newWindow, scroll_callback);
-  glfwSwapInterval(1);//FPS Capping
+  glfwSwapInterval(0);//FPS Capping
   //Intialize glew and all related settings
 
   glewExperimental = GL_TRUE;
@@ -57,7 +57,7 @@ int main()
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   //Cull face unrenders the back side of polygons
-  //glEnable(GL_CULL_FACE);
+  glEnable(GL_CULL_FACE);
   glCullFace(GL_FRONT);
   glFrontFace(GL_CCW);
 
@@ -67,8 +67,9 @@ int main()
 
   initWorld();
   std::cout << "staring main\n";
-  pthread_t threads[2];
+  pthread_t threads[1];
 
+  //pthread_create(&threads[1],NULL,render,NULL);
 
   std::cout << "World initalized begin drawing\n";
   draw(NULL);

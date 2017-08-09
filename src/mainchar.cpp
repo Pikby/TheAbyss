@@ -37,7 +37,7 @@ MainChar::MainChar(float x, float y, float z, World* world )
   deltax = 0;
   deltay = 0;
   deltaz = 0;
-  moveSpeed = 0.1f;
+  moveSpeed = 0.5f;
   curWorld = world;
 
   mainCam = Camera(glm::vec3(xpos/10,ypos/10,zpos/10));
@@ -60,7 +60,7 @@ void MainChar::update()
 
   if(!curWorld->blockExists(floor(xpos),floor(ypos+deltay),floor(zpos)))
   {
-    ypos += deltay;
+    //ypos += deltay;
     grounded = false;
   }
   else
