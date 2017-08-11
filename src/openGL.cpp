@@ -5,7 +5,8 @@
 #include <math.h>
 #include <vector>
 #include <map>
-
+#include <unordered_map>
+#include <queue>
 // GLEW
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -60,9 +61,9 @@ void initWorld()
 {
   //glfwMakeContextCurrent(window);
   newWorld = new World;
-  mainCharacter = new MainChar(0,150,0,newWorld);
+  mainCharacter = new MainChar(0,120,0,newWorld);
   text = new CharRenderer;
-  newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
+  //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
 }
 
 void* draw(void* )
@@ -96,13 +97,20 @@ void* draw(void* )
     glfwPollEvents();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    text->RenderText(fpsString, 50.0f,1000.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
     mainCharacter->update();
     //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
     //Draw and render the world centered around the player
+    while(newWorld->renderQueue.size() != 0)
+    {
+      if(newWorld->renderQueue.front()->isBuilt)
+        newWorld->renderQueue.front()->render();
+      newWorld->renderQueue.pop();
+    }
+
     newWorld->drawWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16),&(mainCharacter->mainCam));
     //std::cout << glGetError() << "update loop\n";
-    text->RenderText(fpsString, 50.0f, 550.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+    text->RenderText(fpsString, 50.0f,1000.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
     glfwSwapBuffers(window);
   }
 }
@@ -111,8 +119,9 @@ void* render(void* )
 {
   while(!glfwWindowShouldClose(window))
   {
-    //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->zpos/16));
+    newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
   }
+  std::cout << "exiting render thread \n";
 }
 
 

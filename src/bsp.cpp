@@ -11,7 +11,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include <fstream>
 #include <sstream>
 #include <thread>
-
+#include <queue>
 // GLEW
 // #define GLEW_STATIC
 #include <GL/glew.h>
@@ -53,8 +53,8 @@ World::World()
     std::cout <<  dictionary[x].atlasHeight <<"\n";
   }
 
-  horzRenderDistance = 5;
-  vertRenderDistance = 3;
+  horzRenderDistance = 15;
+  vertRenderDistance = 15;
   totalChunks = 0;
   lightposx = -10.0f;
   lightposy = 10.0f;
@@ -84,64 +84,133 @@ World::World()
 
 void World::renderWorld(int x, int y, int z)
 {
-  for(int i = x - horzRenderDistance; i < x + horzRenderDistance;i++)
+
+  for(int i = 0; i < horzRenderDistance;i++)
   {
-    for(int j = y - vertRenderDistance; j < y + vertRenderDistance;j++)
+    for(int k = 0; k <  horzRenderDistance;k++)
     {
-      for(int k = z - horzRenderDistance; k < z + horzRenderDistance;k++)
+      for(int j = 0; j < vertRenderDistance;j++)
       {
-        if(!chunkExists(i,j,k))
+        for(int a = 0; a < 8;a++)
         {
-          BSPmap[i][j][k] = BSP(blockShader,&dictionary,&glTexture,i,j,k,perlin);
-          BSP* tempChunk = &BSPmap[i][j][k];
-          if(chunkExists(i,j,k-1))
+          int chunkx = x+i;
+          int chunky = y+j;
+          int chunkz = z+k;
+          switch(a)
           {
-            tempChunk->frontChunk = &(BSPmap[i][j][k-1]);
-            tempChunk->frontChunk->backChunk = tempChunk;
-            tempChunk->frontChunk->render(this);
-          }
-          if(chunkExists(i,j,k+1))
-          {
-            tempChunk->backChunk = &(BSPmap[i][j][k+1]);
-            tempChunk->backChunk->frontChunk = tempChunk;
-            tempChunk->backChunk->render(this);
-          }
-
-          if(chunkExists(i,j-1,k))
-          {
-            tempChunk->bottomChunk = &(BSPmap[i][j-1][k]);
-            tempChunk->bottomChunk->topChunk = tempChunk;
-            tempChunk->bottomChunk->render(this);
-          }
-          if(chunkExists(i,j+1,k))
-          {
-            tempChunk->topChunk = &(BSPmap[i][j+1][k]);
-            tempChunk->topChunk->bottomChunk = tempChunk;
-            tempChunk->topChunk->render(this);
+            case(1): chunkx = x-i; break;
+            case(2): chunky = y-j; break;
+            case(3): chunkz = z-k; break;
+            case(4): chunkx = x-i; chunky = y-j; break;
+            case(5): chunkx = x-i; chunkz = z-k; break;
+            case(6): chunky = y-j; chunkz = z-k; break;
+            case(7): chunkx = z-i; chunky = y-j; chunkz = z-k; break;
           }
 
-          if(chunkExists(i-1,j,k))
+          //std::cout << "checking for chunk:   " << chunkx << ":" << chunky << ":" << chunkz << "\n";
+          if(!chunkExists(chunkx,chunky,chunkz))
           {
-            tempChunk->leftChunk = &(BSPmap[i-1][j][k]);
-            tempChunk->leftChunk->rightChunk = tempChunk;
-            tempChunk->leftChunk->render(this);
-          }
+            //std::cout << "creating  chunk:   " << chunkx << ":" << chunky << ":" << chunkz << "\n";
 
-          if(chunkExists(i+1,j,k))
-          {
-            tempChunk->rightChunk = &(BSPmap[i+1][j][k]);
-            tempChunk->rightChunk->leftChunk = tempChunk;
-            tempChunk->rightChunk->render(this);
-          }
+            BSPmap[chunkx][chunky][chunkz] = BSP(blockShader,&dictionary,&glTexture,chunkx,chunky,chunkz,perlin);
+            BSP* tempChunk = &BSPmap[chunkx][chunky][chunkz];
+            BSP* otherChunk;
 
-          tempChunk->render(this);
+            otherChunk = getChunk(chunkx,chunky,chunkz-1);
+            if(otherChunk  != NULL )
+            {
+              tempChunk->frontChunk = otherChunk;
+              otherChunk->backChunk = tempChunk;
+              if(otherChunk->isBuilt)
+              {
+                otherChunk->build(this);
+                renderQueue.push(otherChunk);
+              }
+            }
+
+            otherChunk = getChunk(chunkx,chunky,chunkz+1);
+            if(otherChunk != NULL)
+            {
+              tempChunk->backChunk = otherChunk;
+              otherChunk->frontChunk = tempChunk;
+              if(otherChunk->isBuilt)
+              {
+                otherChunk->build(this);
+                renderQueue.push(otherChunk);
+              }
+            }
+
+            otherChunk = getChunk(chunkx,chunky-1,chunkz);
+            if(otherChunk != NULL)
+            {
+              tempChunk->bottomChunk = otherChunk;
+              otherChunk->topChunk = tempChunk;
+              if(otherChunk->isBuilt)
+              {
+                otherChunk->build(this);
+                renderQueue.push(otherChunk);
+              }
+            }
+
+            otherChunk = getChunk(chunkx,chunky+1,chunkz);
+            if(otherChunk != NULL)
+            {
+              tempChunk->topChunk = otherChunk;
+              otherChunk->bottomChunk = tempChunk;
+              if(otherChunk->isBuilt)
+              {
+                otherChunk->build(this);
+                renderQueue.push(otherChunk);
+              }
+            }
+
+            otherChunk = getChunk(chunkx-1,chunky,chunkz);
+            if(otherChunk != NULL)
+            {
+              tempChunk->leftChunk = otherChunk;
+              otherChunk->rightChunk = tempChunk;
+              if(otherChunk->isBuilt)
+              {
+                otherChunk->build(this);
+                renderQueue.push(otherChunk);
+              }
+            }
+
+            otherChunk = getChunk(chunkx+1,chunky,chunkz);
+            if(otherChunk != NULL)
+            {
+              tempChunk->rightChunk = otherChunk;
+              otherChunk->leftChunk = tempChunk;
+              if(otherChunk->isBuilt)
+              {
+                otherChunk->build(this);
+                renderQueue.push(otherChunk);
+              }
+            }
+
+            tempChunk->build(this);
+            renderQueue.push(tempChunk);
+          }
         }
       }
     }
   }
 }
 
-
+BSP* World::getChunk(int x, int y, int z)
+{
+  if(BSPmap.count(x) == 1)
+  {
+    if(BSPmap[x].count(y) == 1)
+    {
+      if(BSPmap[x][y].count(z) == 1)
+      {
+        return &BSPmap[x][y][z];
+      }
+    }
+  }
+  return NULL;
+}
 
 void World::delChunk(int x, int y, int z)
 {
@@ -159,14 +228,15 @@ void World::delChunk(int x, int y, int z)
 void World::drawWorld(int x, int y, int z, Camera* camera)
 {
   lightposx += 0.01;
-  typedef std::map <int, BSP> z_t;
-  typedef std::map <int, z_t> y_t;
-  typedef std::map <int, y_t> x_t;
+  typedef std::unordered_map <int, BSP> z_t;
+  typedef std::unordered_map <int, z_t> y_t;
+  typedef std::unordered_map <int, y_t> x_t;
   typedef x_t::iterator x_iter_t;
   typedef y_t::iterator y_iter_t;
   typedef z_t::iterator z_iter_t;
 
   std::vector<BSP*> toDelete;
+
 
   for(x_iter_t xi = BSPmap.begin(); xi != BSPmap.end(); xi++)
   {
@@ -177,18 +247,20 @@ void World::drawWorld(int x, int y, int z, Camera* camera)
         int i = xi->first;
         int j = yi->first;
         int k = zi->first;
-        if(sqrt(pow(x-i,2)+pow(z-k,2)) > horzRenderDistance+2 || abs(j-y) > vertRenderDistance +5)
+
+        //std::cout << i << ":" << j << ":" << k << "\n";
+        if(sqrt(pow(x-i,2)+pow(z-k,2)) > horzRenderDistance+2 || abs(j-y) > vertRenderDistance +2)
         {
-          toDelete.push_back(&zi->second);
+          //toDelete.push_back(&zi->second);
         }
-        else if(zi->second.isRendered) zi->second.draw(camera,lightposx,lightposy,lightposz);
+        else if(zi->second.isRendered && zi->second.isBuilt) zi->second.draw(camera,lightposx,lightposy,lightposz);
       }
     }
   }
-
   for(int x=0;x<toDelete.size();x++)
   {
-    delChunk(toDelete[x]->xCoord,toDelete[x]->yCoord,toDelete[x]->zCoord);
+    if(toDelete[x]->isBuilt && toDelete[x]->isRendered);
+      //delChunk(toDelete[x]->xCoord,toDelete[x]->yCoord,toDelete[x]->zCoord);
   }
 
 }
@@ -211,7 +283,7 @@ bool World::chunkExists(int x ,int y, int z)
 
 bool World::blockExists(int x, int y, int z)
 {
-  std::cout << "checking for block" << x << ":" << y << ":" << z << "\n";
+  //std::cout << "checking for block" << x << ":" << y << ":" << z << "\n";
   int xlocal = x >= 0 ? x % 16 : 16 + (x % 16);
   int ylocal = y >= 0 ? y % 16 : 16 + (y % 16);
   int zlocal = z >= 0 ? z % 16 : 16 + (z % 16);
@@ -224,33 +296,33 @@ bool World::blockExists(int x, int y, int z)
   int ychunk = floor((float)y/(float)16);
   int zchunk = floor((float)z/(float)16);
 
-  std::cout << "checking for block in chunk: " << xchunk <<":" << zchunk << "withCoords: " << xlocal << ":" <<y << ":" << zlocal << "\n";
-
+  //std::cout << "checking for block in chunk: " << xchunk <<":" << zchunk << "withCoords: " << xlocal << ":" <<y << ":" << zlocal << "\n";
   if(chunkExists(xchunk,ychunk,zchunk))
   {
     //std::cout << BSPmap[xchunk][zchunk].xCoord << BSPmap[xchunk][zchunk].zCoord << "\n";
     if(BSPmap[xchunk][ychunk][zchunk].blockExists(xlocal,ylocal, zlocal))
     {
-      std::cout << "found block ahead\n";
+      //std::cout << "found block ahead\n";
       return true;
     }
   }
-      std::cout << "no block ahead\n";
+      //std::cout << "no block ahead\n";
   return false;
 }
 
 BSP::BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int y, long int z,  siv::PerlinNoise* perlin)
 {
-  bool isRendered = false;
-  for(int x = 0;x<16*16*16;x++)
-    worldMap[x] = 0;
-
+  isRendered = false;
+  isDrawing = false;
+  isBuilt = false;
   xCoord = x;
   yCoord = y;
   zCoord = z;
 
-  generateTerrain(perlin);
+  for(int x = 0;x<16*16*16;x++)
+    worldMap[x] = 0;
 
+  generateTerrain(perlin);
 
   blockShader = shader;
   dictionary = dict;
@@ -338,13 +410,12 @@ void BSP::generateTerrain(siv::PerlinNoise* perlin)
     {
       for(int z=0;z<16;z++)
       {
-          int height = 16+200*perlin->octaveNoise0_1((x+xCoord*16)/freq,(z+zCoord*16)/freq,oct);
-
-          if(yCoord*16+y <height)
-          {
-            if(yCoord*16+y == height - 1) addBlock(x,y,z,2);
-            else addBlock(x,y,z,1);
-          }
+        int height = 16+200*perlin->octaveNoise0_1((x+xCoord*16)/freq,(z+zCoord*16)/freq,oct);
+        if(yCoord*16+y <height)
+        {
+          if(yCoord*16+y == height - 1) addBlock(x,y,z,2);
+          else addBlock(x,y,z,1);
+        }
       }
     }
   }
@@ -370,7 +441,7 @@ int BSP::addVertex(float x, float y, float z, float xn, float yn, float zn, floa
 
 bool BSP::blockExists(int x, int y, int z)
 {
-  if(x>=16 || y >=16 || z >= 16 || x<0 || y<0 || z<0) return false;
+  if(x>=16 || y >=16 || z >= 16 || x<0 || y<0 || z<0) return false ;
   if(worldMap[x+16*y+z*16*16] == 0) return false;
   else return true;
 }
@@ -402,9 +473,14 @@ int BSP::getBlock(int x, int y, int z)
   return worldMap[x+y*16+z*16*16];
 }
 
-void BSP::render(World* curWorld)
+void BSP::build(World* curWorld)
 {
-  isRendered = false;
+  isBuilt = false;
+  while(isDrawing)
+  {
+    //Wait till the current rendering is done
+  }
+
   vertices.clear();
   indices.clear();
 
@@ -440,14 +516,14 @@ void BSP::render(World* curWorld)
          }
          else if(blockExists(x-1,y,z)) leftNeigh = true;
 
-         if(z+1 >= 16)
+         if(y+1 >= 16)
          {
            if(topChunk != NULL)
               if(topChunk->blockExists(x,0,z)) topNeigh = true;
          }
          else if(blockExists(x,y+1,z)) topNeigh = true;
 
-         if(z-1 < 0)
+         if(y-1 < 0)
          {
           if(bottomChunk != NULL)
             if(bottomChunk->blockExists(x,15,z)) bottomNeigh = true;
@@ -540,7 +616,17 @@ void BSP::render(World* curWorld)
        }
      }
   }
+  isBuilt = true;
+  //std::cout << "vertices added rendering chunk\n";
+}
 
+void BSP::render()
+{
+  isRendered = false;
+  while(isDrawing || !isBuilt)
+  {
+    //Wait till the chunk stops drawing
+  }
 
 
   glGenVertexArrays(1, &VAO);
@@ -567,11 +653,17 @@ void BSP::render(World* curWorld)
   glBindVertexArray(0);
 
   isRendered = true;
-
 }
 
 void BSP::draw(Camera* camera,float lightposx,float lightposy,float lightposz)
 {
+  //std::cout << "drawing chunk" << xCoord << ":" << yCoord << ":" << zCoord << "\n";
+  isDrawing = true;
+  while(!isRendered || !isBuilt)
+  {
+    //Wait till the chunk stops being built or rendered
+  }
+
   glBindTexture(GL_TEXTURE_2D, *glTexture);
   blockShader->Use();
 
@@ -596,4 +688,5 @@ void BSP::draw(Camera* camera,float lightposx,float lightposy,float lightposz)
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
+  isDrawing = false;
 }

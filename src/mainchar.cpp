@@ -6,6 +6,8 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include <math.h>
 #include <vector>
 #include <map>
+#include <unordered_map>
+#include <queue>
 // GLEW
 // #define GLEW_STATIC
 #include <GL/glew.h>
@@ -37,7 +39,7 @@ MainChar::MainChar(float x, float y, float z, World* world )
   deltax = 0;
   deltay = 0;
   deltaz = 0;
-  moveSpeed = 0.5f;
+  moveSpeed = 5.0f;
   curWorld = world;
 
   mainCam = Camera(glm::vec3(xpos/10,ypos/10,zpos/10));
@@ -45,7 +47,7 @@ MainChar::MainChar(float x, float y, float z, World* world )
 
 void MainChar::update()
 {
-  std::cout << xpos<<":"<<ypos<<":"<<zpos<<"\n";
+  //std::cout << xpos<<":"<<ypos<<":"<<zpos<<"\n";
   deltay -= 0.1;
 
   if(!curWorld->blockExists(floor(xpos+deltax),floor(ypos),floor(zpos)))

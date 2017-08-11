@@ -22,14 +22,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-//Add the shader configs
-#include "headers/shaders.h"
-
-#include "headers/camera.h"
-#include "headers/bsp.h"
 #include "headers/openGL.h"
-#include "headers/mainchar.h"
-#include "headers/text.h"
 
 
 
@@ -69,9 +62,11 @@ int main()
   std::cout << "staring main\n";
   pthread_t threads[1];
 
-  //pthread_create(&threads[1],NULL,render,NULL);
+  pthread_create(&threads[1],NULL,render,NULL);
 
   std::cout << "World initalized begin drawing\n";
   draw(NULL);
+
+  pthread_exit(NULL);
 
 }

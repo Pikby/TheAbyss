@@ -4,40 +4,17 @@ class World;
 class BSP;
 class Block;
 
-//Class which encapsulates all the chunks as well as the shaders and dicionary
-class World
-{
-private:
-  unsigned int totalChunks;
-  GLuint glTexture;
-  Shader* blockShader;
-  siv::PerlinNoise* perlin;
-  const char* texture;
-  int horzRenderDistance;
-  int vertRenderDistance;
-  std::vector<Block> dictionary;
-  float lightposx,lightposy,lightposz;
-public:
-  bool loadDictionary(const char* file);
-  World();
-  void renderWorld(int x, int y, int z);
-  void drawWorld(int x, int y, int z, Camera* camera);
-  bool chunkExists(int x, int y, int z);
-  bool blockExists(int x, int y, int z);
-  void delChunk(int x, int y, int z);
-  void drawShadows();
-  std::map<int, std::map<int, std::map<int, BSP>>> BSPmap;
-};
-
 //Class which holds the data for each individual chunk
 class BSP
 {
 private:
+
   Shader* blockShader;
   const char* texture;
   std::vector<Block>* dictionary;
   std::vector<GLfloat> vertices;
   std::vector<GLuint> indices;
+
 
   char worldMap[16*16*16];
 
@@ -57,6 +34,9 @@ public:
   BSP* backChunk;
   BSP* topChunk;
   BSP* bottomChunk;
+
+  bool isDrawing;
+  bool isBuilt;
   bool isRendered;
   long int xCoord;
   long int zCoord;
@@ -68,10 +48,42 @@ public:
   bool blockExists(int x,int y,int z);
   int getBlock(int x, int y, int z);
   int removeBlock(int x, int y, int z);
-  void render(World* curWorld);
+  void build(World* curWorld);
+  void render();
   void draw(Camera* camera,float lightposx,float lightposy,float lightposz);
   void generateTerrain(  siv::PerlinNoise* perlin);
 };
+
+
+//Class which encapsulates all the chunks as well as the shaders and dicionary
+class World
+{
+private:
+
+  unsigned int totalChunks;
+  GLuint glTexture;
+  Shader* blockShader;
+  siv::PerlinNoise* perlin;
+  const char* texture;
+  int horzRenderDistance;
+  int vertRenderDistance;
+  std::vector<Block> dictionary;
+  float lightposx,lightposy,lightposz;
+public:
+  std::queue<BSP*> renderQueue;
+  bool loadDictionary(const char* file);
+  World();
+  void renderWorld(int x, int y, int z);
+  void drawWorld(int x, int y, int z, Camera* camera);
+  bool chunkExists(int x, int y, int z);
+  BSP* getChunk(int x, int y, int z);
+  bool blockExists(int x, int y, int z);
+  void delChunk(int x, int y, int z);
+  void drawShadows();
+  std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, BSP>>> BSPmap;
+};
+
+
 
 //The class for each individual block in the dictionary
 class Block
