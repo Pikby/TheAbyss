@@ -1,7 +1,7 @@
 #include "perlinnoise.h"
 
+#define CHUNKSIZE 32
 class World;
-class BSP;
 class Block;
 
 //Class which holds the data for each individual chunk
@@ -16,7 +16,7 @@ private:
   std::vector<GLuint> indices;
 
 
-  char worldMap[16*16*16];
+  char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
 
 
   GLuint VBO, EBO, VAO;
@@ -35,16 +35,18 @@ public:
   BSP* topChunk;
   BSP* bottomChunk;
 
-  bool isDrawing;
+  bool toRender;
   bool isBuilt;
-  bool isRendered;
+  bool isDrawing;
+  bool toDelete;
+
   long int xCoord;
   long int zCoord;
   long int yCoord;
   BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int y, long int z,  siv::PerlinNoise* perlin);
   BSP();
   ~BSP();
-  bool addBlock(int x, int y, int z,int id);
+  void addBlock(int x, int y, int z,int id);
   bool blockExists(int x,int y,int z);
   int getBlock(int x, int y, int z);
   int removeBlock(int x, int y, int z);
@@ -59,7 +61,7 @@ public:
 class World
 {
 private:
-
+  std::queue<BSP*> delQueue;
   unsigned int totalChunks;
   GLuint glTexture;
   Shader* blockShader;
@@ -70,17 +72,21 @@ private:
   std::vector<Block> dictionary;
   float lightposx,lightposy,lightposz;
 public:
-  std::queue<BSP*> renderQueue;
+  std::queue<BSP*> buildQueue;
   bool loadDictionary(const char* file);
   World();
-  void renderWorld(int x, int y, int z);
-  void drawWorld(int x, int y, int z, Camera* camera);
+  void renderWorld(float* mainx, float* mainy, float* mainz);
+  void drawWorld(Camera* camera);
   bool chunkExists(int x, int y, int z);
   BSP* getChunk(int x, int y, int z);
   bool blockExists(int x, int y, int z);
   void delChunk(int x, int y, int z);
+  void delScan(int x, int y, int z);
+  void generateChunk(int chunkx, int chunky, int chunkz);
   void drawShadows();
   std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, BSP>>> BSPmap;
+  std::vector<BSP*> BSPvector;
+
 };
 
 

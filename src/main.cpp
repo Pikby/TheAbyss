@@ -60,9 +60,11 @@ int main()
 
   initWorld();
   std::cout << "staring main\n";
-  pthread_t threads[1];
+  pthread_t threads[3];
 
   pthread_create(&threads[1],NULL,render,NULL);
+  pthread_create(&threads[2],NULL,build,NULL);
+  pthread_create(&threads[3],NULL,del,NULL);
 
   std::cout << "World initalized begin drawing\n";
   draw(NULL);

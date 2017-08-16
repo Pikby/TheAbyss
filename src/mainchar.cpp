@@ -8,6 +8,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 #include <map>
 #include <unordered_map>
 #include <queue>
+#include <mutex>
 // GLEW
 // #define GLEW_STATIC
 #include <GL/glew.h>

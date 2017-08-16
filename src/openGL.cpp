@@ -7,6 +7,7 @@
 #include <map>
 #include <unordered_map>
 #include <queue>
+#include <mutex>
 // GLEW
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -99,16 +100,7 @@ void* draw(void* )
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     text->RenderText(fpsString, 50.0f,1000.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
     mainCharacter->update();
-    //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
-    //Draw and render the world centered around the player
-    while(newWorld->renderQueue.size() != 0)
-    {
-      if(newWorld->renderQueue.front()->isBuilt)
-        newWorld->renderQueue.front()->render();
-      newWorld->renderQueue.pop();
-    }
-
-    newWorld->drawWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16),&(mainCharacter->mainCam));
+    newWorld->drawWorld(&(mainCharacter->mainCam));
     //std::cout << glGetError() << "update loop\n";
     text->RenderText(fpsString, 50.0f,1000.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
     glfwSwapBuffers(window);
@@ -117,13 +109,38 @@ void* draw(void* )
 
 void* render(void* )
 {
+  int renderLoop = 0;
   while(!glfwWindowShouldClose(window))
   {
-    newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
+    renderLoop++;
+    newWorld->renderWorld(&mainCharacter->xpos,&mainCharacter->ypos,&mainCharacter->zpos);
+    //std::cout << "Finished render loop" << renderLoop << "\n";
   }
   std::cout << "exiting render thread \n";
 }
 
+void* del(void* )
+{
+  while(!glfwWindowShouldClose(window))
+  {
+    newWorld->delScan(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->xpos);
+  }
+}
+
+void* build(void* )
+{
+  while(!glfwWindowShouldClose(window))
+  {
+    while(newWorld->buildQueue.size() != 0)
+    {
+      BSP* front = newWorld->buildQueue.front();
+      if(front == NULL || front->toDelete == true) continue;
+
+      front->build(newWorld);
+      newWorld->buildQueue.pop();
+    }
+  }
+}
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {

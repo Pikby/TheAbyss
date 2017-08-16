@@ -8,4 +8,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 void* draw(void* );
 void* render(void *);
+void* del(void *);
+void* build(void *);
 void initWorld();
