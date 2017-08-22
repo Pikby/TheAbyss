@@ -1,157 +1,64 @@
+#include <list>
+#include <memory>
 #include "perlinnoise.h"
-
-#define CHUNKSIZE 32
-class World;
-class Block;
-
+#include "world.h"
 //Class which holds the data for each individual chunk
+class BSPNode;
 class BSP
 {
 private:
-
   Shader* blockShader;
   const char* texture;
-  std::vector<Block>* dictionary;
+  Block** dictionary;
   std::vector<GLfloat> vertices;
   std::vector<GLuint> indices;
-
-
   char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
-
-
   GLuint VBO, EBO, VAO;
   GLuint depthMapFBO;
   GLuint* glTexture;
-
-
   int addVertex(float x, float y, float z,float xn, float yn, float zn, float texX, float texY);
   void addIndices(int index1, int index2, int index3, int index4);
-
 public:
-  BSP* leftChunk;
-  BSP* rightChunk;
-  BSP* frontChunk;
-  BSP* backChunk;
-  BSP* topChunk;
-  BSP* bottomChunk;
-
-  bool toRender;
-  bool isBuilt;
-  bool isDrawing;
-  bool toDelete;
 
   long int xCoord;
-  long int zCoord;
   long int yCoord;
-  BSP(Shader* shader, std::vector<Block> * dict, GLuint* newglTexture, long int x, long int y, long int z,  siv::PerlinNoise* perlin);
+  long int zCoord;
+  BSP(Shader* shader, Block** dict, GLuint* newglTexture, long int x, long int y, long int z,  siv::PerlinNoise* perlin);
   BSP();
   ~BSP();
+  void generateTerrain(  siv::PerlinNoise* perlin);
+  void render();
   void addBlock(int x, int y, int z,int id);
+  void freeGL();
   bool blockExists(int x,int y,int z);
   int getBlock(int x, int y, int z);
   int removeBlock(int x, int y, int z);
-  void build(World* curWorld);
-  void render();
+  void build(World* curWorld,std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
+                       std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
   void draw(Camera* camera,float lightposx,float lightposy,float lightposz);
-  void generateTerrain(  siv::PerlinNoise* perlin);
+
 };
 
-
-//Class which encapsulates all the chunks as well as the shaders and dicionary
-class World
+class BSPNode
 {
-private:
-  std::queue<BSP*> delQueue;
-  unsigned int totalChunks;
-  GLuint glTexture;
-  Shader* blockShader;
-  siv::PerlinNoise* perlin;
-  const char* texture;
-  int horzRenderDistance;
-  int vertRenderDistance;
-  std::vector<Block> dictionary;
-  float lightposx,lightposy,lightposz;
-public:
-  std::queue<BSP*> buildQueue;
-  bool loadDictionary(const char* file);
-  World();
-  void renderWorld(float* mainx, float* mainy, float* mainz);
-  void drawWorld(Camera* camera);
-  bool chunkExists(int x, int y, int z);
-  BSP* getChunk(int x, int y, int z);
+  public:
+  BSP curBSP;
+  BSPNode(Shader* shader, Block** dict, GLuint* newglTexture, long int x, long int y, long int z,  siv::PerlinNoise* perlin);
+  ~BSPNode();
   bool blockExists(int x, int y, int z);
-  void delChunk(int x, int y, int z);
-  void delScan(int x, int y, int z);
-  void generateChunk(int chunkx, int chunky, int chunkz);
-  void drawShadows();
-  std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, BSP>>> BSPmap;
-  std::vector<BSP*> BSPvector;
+  void build(World* curWorld);
+  void draw(Camera* camera,float lightposx,float lightposy,float lightposz);
+  std::shared_ptr<BSPNode>  nextNode;
+  std::shared_ptr<BSPNode>  prevNode;
 
-};
-
-
-
-//The class for each individual block in the dictionary
-class Block
-{
-public:
-  int id;
-  int texArray[12]; //array of coordinates of all sides of the block from the texture array
-  int width;
-  int height;
-  int atlasWidth;
-  int atlasHeight;
-
-  Block(int newId, int* array, int newWidth,
-    int newHeight,int newAtlasWidth, int newAtlasHeight);
-
-  void getTop(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[0]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[1]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[0]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[1]+1);
-  };
-
-  void getBottom(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[2]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[3]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[2]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[3]+1);
-  };
-
-  void getLeft(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[4]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[5]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[4]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[5]+1);
-  };
-
-  void getRight(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[6]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[7]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[6]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[7]+1);
-  };
-
-  void getFront(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[8]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[9]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[8]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[9]+1);
-  };
-
-  void getBack(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[10]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[11]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[10]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[11]+1);
-  };
-
-
+  std::shared_ptr<BSPNode>  leftChunk;
+  std::shared_ptr<BSPNode>  rightChunk;
+  std::shared_ptr<BSPNode>  frontChunk;
+  std::shared_ptr<BSPNode>  backChunk;
+  std::shared_ptr<BSPNode>  topChunk;
+  std::shared_ptr<BSPNode>  bottomChunk;
+  bool inUse;
+  bool toRender;
+  bool toBuild;
+  bool toDelete;
 };

@@ -7,7 +7,7 @@
 #include <map>
 #include <unordered_map>
 #include <queue>
-#include <mutex>
+
 // GLEW
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -62,7 +62,7 @@ void initWorld()
 {
   //glfwMakeContextCurrent(window);
   newWorld = new World;
-  mainCharacter = new MainChar(0,120,0,newWorld);
+  mainCharacter = new MainChar(0,200,0,newWorld);
   text = new CharRenderer;
   //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
 }
@@ -105,6 +105,7 @@ void* draw(void* )
     text->RenderText(fpsString, 50.0f,1000.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
     glfwSwapBuffers(window);
   }
+      std::cout << "exiting draw thread \n";
 }
 
 void* render(void* )
@@ -112,7 +113,7 @@ void* render(void* )
   int renderLoop = 0;
   while(!glfwWindowShouldClose(window))
   {
-    renderLoop++;
+    //std::cout << "finished render loop\n";
     newWorld->renderWorld(&mainCharacter->xpos,&mainCharacter->ypos,&mainCharacter->zpos);
     //std::cout << "Finished render loop" << renderLoop << "\n";
   }
@@ -123,23 +124,20 @@ void* del(void* )
 {
   while(!glfwWindowShouldClose(window))
   {
-    newWorld->delScan(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->xpos);
+    //std::cout << "finished delete scan\n";
+    newWorld->delScan(&mainCharacter->xpos,&mainCharacter->ypos,&mainCharacter->zpos);
   }
+    std::cout << "exiting delete thread \n";
 }
 
 void* build(void* )
 {
   while(!glfwWindowShouldClose(window))
   {
-    while(newWorld->buildQueue.size() != 0)
-    {
-      BSP* front = newWorld->buildQueue.front();
-      if(front == NULL || front->toDelete == true) continue;
 
-      front->build(newWorld);
-      newWorld->buildQueue.pop();
-    }
+    newWorld->buildWorld();
   }
+      std::cout << "exiting build thread \n";
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
