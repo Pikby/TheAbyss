@@ -48,7 +48,6 @@ BSPNode::BSPNode(Shader* shader, Block** dict, GLuint* newglTexture, long int x,
 
 BSPNode::~BSPNode()
 {
-  std::cout << "deleting chunk\n";
   totalChunks--;
 }
 
@@ -58,11 +57,13 @@ void BSPNode::build(World* curWorld)
   std::cout << totalChunks << "\n";
   while(inUse)
   {
+    std::cout << "build waiting\n";
     if(toDelete == true) return;
   }
   inUse = true;
   curBSP.build(curWorld,rightChunk,leftChunk,topChunk,bottomChunk,frontChunk,backChunk);
   toRender = true;
+  toBuild = false;
   inUse = false;
 }
 
@@ -98,8 +99,6 @@ BSP::BSP(Shader* shader, Block** dict, GLuint* newglTexture, long int x, long in
     dictionary = dict;
     glTexture = newglTexture;
     for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
-
-
 }
 
 BSP::~BSP()
@@ -108,9 +107,12 @@ BSP::~BSP()
 }
 void BSP::freeGL()
 {
-    glDeleteBuffers(1,&VBO);
-    glDeleteBuffers(1,&EBO);
-    glDeleteVertexArrays(1,&VAO);
+  //Frees all the used opengl resourses
+  //MUST BE DONE IN THE MAIN THHREAD
+  //Since that is the only thread with opengl context
+  glDeleteBuffers(1,&VBO);
+  glDeleteBuffers(1,&EBO);
+  glDeleteVertexArrays(1,&VAO);
 }
 
 BSP::BSP(){}
@@ -145,16 +147,20 @@ int BSP::addVertex(float x, float y, float z, float xn, float yn, float zn, floa
 {
   int numbVert = vertices.size()/8;
 
+  //Adds position vector
   vertices.push_back(x);
   vertices.push_back(y);
   vertices.push_back(z);
 
+  //Adds normal vector
   vertices.push_back(xn);
   vertices.push_back(yn);
   vertices.push_back(zn);
 
+  //Adds the textureCoordinate
   vertices.push_back(texX);
   vertices.push_back(texY);
+  //Returns the location of the vertice
   return numbVert;
 }
 

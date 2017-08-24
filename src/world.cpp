@@ -24,13 +24,15 @@
 //Add the shader configs
 #include "headers/shaders.h"
 #include "headers/camera.h"
-
 #include "headers/bsp.h"
 
 
 
-World::World()
+World::World(int numbBuildThreads)
 {
+  typedef std::queue<std::shared_ptr<BSPNode>> buildType;
+  buildQueue = new buildType[numbBuildThreads];
+  numbOfThreads = numbBuildThreads;
 
   int seed = 1737;
 
@@ -77,6 +79,15 @@ World::~World()
 
 }
 
+void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
+{
+  static int currentThread = 0;
+  buildQueue[currentThread].push(curNode);
+  curNode->toBuild = true;
+
+  currentThread++;
+  if(currentThread >= numbOfThreads) currentThread = 0;
+}
 
 void World::generateChunk(int chunkx, int chunky, int chunkz)
 {
@@ -95,14 +106,20 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
     frontNode->prevNode = tempChunk;
     frontNode = tempChunk;
   }
-
+  /*
+    At this point the chunk is in both the linked list as well as the unorderedmap
+    now it will attempt to find any nearby chunks and store a refrence to it
+  */
 
   std::shared_ptr<BSPNode>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
   if(otherChunk  != NULL )
   {
     tempChunk->frontChunk = otherChunk;
     otherChunk->backChunk = tempChunk;
-    otherChunk->toBuild = true;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
   }
 
   otherChunk = getChunk(chunkx,chunky,chunkz+1);
@@ -110,7 +127,10 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   {
     tempChunk->backChunk = otherChunk;
     otherChunk->frontChunk = tempChunk;
-    otherChunk->toBuild = true;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
   }
 
   otherChunk = getChunk(chunkx,chunky-1,chunkz);
@@ -118,7 +138,10 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   {
     tempChunk->bottomChunk = otherChunk;
     otherChunk->topChunk = tempChunk;
-    otherChunk->toBuild = true;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
   }
 
   otherChunk = getChunk(chunkx,chunky+1,chunkz);
@@ -126,7 +149,10 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   {
     tempChunk->topChunk = otherChunk;
     otherChunk->bottomChunk = tempChunk;
-    otherChunk->toBuild = true;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
   }
 
   otherChunk = getChunk(chunkx-1,chunky,chunkz);
@@ -134,7 +160,10 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   {
     tempChunk->leftChunk = otherChunk;
     otherChunk->rightChunk = tempChunk;
-    otherChunk->toBuild = true;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
   }
 
   otherChunk = getChunk(chunkx+1,chunky,chunkz);
@@ -142,16 +171,22 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   {
     tempChunk->rightChunk = otherChunk;
     otherChunk->leftChunk = tempChunk;
-    otherChunk->toBuild = true;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);;
+    }
   }
-  tempChunk->toBuild = true;
+  //Adds the chunk to the current mainBuildQueue if it is not already;
+  if(!tempChunk->toBuild)
+  {
+      addToBuildQueue(tempChunk);
+  }
 }
 
 void World::renderWorld(float* mainx, float* mainy, float* mainz)
 {
-
-
-
+  //Dynamically renders world around the player prioritizing y
+  //Does so in a ring like manner
   for(int curDis = 0; curDis < horzRenderDistance; curDis++)
   {
     for(int height = 0; height < vertRenderDistance*2; height++)
@@ -201,19 +236,15 @@ void World::renderWorld(float* mainx, float* mainy, float* mainz)
   }
 }
 
-void World::buildWorld()
+void World::buildWorld(int threadNumb)
 {
-  std::shared_ptr<BSPNode>  curNode = frontNode;
-  while(curNode != NULL)
+  //Empties the build queue
+  //TODO Break up queue into smaller pieces and use seperate threads to build them
+  while(!buildQueue[threadNumb].empty())
   {
-    if(curNode->toBuild == true)
-    {
-      curNode->build(this);
-      curNode->toBuild = false;
-    }
-    curNode = curNode->nextNode;
+    buildQueue[threadNumb].front()->build(this);
+    buildQueue[threadNumb].pop();
   }
-
 }
 
 
@@ -232,52 +263,15 @@ std::shared_ptr<BSPNode>  World::getChunk(int x, int y, int z)
   return NULL;
 }
 
-void World::delChunk(int x, int y, int z)
-{
-  std::shared_ptr<BSPNode>  tempChunk = getChunk(x,y,z);
-  if(tempChunk != NULL)
-  {
-    BSPmap[x][y].erase(z);
-    if(BSPmap[x][y].empty())
-    {
-      BSPmap[x].erase(y);
-      if(BSPmap[x].empty())
-      {
-        BSPmap.erase(x);
-      }
-    }
-
-    /*
-    tempChunk->toDelete = true;
-    if(tempChunk->nextNode != NULL) tempChunk->nextNode->prevNode = tempChunk->prevNode;
-    if(tempChunk->prevNode != NULL) tempChunk->prevNode->nextNode = tempChunk->nextNode;
-    else frontNode = tempChunk->nextNode;
-    */
-    tempChunk->toDelete = true;
-    if(tempChunk->leftChunk != NULL) tempChunk->leftChunk->rightChunk = NULL;
-    if(tempChunk->rightChunk != NULL) tempChunk->rightChunk->leftChunk = NULL;
-    if(tempChunk->frontChunk != NULL) tempChunk->frontChunk->backChunk = NULL;
-    if(tempChunk->backChunk != NULL) tempChunk->backChunk->frontChunk = NULL;
-    if(tempChunk->topChunk != NULL) tempChunk->topChunk->bottomChunk = NULL;
-    if(tempChunk->bottomChunk != NULL) tempChunk->bottomChunk->topChunk = NULL;
-
-    /*
-    if(frontDelNode == NULL)
-    {
-      frontDelNode = tempChunk;
-    }
-    else
-    {
-      tempChunk->nextNode = frontNode;
-      frontDelNode->prevNode = tempChunk;
-      frontDelNode = tempChunk;
-    }
-    */
-  }
-}
 
 void World::drawWorld(Camera* camera)
 {
+  /*
+  Iterates through all the chunks and draws them unless they're marked for destruciton
+  then it calls freeGl which will free up all opengl resourses on the chunk and then
+  removes all refrences to it
+  At that point the chunk should be deleted by the smart pointers;
+  */
   std::shared_ptr<BSPNode>  curNode = frontNode;
   std::shared_ptr<BSPNode>  nextNode;
   while(curNode != NULL)
@@ -302,8 +296,46 @@ void World::drawWorld(Camera* camera)
   }
 }
 
+void World::delChunk(int x, int y, int z)
+{
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(x,y,z);
+  if(tempChunk != NULL)
+  {
+    BSPmap[x][y].erase(z);
+    if(BSPmap[x][y].empty())
+    {
+      BSPmap[x].erase(y);
+      if(BSPmap[x].empty())
+      {
+        BSPmap.erase(x);
+      }
+    }
+
+    /*
+    Essentially marks the chunk for death
+    Removes all connected pointers besides the linked list
+    The Node however must be destroyed in the draw string
+    since that is the sole string using opengl functions;
+    othereise the vao wont get freed causing a memory leak
+    */
+    tempChunk->toDelete = true;
+    if(tempChunk->leftChunk != NULL) tempChunk->leftChunk->rightChunk = NULL;
+    if(tempChunk->rightChunk != NULL) tempChunk->rightChunk->leftChunk = NULL;
+    if(tempChunk->frontChunk != NULL) tempChunk->frontChunk->backChunk = NULL;
+    if(tempChunk->backChunk != NULL) tempChunk->backChunk->frontChunk = NULL;
+    if(tempChunk->topChunk != NULL) tempChunk->topChunk->bottomChunk = NULL;
+    if(tempChunk->bottomChunk != NULL) tempChunk->bottomChunk->topChunk = NULL;
+
+  }
+}
+
 void World::delScan(float* mainx, float* mainy, float* mainz)
 {
+  /*
+    Scans through the same list as the draw function
+    however this time referencing the current position of the player
+    and raises the destroy flag if its out of a certain range
+  */
   std::shared_ptr<BSPNode>  curNode = frontNode;
   while(curNode != NULL)
   {
@@ -320,7 +352,9 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
     int chunkz = curNode->curBSP.zCoord;
 
     curNode = curNode->nextNode;
-    if(sqrt(pow(chunkx-x,2)+pow(chunky-y,2)+pow(chunkz-z,2)) > horzRenderDistance*2 + 2)
+    if(abs(chunkx-x) > horzRenderDistance + 1
+    || abs(chunky-y) > horzRenderDistance + 1
+    || abs(chunkz-z) > horzRenderDistance + 1)
     {
       delChunk(chunkx,chunky,chunkz);
     }
@@ -344,6 +378,10 @@ bool World::chunkExists(int x ,int y, int z)
 
 bool World::blockExists(int x, int y, int z)
 {
+  /*
+  Finds which ever chunk holds the block and then calls the blockExists
+  function on that chunk with the localized coordinates
+  */
   int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
   int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
   int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
@@ -383,6 +421,12 @@ Block::Block(int newId, int* array, int newWidth,int newHeight,int newAtlasWidth
 
 bool World::loadDictionary(const char* file)
 {
+  /*
+  Loads the dictionary in such a format
+  TODO: work on improving and discribing that format
+
+
+  */
   dictionary = new Block*[5];
   int id = 0;
   using namespace std;

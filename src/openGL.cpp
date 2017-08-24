@@ -58,10 +58,10 @@ GLFWwindow* createWindow(int width, int height)
   return window;
 }
 
-void initWorld()
+void initWorld(int numbBuildThreads)
 {
   //glfwMakeContextCurrent(window);
-  newWorld = new World;
+  newWorld = new World(numbBuildThreads);
   mainCharacter = new MainChar(0,200,0,newWorld);
   text = new CharRenderer;
   //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
@@ -130,12 +130,13 @@ void* del(void* )
     std::cout << "exiting delete thread \n";
 }
 
-void* build(void* )
+void* build(void*i)
 {
+  int threadNumb = *(int*) i;
+  delete (int*)i;
   while(!glfwWindowShouldClose(window))
   {
-
-    newWorld->buildWorld();
+    newWorld->buildWorld(threadNumb);
   }
       std::cout << "exiting build thread \n";
 }

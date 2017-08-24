@@ -24,13 +24,12 @@ enum Type {STATIC,DYNAMIC,STREAM};
 
 #include "headers/openGL.h"
 
-
-
-
 int main()
 {
-  std::cout << -16 % 16 << "\n";
   glfwInit();
+
+  int numbBuildThreads = 4;
+
 
   int winWidth = 1920;
   int winHeight = 1080;
@@ -58,13 +57,21 @@ int main()
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  initWorld();
+  initWorld(numbBuildThreads);
   std::cout << "staring main\n";
-  pthread_t threads[3];
 
-  pthread_create(&threads[1],NULL,render,NULL);
-  pthread_create(&threads[2],NULL,build,NULL);
-  pthread_create(&threads[3],NULL,del,NULL);
+  pthread_t renderThreads[2];
+  pthread_create(&renderThreads[1],NULL,render,NULL);
+  pthread_create(&renderThreads[2],NULL,del,NULL);
+  std::cout << "Render threads created \n";
+
+  pthread_t buildThreads[numbBuildThreads];
+  for(int i = 0;i<numbBuildThreads;i++)
+  {
+    int *x = new int;
+    *x = i;
+    pthread_create(&buildThreads[i],NULL,build,(void*)x );
+  }
 
   std::cout << "World initalized begin drawing\n";
   draw(NULL);

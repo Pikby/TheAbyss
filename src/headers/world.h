@@ -1,4 +1,4 @@
-#define CHUNKSIZE 32
+ #define CHUNKSIZE 32
 //Class which encapsulates all the chunks as well as the shaders and dicionary
 class BSPNode;
 class BSP;
@@ -16,15 +16,17 @@ private:
   Block** dictionary;
   float lightposx,lightposy,lightposz;
   GLuint VAO;
+  void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
 public:
+  int numbOfThreads;
   std::shared_ptr<BSPNode> frontNode;
   std::shared_ptr<BSPNode> frontDelNode;
   bool loadDictionary(const char* file);
-  World();
+  World(int numbBuildThreads);
   ~World();
   void renderWorld(float* mainx, float* mainy, float* mainz);
   void drawWorld(Camera* camera);
-  void buildWorld();
+  void buildWorld(int threadNumb);
   bool chunkExists(int x, int y, int z);
   std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
   bool blockExists(int x, int y, int z);
@@ -33,6 +35,7 @@ public:
   void generateChunk(int chunkx, int chunky, int chunkz);
   void drawShadows();
   std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> BSPmap;
+  std::queue<std::shared_ptr<BSPNode>>* buildQueue;
 
 };
 
