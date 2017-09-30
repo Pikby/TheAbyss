@@ -3,55 +3,66 @@
 class BSPNode;
 class BSP;
 class Block;
-class World
+class WorldWrap
 {
-private:
-  unsigned int totalChunks;
-  GLuint glTexture;
-  Shader* blockShader;
-  siv::PerlinNoise* perlin;
-  const char* texture;
-  int horzRenderDistance;
-  int vertRenderDistance;
-  Block** dictionary;
-  float lightposx,lightposy,lightposz;
-  GLuint VAO;
-  void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
-public:
-  int numbOfThreads;
-  std::shared_ptr<BSPNode> frontNode;
-  std::shared_ptr<BSPNode> frontDelNode;
-  bool loadDictionary(const char* file);
-  World(int numbBuildThreads);
-  ~World();
-  void renderWorld(float* mainx, float* mainy, float* mainz);
-  void drawWorld(Camera* camera);
-  void buildWorld(int threadNumb);
-  bool chunkExists(int x, int y, int z);
-  std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
-  bool blockExists(int x, int y, int z);
-  void delChunk(int x, int y, int z);
-  void delScan(float* mainx, float* mainy, float* mainz);
-  void generateChunk(int chunkx, int chunky, int chunkz);
-  void drawShadows();
-  std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> BSPmap;
-  std::queue<std::shared_ptr<BSPNode>>* buildQueue;
-
+protected:
+  static GLuint SHADOW_WIDTH, SHADOW_HEIGHT, VIEW_WIDTH, VIEW_HEIGHT;
+  static unsigned int totalChunks;
+  static GLuint glTexture;
+  static Shader* blockShader;
+  static Shader* depthShader;
+  static Shader* testShader;
+  static const char* texture;
+  static int horzRenderDistance;
+  static int vertRenderDistance;
+  static glm::vec3 lightPos;
+  static int seed;
+  static Block** dictionary;
+  static siv::PerlinNoise* perlin;
+  static int numbOfThreads;
 };
 
+class World : public WorldWrap
+{
+  private:
+
+  public:
+     unsigned int depthMapFBO,depthMap;
+     void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
+     std::shared_ptr<BSPNode> frontNode;
+     std::shared_ptr<BSPNode> frontDelNode;
+     bool loadDictionary(const char* file);
+     void initWorld(int numbBuildThreads);
+     void destroyWorld();
+     void renderWorld(float* mainx, float* mainy, float* mainz);
+     void drawWorld(Camera* camera);
+     void buildWorld(int threadNumb);
+     bool chunkExists(int x, int y, int z);
+     std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
+     bool blockExists(int x, int y, int z);
+     void delChunk(int x, int y, int z);
+     void delScan(float* mainx, float* mainy, float* mainz);
+     void generateChunk(int chunkx, int chunky, int chunkz);
+     void drawTranslucent(Camera* camera);
+     void drawOpaque(Camera* camera);
+     std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> BSPmap;
+     std::queue<std::shared_ptr<BSPNode>>* buildQueue;
+};
 
 //The class for each individual block in the dictionary
 class Block
 {
 public:
+  std::string name;
   int id;
   int texArray[12]; //array of coordinates of all sides of the block from the texture array
   int width;
   int height;
   int atlasWidth;
   int atlasHeight;
+  int visibleType;
 
-  Block(int newId, int* array, int newWidth,
+  Block(std::string name, int newId, int* array,int newVisibleType, int newWidth,
     int newHeight,int newAtlasWidth, int newAtlasHeight);
 
   Block();

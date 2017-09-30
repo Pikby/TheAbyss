@@ -43,12 +43,12 @@ MainChar::MainChar(float x, float y, float z, World* world )
   moveSpeed = 5.0f;
   curWorld = world;
 
-  mainCam = Camera(glm::vec3(xpos/10,ypos/10,zpos/10));
+  mainCam = Camera(glm::vec3(xpos,ypos,zpos));
 }
 
 void MainChar::update()
 {
-  //std::cout << xpos<<":"<<ypos<<":"<<zpos<<"\n";
+  //std::cout << xpos /10.0f<<":"<<ypos/10.0f<<":"<<zpos/10.0f<<"\n";
   deltay -= 0.1;
 
   if(!curWorld->blockExists(floor(xpos+deltax),floor(ypos),floor(zpos)))
@@ -77,7 +77,7 @@ void MainChar::update()
     deltaz /= 5;
 
 
-  mainCam.setPosition(xpos/10,ypos/10+0.1,zpos/10);
+  mainCam.setPosition(xpos,ypos+0.1,zpos);
 }
 
 void MainChar::moveRight()

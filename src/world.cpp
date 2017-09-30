@@ -1,44 +1,36 @@
-#include <string>
-#include "headers/SOIL.h"
-#include <iostream>
-#include <math.h>
-#include <vector>
-#include <map>
-#include <unordered_map>
-#include <fstream>
-#include <sstream>
-#include <thread>
-#include <queue>
-// GLEW
-// #define GLEW_STATIC
-#include <GL/glew.h>
 
-// GLFW
-#include <GLFW/glfw3.h>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/ext.hpp>
-
-//Add the shader configs
-#include "headers/shaders.h"
-#include "headers/camera.h"
-#include "headers/bsp.h"
+#include "headers/all.h"
 
 
+int WorldWrap::numbOfThreads;
+int WorldWrap::seed;
+Shader* WorldWrap::blockShader;
+Shader* WorldWrap::depthShader;
+Shader* WorldWrap::testShader;
+int WorldWrap::horzRenderDistance;
+int WorldWrap::vertRenderDistance;
+GLuint WorldWrap::SHADOW_WIDTH;
+GLuint WorldWrap::SHADOW_HEIGHT;
+GLuint WorldWrap::VIEW_WIDTH;
+GLuint WorldWrap::VIEW_HEIGHT;
+unsigned int WorldWrap::totalChunks;
+glm::vec3 WorldWrap::lightPos;
+Block** WorldWrap::dictionary;
+siv::PerlinNoise* WorldWrap::perlin;
+GLuint WorldWrap::glTexture;
 
-World::World(int numbBuildThreads)
+void World::initWorld(int numbBuildThreads)
 {
   typedef std::queue<std::shared_ptr<BSPNode>> buildType;
   buildQueue = new buildType[numbBuildThreads];
   numbOfThreads = numbBuildThreads;
 
-  int seed = 1737;
+  seed = 1737;
 
   perlin = new siv::PerlinNoise(seed);
 
   blockShader = new Shader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
+  depthShader = new Shader("../src/shaders/depthShader.vs","../src/shaders/depthShader.fs");
   const char* texture = "../assets/textures/atlas.png";
   loadDictionary("../assets/dictionary.dat");
 
@@ -46,33 +38,54 @@ World::World(int numbBuildThreads)
   horzRenderDistance = 7;
   vertRenderDistance = 7;
   totalChunks = 0;
-  lightposx = -10.0f;
-  lightposy = 10.0f;
-  lightposz = 0.0f;
-
   glGenTextures(1, &glTexture);
   glBindTexture(GL_TEXTURE_2D, glTexture);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-
   //Load and bind the texture from the class
   int texWidth, texHeight;
-  unsigned char* image = SOIL_load_image(texture, &texWidth, &texHeight, 0 , SOIL_LOAD_RGB);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight,0,GL_RGB, GL_UNSIGNED_BYTE, image);
+  unsigned char* image = SOIL_load_image(texture, &texWidth, &texHeight, 0 , SOIL_LOAD_RGBA);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight,0,GL_RGBA, GL_UNSIGNED_BYTE, image);
   glGenerateMipmap(GL_TEXTURE_2D);
 
   SOIL_free_image_data(image);
   glBindTexture(GL_TEXTURE_2D, 0);
 
+  glGenFramebuffers(1, &depthMapFBO);
 
+  int shadowSize = 1024*4;
+  SHADOW_WIDTH = shadowSize;
+  SHADOW_HEIGHT = shadowSize;
+  VIEW_WIDTH = 1920;
+  VIEW_HEIGHT = 1080;
+
+  //lightPos = glm::vec3(100.0f,200.0f,100.0f);
+
+  glGenTextures(1, &depthMap);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+               SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  depthShader->use();
+  depthShader->setInt("textureInfo", 0);
+  depthShader->setInt("shadowMap", 1);
 }
 
-World::~World()
+void World::destroyWorld()
 {
   delete blockShader;
   delete perlin;
@@ -93,7 +106,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
 {
   if(chunkExists(chunkx,chunky,chunkz)) return;
 
-  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(blockShader,dictionary, &glTexture,chunkx,chunky,chunkz,perlin));
+  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz));
   BSPmap[chunkx][chunky][chunkz] = tempChunk;
 
   if(frontNode == NULL)
@@ -110,7 +123,6 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
     At this point the chunk is in both the linked list as well as the unorderedmap
     now it will attempt to find any nearby chunks and store a refrence to it
   */
-
   std::shared_ptr<BSPNode>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
   if(otherChunk  != NULL )
   {
@@ -185,55 +197,53 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
 
 void World::renderWorld(float* mainx, float* mainy, float* mainz)
 {
-  //Dynamically renders world around the player prioritizing y
-  //Does so in a ring like manner
   for(int curDis = 0; curDis < horzRenderDistance; curDis++)
-  {
-    for(int height = 0; height < vertRenderDistance*2; height++)
-    {
-      int x = round(*mainx);
-      int y = round(*mainy);
-      int z = round(*mainz);
-      x/= CHUNKSIZE;
-      y/= CHUNKSIZE;
-      z/= CHUNKSIZE;
-      y--;
+   {
+     for(int height = 0; height < vertRenderDistance*2; height++)
+     {
+       int x = round(*mainx);
+       int y = round(*mainy);
+       int z = round(*mainz);
+       x/= CHUNKSIZE;
+       y/= CHUNKSIZE;
+       z/= CHUNKSIZE;
+       y--;
 
-      int ychunk;
-      if(height % 2 == 1) ychunk = y -(height/2);
-      else ychunk = y + (height/2);
+       int ychunk;
+       if(height % 2 == 1) ychunk = y -(height/2);
+       else ychunk = y + (height/2);
 
-      int xchunk = x;
-      int zchunk = z;
+       int xchunk = x;
+       int zchunk = z;
 
 
-      zchunk = z+curDis;
-      xchunk = x;
-      for(int i = -curDis+1;i<curDis;i++)
-      {
-        generateChunk(xchunk+i,ychunk,zchunk);
-      }
+       zchunk = z+curDis;
+       xchunk = x;
+       for(int i = -curDis+1;i<curDis;i++)
+       {
+         generateChunk(xchunk+i,ychunk,zchunk);
+       }
 
-      zchunk = z-curDis;
-      xchunk = x;
-      for(int i = -curDis+1;i<curDis;i++)
-      {
-        generateChunk(xchunk+i,ychunk,zchunk);
-      }
-      zchunk = z;
-      xchunk = x+curDis;
-      for(int i = -curDis;i<=curDis;i++)
-      {
-        generateChunk(xchunk,ychunk,zchunk+i);
-      }
-      zchunk = z;
-      xchunk = x-curDis;
-      for(int i = -curDis;i<=curDis;i++)
-      {
-        generateChunk(xchunk,ychunk,zchunk+i);
-      }
-    }
-  }
+       zchunk = z-curDis;
+       xchunk = x;
+       for(int i = -curDis+1;i<curDis;i++)
+       {
+         generateChunk(xchunk+i,ychunk,zchunk);
+       }
+       zchunk = z;
+       xchunk = x+curDis;
+       for(int i = -curDis;i<=curDis;i++)
+       {
+         generateChunk(xchunk,ychunk,zchunk+i);
+       }
+       zchunk = z;
+       xchunk = x-curDis;
+       for(int i = -curDis;i<=curDis;i++)
+       {
+         generateChunk(xchunk,ychunk,zchunk+i);
+       }
+     }
+   }
 }
 
 void World::buildWorld(int threadNumb)
@@ -242,7 +252,7 @@ void World::buildWorld(int threadNumb)
   //TODO Break up queue into smaller pieces and use seperate threads to build them
   while(!buildQueue[threadNumb].empty())
   {
-    buildQueue[threadNumb].front()->build(this);
+    buildQueue[threadNumb].front()->build();
     buildQueue[threadNumb].pop();
   }
 }
@@ -272,6 +282,59 @@ void World::drawWorld(Camera* camera)
   removes all refrences to it
   At that point the chunk should be deleted by the smart pointers;
   */
+
+  lightPos = glm::vec3(0.0f,5.0f,0.0f);
+  //std::cout << lightPos.x << ":" << lightPos.y<< ":" << lightPos.z << "\n";
+  glm::mat4 model = glm::mat4();
+  /*
+  glm::mat4 lightProjection,lightView,lightSpaceMatrix;
+  float orthoSize = 128;
+  lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,1.0f, 128.0f);
+  lightView  = glm::lookAt(lightPos,
+                                    glm::vec3(8.0f,0.0f,8.0f),
+                                    glm::vec3( 0.0f,1.0f,0.0f));
+
+
+  lightSpaceMatrix = lightProjection * lightView;
+  depthShader->use();
+  depthShader->setMat4("lightSpaceMatrix",lightSpaceMatrix);
+  glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+
+      glClear(GL_DEPTH_BUFFER_BIT);
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, glTexture);
+      depthShader->setMat4("model",model);
+      drawOpaque(camera);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  glViewport(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+*/
+
+  blockShader->use();
+
+  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1920/ (float)1080, 0.1f, (float)horzRenderDistance*CHUNKSIZE*4);
+  blockShader->setMat4("projection", projection);
+
+  glm::mat4 view = camera->getViewMatrix();
+  blockShader->setMat4("view", view);
+
+  blockShader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+  blockShader->setVec3("lightColor",  0.5f, 0.5f, 0.5f);
+  blockShader->setVec3("lightPos",  lightPos);
+  blockShader->setVec3("viewPos", camera->position);
+  //blockShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+  blockShader->setMat4("model",model);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, glTexture);
+  drawOpaque(camera);
+  drawTranslucent(camera);
+}
+
+void World::drawOpaque(Camera* camera)
+{
   std::shared_ptr<BSPNode>  curNode = frontNode;
   std::shared_ptr<BSPNode>  nextNode;
   while(curNode != NULL)
@@ -286,15 +349,34 @@ void World::drawWorld(Camera* camera)
       curNode->nextNode = NULL;
       curNode->prevNode = NULL;
       curNode->curBSP.freeGL();
-
-      std::cout << curNode.use_count() << "\n";
-
     }
-    else curNode->draw(camera,lightposx,lightposy,lightposz);
-
+    else curNode->drawOpaque(camera);
     curNode = nextNode;
   }
 }
+
+void World::drawTranslucent(Camera* camera)
+{
+  std::shared_ptr<BSPNode> curNode = frontNode;
+  std::shared_ptr<BSPNode> nextNode;
+  while(curNode != NULL)
+  {
+    nextNode = curNode->nextNode;
+    if(curNode->toDelete == true)
+    {
+      if(curNode->nextNode != NULL) curNode->nextNode->prevNode = curNode->prevNode;
+      if(curNode->prevNode != NULL) curNode->prevNode->nextNode = curNode->nextNode;
+      else frontNode = curNode->nextNode;
+
+      curNode->nextNode = NULL;
+      curNode->prevNode = NULL;
+      curNode->curBSP.freeGL();
+    }
+    else curNode->drawTranslucent(camera);
+    curNode = nextNode;
+  }
+}
+
 
 void World::delChunk(int x, int y, int z)
 {
@@ -406,8 +488,10 @@ bool World::blockExists(int x, int y, int z)
   return false;
 }
 
-Block::Block(int newId, int* array, int newWidth,int newHeight,int newAtlasWidth, int newAtlasHeight)
+Block::Block(std::string newName,int newId, int* array, int newVisibleType, int newWidth,int newHeight,int newAtlasWidth, int newAtlasHeight)
 {
+  visibleType = newVisibleType;
+  name = newName;
   id = newId;
   for(int x=0;x<12;x++)
   {
@@ -442,6 +526,8 @@ bool World::loadDictionary(const char* file)
     int curBlock=0;
     while(getline(dictionaryf,line))
     {
+      string name = line;
+      getline(dictionaryf,line);
 
       int texNumb;
       int texArray[12];
@@ -454,10 +540,12 @@ bool World::loadDictionary(const char* file)
         if(ss.peek() == ',') ss.ignore();
       }
       getline(dictionaryf,line);
+      int visibleType = stoi(line);
+      getline(dictionaryf,line);
       int width = stoi(line);
       getline(dictionaryf,line);
       int height = stoi(line);
-      dictionary[curBlock] = new Block(id++,texArray,width,height,atlasWidth,atlasHeight);
+      dictionary[curBlock] = new Block(name,id++,texArray,visibleType,width,height,atlasWidth,atlasHeight);
       curBlock++;
     }
   }

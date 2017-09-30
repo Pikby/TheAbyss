@@ -1,28 +1,4 @@
-enum Type {STATIC,DYNAMIC,STREAM};
-
-#include "headers/SOIL.h"
-#include <iostream>
-#include <math.h>
-#include <vector>
-#include <map>
-#include <string>
-#include <pthread.h>
-
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
-// GLEW
-// #define GLEW_STATIC
-#include <GL/glew.h>
-
-// GLFW
-#include <GLFW/glfw3.h>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include "headers/openGL.h"
+#include "headers/all.h"
 
 int main()
 {
@@ -38,6 +14,7 @@ int main()
   glfwSetKeyCallback(newWindow, key_callback);
   glfwSetCursorPosCallback(newWindow, mouse_callback);
   glfwSetScrollCallback(newWindow, scroll_callback);
+  glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSwapInterval(0);//FPS Capping
   //Intialize glew and all related settings
 
@@ -48,14 +25,14 @@ int main()
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   //Cull face unrenders the back side of polygons
+
   glEnable(GL_CULL_FACE);
   glCullFace(GL_FRONT);
-  glFrontFace(GL_CCW);
+  glFrontFace(GL_CW);
 
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
   initWorld(numbBuildThreads);
   std::cout << "staring main\n";

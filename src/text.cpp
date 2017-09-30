@@ -24,7 +24,7 @@ CharRenderer::CharRenderer()
 {
   textShader = new Shader("../src/shaders/shaderText.vs","../src/shaders/shaderText.fs");
   glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 0.0f, 1080.0f);
-  textShader->Use();
+  textShader->use();
   textShader->setMat4("projection",projection);
 
   FT_Library ft;
@@ -96,10 +96,11 @@ CharRenderer::CharRenderer()
 
 void CharRenderer::RenderText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color)
 {
-  textShader->Use();
+  textShader->use();
   glUniform3f(glGetUniformLocation(textShader->Program, "textColor"), color.x, color.y, color.z);
   glActiveTexture(GL_TEXTURE0);
   glBindVertexArray(VAOText);
+
 
 
   // Iterate through all characters

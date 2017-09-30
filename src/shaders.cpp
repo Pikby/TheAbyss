@@ -66,8 +66,8 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
   glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
   if(!success)
   {
-    glGetShaderInfoLog(vertex, 512, NULL, infoLog);
-    std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+    glGetShaderInfoLog(fragment, 512, NULL, infoLog);
+    std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
   }
 
   //Create the shader program
@@ -80,7 +80,7 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
   glDeleteShader(fragment);
 }
 
-void Shader::Use()
+void Shader::use()
 {
   glUseProgram(this->Program);
 }
@@ -98,4 +98,8 @@ void Shader::setVec3(const char* name, glm::vec3 value)
 void Shader::setVec3(const char* name, float x, float y, float z)
 {
   glUniform3f(glGetUniformLocation(this->Program, name),x,y,z);
+}
+void Shader::setInt(const char* name, int x)
+{
+  glUniform1i(glGetUniformLocation(this->Program, name),x);
 }

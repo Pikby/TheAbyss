@@ -1,31 +1,4 @@
-#include <string>
-#include "headers/SOIL.h"
-#include <iostream>
-#include <fstream>
-#include <math.h>
-#include <vector>
-#include <map>
-#include <unordered_map>
-#include <queue>
-
-// GLEW
-#define GLEW_STATIC
-#include <GL/glew.h>
-
-// GLFW
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include "headers/shaders.h"
-#include "headers/camera.h"
-#include "headers/bsp.h"
-
-#include "headers/openGL.h"
-#include "headers/mainchar.h"
-#include "headers/text.h"
-#include <assert.h>
+#include "headers/all.h"
 
 //Global maincharacter reference which encapsulates the camera
 
@@ -61,8 +34,9 @@ GLFWwindow* createWindow(int width, int height)
 void initWorld(int numbBuildThreads)
 {
   //glfwMakeContextCurrent(window);
-  newWorld = new World(numbBuildThreads);
-  mainCharacter = new MainChar(0,200,0,newWorld);
+  newWorld = new World;
+  newWorld->initWorld(numbBuildThreads);
+  mainCharacter = new MainChar(0, 204, 0,newWorld);
   text = new CharRenderer;
   //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
 }
@@ -98,7 +72,6 @@ void* draw(void* )
     glfwPollEvents();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    text->RenderText(fpsString, 50.0f,1000.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
     mainCharacter->update();
     newWorld->drawWorld(&(mainCharacter->mainCam));
     //std::cout << glGetError() << "update loop\n";
