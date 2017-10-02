@@ -18,21 +18,21 @@ protected:
   static glm::vec3 lightPos;
   static int seed;
   static Block** dictionary;
-  static siv::PerlinNoise* perlin;
+  static FastNoise perlin;
   static int numbOfThreads;
+  static std::string worldName;
 };
 
 class World : public WorldWrap
 {
   private:
-
+    std::shared_ptr<BSPNode> frontNode;
+    std::shared_ptr<BSPNode> frontDelNode;
   public:
      unsigned int depthMapFBO,depthMap;
      void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
-     std::shared_ptr<BSPNode> frontNode;
-     std::shared_ptr<BSPNode> frontDelNode;
      bool loadDictionary(const char* file);
-     void initWorld(int numbBuildThreads);
+     World(int numbBuildThreads);
      void destroyWorld();
      void renderWorld(float* mainx, float* mainy, float* mainz);
      void drawWorld(Camera* camera);

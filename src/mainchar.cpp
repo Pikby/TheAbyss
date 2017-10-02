@@ -1,33 +1,6 @@
 enum Type {STATIC,DYNAMIC,STREAM};
 
-#include <string>
-#include "headers/SOIL.h"
-#include <iostream>
-#include <math.h>
-#include <vector>
-#include <map>
-#include <unordered_map>
-#include <queue>
-#include <mutex>
-// GLEW
-// #define GLEW_STATIC
-#include <GL/glew.h>
-
-// GLFW
-#include <GLFW/glfw3.h>
-
-
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-
-//Add the shader configs
-#include "headers/camera.h"
-#include "headers/shaders.h"
-#include "headers/bsp.h"
-#include "headers/mainchar.h"
+#include "headers/all.h"
 
 #define PI 3.14159265
 
@@ -49,8 +22,6 @@ MainChar::MainChar(float x, float y, float z, World* world )
 void MainChar::update()
 {
   //std::cout << xpos /10.0f<<":"<<ypos/10.0f<<":"<<zpos/10.0f<<"\n";
-  deltay -= 0.1;
-
   if(!curWorld->blockExists(floor(xpos+deltax),floor(ypos),floor(zpos)))
   {
     xpos += deltax;
@@ -63,14 +34,10 @@ void MainChar::update()
 
   if(!curWorld->blockExists(floor(xpos),floor(ypos+deltay),floor(zpos)))
   {
-    //ypos += deltay;
+    ypos += deltay;
     grounded = false;
   }
-  else
-  {
-    deltay = 0;
-    grounded = true;
-  }
+
 
     deltax /= 5;
     deltay /= 5;
@@ -102,6 +69,16 @@ void MainChar::moveBackward()
 {
   deltax = -cos(mainCam.yaw*PI/180.0)*moveSpeed;
   deltaz = -sin(mainCam.yaw*PI/180.0)*moveSpeed;
+}
+
+void MainChar::moveDown()
+{
+  deltay = -5;
+}
+
+void MainChar::moveUp()
+{
+  deltay = 5;
 }
 
 void MainChar::jump()

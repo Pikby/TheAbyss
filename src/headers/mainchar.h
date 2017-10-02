@@ -27,5 +27,7 @@ public:
   void moveRight();
   void moveForward();
   void moveBackward();
+  void moveDown();
+  void moveUp();
   void jump();
 };

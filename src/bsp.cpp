@@ -1,12 +1,15 @@
 
 #include "headers/all.h"
+
 int totalChunks;
 
 
 BSPNode::BSPNode(long int x, long int y, long int z)
 {
+  std::cout << totalChunks << "\n";
   curBSP = BSP(x,y,z);
 
+  isGenerated = false;
   nextNode = NULL;
   prevNode = NULL;
   inUse = false;
@@ -21,6 +24,10 @@ BSPNode::~BSPNode()
   totalChunks--;
 }
 
+void BSPNode::generateTerrain()
+{
+  curBSP.generateTerrain();
+}
 
 void BSPNode::build()
 {
@@ -38,8 +45,6 @@ void BSPNode::build()
 
 void BSPNode::drawOpaque(Camera* camera)
 {
-
-
   inUse = true;
   if(toRender == true)
   {
@@ -78,7 +83,35 @@ BSP::BSP(long int x, long int y, long int z)
     yCoord = y;
     zCoord = z;
     for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
-    generateTerrain(perlin);
+
+    using namespace std;
+
+    string directory = "saves/" + worldName + "/chunks/";
+    string chunkName = to_string(x) + '_'+to_string(y) + '_' + to_string(z) + ".dat";
+    string chunkPath = directory+chunkName;
+    int numbOfInts = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
+    ifstream ichunk(chunkPath,ios::binary);
+    if(!ichunk.is_open())
+    {
+      generateTerrain();
+      ichunk.close();
+      std::cout << "creating file" + chunkPath << "\n";
+      ofstream ochunk(chunkPath, ios::binary);
+      for(int i = 0 ;i<numbOfInts;i++)
+      {
+        ochunk << worldMap[i];
+      }
+
+      ochunk.close();
+    }
+    else
+    {
+      for(int i = 0;i<numbOfInts;i++)
+      {
+        ichunk >> worldMap[i];
+      }
+      ichunk.close();
+    }
 
     oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
     oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
@@ -105,12 +138,16 @@ void BSP::freeGL()
   glDeleteBuffers(1,&oVBO);
   glDeleteBuffers(1,&oEBO);
   glDeleteVertexArrays(1,&oVAO);
+
+  glDeleteBuffers(1,&tVBO);
+  glDeleteBuffers(1,&tEBO);
+  glDeleteVertexArrays(1,&tVAO);
 }
 
 BSP::BSP(){}
 
 
-void BSP::generateTerrain(siv::PerlinNoise* perlin)
+void BSP::generateTerrain()
 {
   double freq = 128;
   int oct = 8;
@@ -118,10 +155,9 @@ void BSP::generateTerrain(siv::PerlinNoise* perlin)
   {
     for(int z=0;z<CHUNKSIZE;z++)
     {
-      int height = CHUNKSIZE+200*perlin->octaveNoise0_1((x+xCoord*CHUNKSIZE)/freq,(z+zCoord*CHUNKSIZE)/freq,oct);
+      int height = CHUNKSIZE+200*perlin.GetPerlin(x+xCoord*CHUNKSIZE,z+zCoord*CHUNKSIZE);
       for(int y=0;y<CHUNKSIZE;y++)
       {
-
         if(yCoord*CHUNKSIZE+y <height)
         {
           if(yCoord*CHUNKSIZE+y == height - 1) addBlock(x,y,z,2);
@@ -129,7 +165,13 @@ void BSP::generateTerrain(siv::PerlinNoise* perlin)
         }
         else if(yCoord*CHUNKSIZE+y<120)
         {
-          addBlock(x,y,z,3);
+          //addBlock(x,y,z,3);
+        }
+
+
+        if(perlin.GetSimplex(x+xCoord*CHUNKSIZE,y+yCoord*CHUNKSIZE,z+zCoord*CHUNKSIZE)>0.5)
+        {
+          addBlock(x,y,z,0);
         }
       }
     }
@@ -438,6 +480,12 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
   oIndices = oIndicesBuffer;
   tVertices = tVerticesBuffer;
   tIndices = tIndicesBuffer;
+
+  oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+  tVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  tIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+
 }
 
 void BSP::render()

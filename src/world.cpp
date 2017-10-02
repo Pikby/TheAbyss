@@ -16,10 +16,12 @@ GLuint WorldWrap::VIEW_HEIGHT;
 unsigned int WorldWrap::totalChunks;
 glm::vec3 WorldWrap::lightPos;
 Block** WorldWrap::dictionary;
-siv::PerlinNoise* WorldWrap::perlin;
+FastNoise WorldWrap::perlin;
 GLuint WorldWrap::glTexture;
+std::string WorldWrap::worldName;
 
-void World::initWorld(int numbBuildThreads)
+
+World::World(int numbBuildThreads)
 {
   typedef std::queue<std::shared_ptr<BSPNode>> buildType;
   buildQueue = new buildType[numbBuildThreads];
@@ -27,12 +29,22 @@ void World::initWorld(int numbBuildThreads)
 
   seed = 1737;
 
-  perlin = new siv::PerlinNoise(seed);
+  perlin.SetSeed(seed);
+  perlin.SetFractalOctaves(8);
+  perlin.SetFrequency(0.01);
+  perlin.SetFractalLacunarity(8);
+  perlin.SetFractalGain(5);
+  worldName = "default";
 
   blockShader = new Shader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
   depthShader = new Shader("../src/shaders/depthShader.vs","../src/shaders/depthShader.fs");
   const char* texture = "../assets/textures/atlas.png";
   loadDictionary("../assets/dictionary.dat");
+
+
+      std::experimental::filesystem::create_directory("saves");
+      std::experimental::filesystem::create_directory("saves/"+worldName);
+      std::experimental::filesystem::create_directory("saves/"+worldName+"/chunks");
 
   frontNode = NULL;
   horzRenderDistance = 7;
@@ -88,7 +100,6 @@ void World::initWorld(int numbBuildThreads)
 void World::destroyWorld()
 {
   delete blockShader;
-  delete perlin;
 
 }
 
@@ -252,7 +263,8 @@ void World::buildWorld(int threadNumb)
   //TODO Break up queue into smaller pieces and use seperate threads to build them
   while(!buildQueue[threadNumb].empty())
   {
-    buildQueue[threadNumb].front()->build();
+    std::shared_ptr<BSPNode> chunk = buildQueue[threadNumb].front();
+    chunk->build();
     buildQueue[threadNumb].pop();
   }
 }
@@ -330,7 +342,7 @@ void World::drawWorld(Camera* camera)
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, glTexture);
   drawOpaque(camera);
-  drawTranslucent(camera);
+  //drawTranslucent(camera);
 }
 
 void World::drawOpaque(Camera* camera)

@@ -30,14 +30,14 @@ private:
   char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
 
 public:
-
   long int xCoord;
   long int yCoord;
   long int zCoord;
+
   BSP(long int x, long int y, long int z);
   BSP();
   ~BSP();
-  void generateTerrain(  siv::PerlinNoise* perlin);
+  void generateTerrain();
   void render();
   void addBlock(int x, int y, int z,char id);
   void freeGL();
@@ -64,6 +64,7 @@ class BSPNode
   void build();
   void drawOpaque(Camera* camera);
   void drawTranslucent(Camera* camera);
+  void generateTerrain();
   std::shared_ptr<BSPNode>  nextNode;
   std::shared_ptr<BSPNode>  prevNode;
   std::shared_ptr<BSPNode>  leftChunk;
@@ -76,4 +77,5 @@ class BSPNode
   bool toRender;
   bool toBuild;
   bool toDelete;
+  bool isGenerated;
 };

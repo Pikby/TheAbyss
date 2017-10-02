@@ -34,8 +34,7 @@ GLFWwindow* createWindow(int width, int height)
 void initWorld(int numbBuildThreads)
 {
   //glfwMakeContextCurrent(window);
-  newWorld = new World;
-  newWorld->initWorld(numbBuildThreads);
+  newWorld = new World(numbBuildThreads);
   mainCharacter = new MainChar(0, 204, 0,newWorld);
   text = new CharRenderer;
   //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
@@ -127,7 +126,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		mainCharacter->moveRight();
   if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-    mainCharacter->jump();
+    mainCharacter->moveUp();
+  if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+    mainCharacter->moveDown();
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)

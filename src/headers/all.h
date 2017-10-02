@@ -1,5 +1,5 @@
 #pragma once
-
+#include <experimental/filesystem>
 #include <string>
 #include "SOIL.h"
 #include <iostream>
@@ -25,6 +25,7 @@
 #include <glm/ext.hpp>
 
 //Add the shader configs
+#include "FastNoise.h"
 #include "shaders.h"
 #include "camera.h"
 #include "bsp.h"

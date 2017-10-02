@@ -4,3 +4,4 @@ libs/
 *.user
 win32/Debug/
 src/headers/SOIL.h
+Linux/saves/
