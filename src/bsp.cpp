@@ -6,7 +6,7 @@ int totalChunks;
 
 BSPNode::BSPNode(long int x, long int y, long int z)
 {
-  std::cout << totalChunks << "\n";
+  //std::cout << totalChunks << "\n";
   curBSP = BSP(x,y,z);
 
   isGenerated = false;
@@ -95,7 +95,6 @@ BSP::BSP(long int x, long int y, long int z)
     {
       generateTerrain();
       ichunk.close();
-      std::cout << "creating file" + chunkPath << "\n";
       ofstream ochunk(chunkPath, ios::binary);
       for(int i = 0 ;i<numbOfInts;i++)
       {
@@ -147,36 +146,7 @@ void BSP::freeGL()
 BSP::BSP(){}
 
 
-void BSP::generateTerrain()
-{
-  double freq = 128;
-  int oct = 8;
-  for(int x=0;x<CHUNKSIZE;x++)
-  {
-    for(int z=0;z<CHUNKSIZE;z++)
-    {
-      int height = CHUNKSIZE+200*perlin.GetPerlin(x+xCoord*CHUNKSIZE,z+zCoord*CHUNKSIZE);
-      for(int y=0;y<CHUNKSIZE;y++)
-      {
-        if(yCoord*CHUNKSIZE+y <height)
-        {
-          if(yCoord*CHUNKSIZE+y == height - 1) addBlock(x,y,z,2);
-          else addBlock(x,y,z,1);
-        }
-        else if(yCoord*CHUNKSIZE+y<120)
-        {
-          //addBlock(x,y,z,3);
-        }
 
-
-        if(perlin.GetSimplex(x+xCoord*CHUNKSIZE,y+yCoord*CHUNKSIZE,z+zCoord*CHUNKSIZE)>0.5)
-        {
-          addBlock(x,y,z,0);
-        }
-      }
-    }
-  }
-}
 
 
 int BSP::addVertex(int renderType,float x, float y, float z, float xn, float yn, float zn, float texX, float texY)
@@ -313,6 +283,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          bool rightNeigh = false;
          bool frontNeigh = false;
          bool backNeigh = false;
+         bool defaultNull = true;
 
          if(x+1 >= CHUNKSIZE)
          {
@@ -320,6 +291,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
            {
               if(renderType == curRightChunk->blockVisibleType(0,y,z)) rightNeigh = true;
            }
+           else if(defaultNull) rightNeigh = true;
          }
          else if(renderType == blockVisibleType(x+1,y,z)) rightNeigh = true;
 
@@ -329,6 +301,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
            {
             if(renderType == curLeftChunk->blockVisibleType(CHUNKSIZE-1,y,z)) leftNeigh = true;
            }
+           else if(defaultNull) leftNeigh = true;
          }
          else if(renderType == blockVisibleType(x-1,y,z)) leftNeigh = true;
 
@@ -338,6 +311,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
            {
               if(renderType == curTopChunk->blockVisibleType(x,0,z)) topNeigh = true;
            }
+           else if(defaultNull) topNeigh = true;
          }
          else if(renderType == blockVisibleType(x,y+1,z)) topNeigh = true;
 
@@ -347,6 +321,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
           {
             if(renderType == curBottomChunk->blockVisibleType(x,CHUNKSIZE-1,z)) bottomNeigh = true;
           }
+          else if(defaultNull) bottomNeigh = true;
          }
          else if(renderType == blockVisibleType(x,y-1,z)) bottomNeigh = true;
 
@@ -356,6 +331,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
            {
              if(renderType == curBackChunk->blockVisibleType(x,y,0)) backNeigh = true;
            }
+           else if(defaultNull) backNeigh = true;
          }
          else if(renderType == blockVisibleType(x,y,z+1)) backNeigh = true;
 
@@ -365,6 +341,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
            {
              if(renderType == curFrontChunk->blockVisibleType(x,y,CHUNKSIZE-1)) frontNeigh = true;
            }
+           else if(defaultNull) frontNeigh = true;
          }
          else if(renderType == blockVisibleType(x,y,z-1)) frontNeigh = true;
 

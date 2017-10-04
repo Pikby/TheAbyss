@@ -13,10 +13,11 @@ CFLAGSWINDOWS = -I/usr/local/include/freetype2\
 
 TARGET = ../src/world.cpp ../src/main.cpp ../src/shaders.cpp ../src/openGL.cpp \
 				 ../src/camera.cpp   ../src/text.cpp ../src/FastNoise.cpp\
-				 ../src/bsp.cpp ../src/mainchar.cpp
+				 ../src/bsp.cpp ../src/mainchar.cpp ../src/bspterraingen.cpp
 #TARGET = ../src/test.cpp ../src/shaders.cpp
+NAME = -o game
 linux: $(TARGET)
-	$(CC)  $(TARGET) $(CFLAGSLINUX)
+	$(CC) $(NAME) $(TARGET) $(CFLAGSLINUX)
 
 windows: $(TARGET)
-	$(WCC) $(TARGET) $(CFLAGSWINDOWS)
+	$(WCC) $(NAME) $(TARGET) $(CFLAGSWINDOWS) -o One

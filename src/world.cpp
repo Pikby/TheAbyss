@@ -47,8 +47,8 @@ World::World(int numbBuildThreads)
       std::experimental::filesystem::create_directory("saves/"+worldName+"/chunks");
 
   frontNode = NULL;
-  horzRenderDistance = 7;
-  vertRenderDistance = 7;
+  horzRenderDistance = 15;
+  vertRenderDistance = 15;
   totalChunks = 0;
   glGenTextures(1, &glTexture);
   glBindTexture(GL_TEXTURE_2D, glTexture);
@@ -210,7 +210,7 @@ void World::renderWorld(float* mainx, float* mainy, float* mainz)
 {
   for(int curDis = 0; curDis < horzRenderDistance; curDis++)
    {
-     for(int height = 0; height < vertRenderDistance*2; height++)
+     for(int height = 0; height < vertRenderDistance; height++)
      {
        int x = round(*mainx);
        int y = round(*mainy);
