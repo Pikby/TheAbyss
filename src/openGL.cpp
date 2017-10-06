@@ -31,12 +31,14 @@ GLFWwindow* createWindow(int width, int height)
   return window;
 }
 
-void initWorld(int numbBuildThreads)
+void initWorld(int numbBuildThreads,unsigned int width, unsigned int height)
 {
   //glfwMakeContextCurrent(window);
   newWorld = new World(numbBuildThreads);
   mainCharacter = new MainChar(0, 204, 0,newWorld);
   text = new CharRenderer;
+  screenWidth = width;
+  screenHeight = height;
   //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
 }
 
@@ -73,6 +75,7 @@ void* draw(void* )
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     mainCharacter->update();
     newWorld->drawWorld(&(mainCharacter->mainCam));
+    mainCharacter->drawHud();
     //std::cout << glGetError() << "update loop\n";
     text->RenderText(fpsString, 50.0f,1000.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
     glfwSwapBuffers(window);

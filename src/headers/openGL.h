@@ -11,4 +11,4 @@ void* render(void *);
 void* del(void *);
 void* mainBuild(void* );
 void* build(void *i);
-void initWorld(int numbBuildThreads);
+void initWorld(int numbBuildThreads,int width, int height);

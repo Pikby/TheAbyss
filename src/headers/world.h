@@ -21,6 +21,8 @@ protected:
   static FastNoise perlin;
   static int numbOfThreads;
   static std::string worldName;
+  static unsigned int screenWidth;
+  static unsigned int screenHeight;
 };
 
 class World : public WorldWrap

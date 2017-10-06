@@ -19,7 +19,8 @@ Block** WorldWrap::dictionary;
 FastNoise WorldWrap::perlin;
 GLuint WorldWrap::glTexture;
 std::string WorldWrap::worldName;
-
+unsigned int WorldWrap::screenWidth;
+unsigned int WorldWrap::screenHeight;
 
 World::World(int numbBuildThreads)
 {

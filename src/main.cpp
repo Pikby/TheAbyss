@@ -34,7 +34,7 @@ int main()
 
 
 
-  initWorld(numbBuildThreads);
+  initWorld(numbBuildThreads,winWidth,winHeight);
   std::cout << "staring main\n";
 
   pthread_t renderThreads[2];

@@ -218,7 +218,6 @@ void BSP::addIndices(int renderType,int index1, int index2, int index3, int inde
 
 bool BSP::blockExists(int x, int y, int z)
 {
-  if(x>=CHUNKSIZE || y >=CHUNKSIZE || z >= CHUNKSIZE || x<0 || y<0 || z<0) return false ;
   if(worldMap[x+CHUNKSIZE*y+z*CHUNKSIZE*CHUNKSIZE] == 0) return false;
   else return true;
 }

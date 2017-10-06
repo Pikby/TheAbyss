@@ -85,3 +85,19 @@ void MainChar::jump()
 {
   if(grounded) deltay = 5.0f;
 }
+
+void MainChar::calculateHud()
+{
+  glm::vec2 topLeft(screenWidth*.1,screenHeight*.85);
+  glm::vec2 bottomRight(screenWidth*.9,screenHeight*.95);
+}
+
+void MainChar::drawHud()
+{
+  glBegin(GL_LINE_STRIP);
+    glVertex2f(topLeft.x, topLeft.y);
+    glVertex2f(topLeft.x, bottomRight.y);
+    glVertex2f(bottomRight.x,bottomLRight.y);
+    glVertex2f(bottomRIght.x,topLeft.y);
+  glEnd();
+}
