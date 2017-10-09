@@ -7,8 +7,8 @@ int main()
   int numbBuildThreads = 4;
 
 
-  int winWidth = 1920;
-  int winHeight = 1080;
+  int winWidth = 1280;
+  int winHeight = 720;
   GLFWwindow* newWindow = createWindow(winWidth,winHeight);
   glfwMakeContextCurrent(newWindow);
   glfwSetKeyCallback(newWindow, key_callback);

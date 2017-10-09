@@ -6,7 +6,7 @@ enum Type {STATIC,DYNAMIC,STREAM};
 
 MainChar::MainChar(float x, float y, float z, World* world )
 {
-  mainCharShader = new Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
+  mainCharShader = Shader("../src/shaders/shaderBlocks.vs","../src/shaders/shaderBlocks.fs");
   xpos = x;
   ypos = y;
   zpos = z;
@@ -15,8 +15,10 @@ MainChar::MainChar(float x, float y, float z, World* world )
   deltaz = 0;
   moveSpeed = 5.0f;
   curWorld = world;
-
   mainCam = Camera(glm::vec3(xpos,ypos,zpos));
+  calculateHud();
+  gui = GUIRenderer(screenWidth,screenHeight);
+  std::cout << screenWidth << "\n" << screenHeight <<"\n";
 }
 
 void MainChar::update()
@@ -88,16 +90,35 @@ void MainChar::jump()
 
 void MainChar::calculateHud()
 {
-  glm::vec2 topLeft(screenWidth*.1,screenHeight*.85);
-  glm::vec2 bottomRight(screenWidth*.9,screenHeight*.95);
+  actionMain.topLeft = glm::vec2(screenWidth*0.05,screenHeight*0.05);
+  actionMain.bottomRight = glm::vec2(screenWidth*0.95,screenHeight*0.15);
+  actionMain.selected = 0;
+  actionMain.width = 2;
 }
 
 void MainChar::drawHud()
 {
-  glBegin(GL_LINE_STRIP);
-    glVertex2f(topLeft.x, topLeft.y);
-    glVertex2f(topLeft.x, bottomRight.y);
-    glVertex2f(bottomRight.x,bottomLRight.y);
-    glVertex2f(bottomRIght.x,topLeft.y);
-  glEnd();
+  int topLeftx = actionMain.topLeft.x;
+  int topLefty = actionMain.topLeft.y;
+  int bottomRightx = actionMain.bottomRight.x;
+  int bottomRighty = actionMain.bottomRight.y;
+  int width = actionMain.width;
+
+  gui.drawRectangle(topLeftx,topLefty,topLeftx+width,bottomRighty);
+  gui.drawRectangle(topLeftx+width,topLefty,bottomRightx,topLefty+width);
+  showFPS();
+}
+
+void MainChar::showFPS()
+{
+  static double lastFrameTime = 0;
+  static double curFrameTime  = 0;
+
+  curFrameTime = glfwGetTime();
+
+  double deltaTime = curFrameTime - lastFrameTime;
+  std::string fps = "FPS: " + std::to_string((int)round(1.0f/deltaTime));
+
+  gui.renderText(fps,0,screenHeight*.9,1);
+  lastFrameTime = glfwGetTime();
 }

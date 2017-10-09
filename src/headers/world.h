@@ -9,9 +9,8 @@ protected:
   static GLuint SHADOW_WIDTH, SHADOW_HEIGHT, VIEW_WIDTH, VIEW_HEIGHT;
   static unsigned int totalChunks;
   static GLuint glTexture;
-  static Shader* blockShader;
-  static Shader* depthShader;
-  static Shader* testShader;
+  static Shader blockShader;
+  static Shader depthShader;
   static const char* texture;
   static int horzRenderDistance;
   static int vertRenderDistance;
@@ -34,7 +33,7 @@ class World : public WorldWrap
      unsigned int depthMapFBO,depthMap;
      void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
      bool loadDictionary(const char* file);
-     World(int numbBuildThreads);
+     World(int numbBuildThreads,int width,int height);
      void destroyWorld();
      void renderWorld(float* mainx, float* mainy, float* mainz);
      void drawWorld(Camera* camera);

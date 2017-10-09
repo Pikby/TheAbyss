@@ -103,3 +103,7 @@ void Shader::setInt(const char* name, int x)
 {
   glUniform1i(glGetUniformLocation(this->Program, name),x);
 }
+void Shader::setBool(const char* name, bool val)
+{
+  glUniform1i(glGetUniformLocation(this->Program, name),val);
+}

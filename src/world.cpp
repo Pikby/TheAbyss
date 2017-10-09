@@ -4,9 +4,8 @@
 
 int WorldWrap::numbOfThreads;
 int WorldWrap::seed;
-Shader* WorldWrap::blockShader;
-Shader* WorldWrap::depthShader;
-Shader* WorldWrap::testShader;
+Shader WorldWrap::blockShader;
+Shader WorldWrap::depthShader;
 int WorldWrap::horzRenderDistance;
 int WorldWrap::vertRenderDistance;
 GLuint WorldWrap::SHADOW_WIDTH;
@@ -22,13 +21,15 @@ std::string WorldWrap::worldName;
 unsigned int WorldWrap::screenWidth;
 unsigned int WorldWrap::screenHeight;
 
-World::World(int numbBuildThreads)
+World::World(int numbBuildThreads,int width,int height)
 {
   typedef std::queue<std::shared_ptr<BSPNode>> buildType;
   buildQueue = new buildType[numbBuildThreads];
   numbOfThreads = numbBuildThreads;
 
   seed = 1737;
+  screenWidth = width;
+  screenHeight = height;
 
   perlin.SetSeed(seed);
   perlin.SetFractalOctaves(8);
@@ -37,19 +38,19 @@ World::World(int numbBuildThreads)
   perlin.SetFractalGain(5);
   worldName = "default";
 
-  blockShader = new Shader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
-  depthShader = new Shader("../src/shaders/depthShader.vs","../src/shaders/depthShader.fs");
+  blockShader = Shader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
+  depthShader =  Shader("../src/shaders/depthShader.vs","../src/shaders/depthShader.fs");
   const char* texture = "../assets/textures/atlas.png";
   loadDictionary("../assets/dictionary.dat");
 
-
-      std::experimental::filesystem::create_directory("saves");
-      std::experimental::filesystem::create_directory("saves/"+worldName);
-      std::experimental::filesystem::create_directory("saves/"+worldName+"/chunks");
+  
+  std::experimental::filesystem::create_directory("saves");
+  std::experimental::filesystem::create_directory("saves/"+worldName);
+  std::experimental::filesystem::create_directory("saves/"+worldName+"/chunks");
 
   frontNode = NULL;
-  horzRenderDistance = 15;
-  vertRenderDistance = 15;
+  horzRenderDistance = 7;
+  vertRenderDistance = 7;
   totalChunks = 0;
   glGenTextures(1, &glTexture);
   glBindTexture(GL_TEXTURE_2D, glTexture);
@@ -73,8 +74,8 @@ World::World(int numbBuildThreads)
   int shadowSize = 1024*4;
   SHADOW_WIDTH = shadowSize;
   SHADOW_HEIGHT = shadowSize;
-  VIEW_WIDTH = 1920;
-  VIEW_HEIGHT = 1080;
+  VIEW_WIDTH = width;
+  VIEW_HEIGHT = height;
 
   //lightPos = glm::vec3(100.0f,200.0f,100.0f);
 
@@ -93,14 +94,13 @@ World::World(int numbBuildThreads)
   glReadBuffer(GL_NONE);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  depthShader->use();
-  depthShader->setInt("textureInfo", 0);
-  depthShader->setInt("shadowMap", 1);
+  depthShader.use();
+  depthShader.setInt("textureInfo", 0);
+  depthShader.setInt("shadowMap", 1);
 }
 
 void World::destroyWorld()
 {
-  delete blockShader;
 
 }
 
@@ -325,20 +325,20 @@ void World::drawWorld(Camera* camera)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 */
 
-  blockShader->use();
+  blockShader.use();
 
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1920/ (float)1080, 0.1f, (float)horzRenderDistance*CHUNKSIZE*4);
-  blockShader->setMat4("projection", projection);
+  blockShader.setMat4("projection", projection);
 
   glm::mat4 view = camera->getViewMatrix();
-  blockShader->setMat4("view", view);
+  blockShader.setMat4("view", view);
 
-  blockShader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-  blockShader->setVec3("lightColor",  0.5f, 0.5f, 0.5f);
-  blockShader->setVec3("lightPos",  lightPos);
-  blockShader->setVec3("viewPos", camera->position);
+  blockShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+  blockShader.setVec3("lightColor",  0.5f, 0.5f, 0.5f);
+  blockShader.setVec3("lightPos",  lightPos);
+  blockShader.setVec3("viewPos", camera->position);
   //blockShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
-  blockShader->setMat4("model",model);
+  blockShader.setMat4("model",model);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, glTexture);

@@ -1,24 +1,41 @@
 #pragma once
 
-class MainChar : public WorldWrapper
+class MainChar : public WorldWrap
 {
+  struct ActionBar
+  {
+    glm::vec2 topLeft,bottomRight;
+    int width;
+    unsigned int selected;
+  };
 private:
+  //References
+  ActionBar actionMain;
+  World* curWorld;
+  GUIRenderer gui;
+
+  //Rendering objects
   GLuint VBO, VAO, EBO;
   GLuint glTexture;
-  Shader* mainCharShader;
-  World* curWorld;
+  Shader mainCharShader;
+
+  //Character attributes
   float gravity;
   float moveSpeed;
   float deltax,deltay,deltaz;
-  glm::vec2 topLeftAction,bottomRightAction;
   bool grounded;
 public:
   Camera mainCam;
+
+
   float xpos,ypos,zpos;
-  //0 = STATIC, 1 = DYNAMIC, 2 = STREAM
-  int type;
+
   MainChar(float x, float y, float z, World* curWorld );
+
+  //Update movement
   void update();
+
+  //Movement inputs
   void moveLeft();
   void moveRight();
   void moveForward();
@@ -26,6 +43,9 @@ public:
   void moveDown();
   void moveUp();
   void jump();
+
+  //Hud functions
   void calculateHud();
   void drawHud();
+  void showFPS();
 };

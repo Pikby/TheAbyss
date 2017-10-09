@@ -6,7 +6,7 @@ public:
 
   //Create the shader with a path to the vertex and fragment shaders
   Shader(const GLchar* vertexPath, const GLchar* fragmentShader);
-
+  Shader(){};
   //Command to use the program
   void use();
 
@@ -14,4 +14,5 @@ public:
   void setVec3(const char* name, glm::vec3 value);
   void setVec3(const char* name, float x, float y, float z);
   void setInt(const char* name, int x);
+  void setBool(const char* name, bool val);
 };

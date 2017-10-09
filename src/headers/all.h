@@ -31,5 +31,5 @@
 #include "bsp.h"
 
 #include "openGL.h"
+#include "gui.h"
 #include "mainchar.h"
-#include "text.h"

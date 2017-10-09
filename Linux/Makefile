@@ -12,7 +12,7 @@ CFLAGSWINDOWS = -I/usr/local/include/freetype2\
 -lXcursor -lX11 -lXxf86vm -lpthread -lSOIL -std=c++11 \
 
 TARGET = ../src/world.cpp ../src/main.cpp ../src/shaders.cpp ../src/openGL.cpp \
-				 ../src/camera.cpp   ../src/text.cpp ../src/FastNoise.cpp\
+				 ../src/camera.cpp   ../src/gui.cpp ../src/FastNoise.cpp\
 				 ../src/bsp.cpp ../src/mainchar.cpp ../src/bspterraingen.cpp
 #TARGET = ../src/test.cpp ../src/shaders.cpp
 NAME = -o game

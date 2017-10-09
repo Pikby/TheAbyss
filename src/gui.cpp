@@ -16,16 +16,16 @@
 
 #include "headers/shaders.h"
 #include "headers/camera.h"
-#include "headers/text.h"
+#include "headers/gui.h"
 
 
 
-CharRenderer::CharRenderer()
+GUIRenderer::GUIRenderer(int width, int height)
 {
-  textShader = new Shader("../src/shaders/shaderText.vs","../src/shaders/shaderText.fs");
-  glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 0.0f, 1080.0f);
-  textShader->use();
-  textShader->setMat4("projection",projection);
+  guiShader = Shader("../src/shaders/shaderText.vs","../src/shaders/shaderText.fs");
+  glm::mat4 projection = glm::ortho(0.0f, (float)width, 0.0f, (float)height);
+  guiShader.use();
+  guiShader.setMat4("projection",projection);
 
   FT_Library ft;
   if (FT_Init_FreeType(&ft))
@@ -83,10 +83,10 @@ CharRenderer::CharRenderer()
   FT_Done_Face(face);
   FT_Done_FreeType(ft);
 
-  glGenVertexArrays(1, &VAOText);
-  glGenBuffers(1, &VBOText);
-  glBindVertexArray(VAOText);
-  glBindBuffer(GL_ARRAY_BUFFER, VBOText);
+  glGenVertexArrays(1, &VAOgui);
+  glGenBuffers(1, &VBOgui);
+  glBindVertexArray(VAOgui);
+  glBindBuffer(GL_ARRAY_BUFFER, VBOgui);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*6*4, NULL, GL_DYNAMIC_DRAW);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,4*sizeof(GLfloat),0);
@@ -94,12 +94,13 @@ CharRenderer::CharRenderer()
   glBindVertexArray(0);
 }
 
-void CharRenderer::RenderText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color)
+void GUIRenderer::renderText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color)
 {
-  textShader->use();
-  glUniform3f(glGetUniformLocation(textShader->Program, "textColor"), color.x, color.y, color.z);
+  guiShader.use();
+  guiShader.setVec3("textColor",color);
+  guiShader.setBool("isText",true);
   glActiveTexture(GL_TEXTURE0);
-  glBindVertexArray(VAOText);
+  glBindVertexArray(VAOgui);
 
 
 
@@ -127,7 +128,7 @@ void CharRenderer::RenderText(std::string text, GLfloat x, GLfloat y, GLfloat sc
       // Render glyph texture over quad
       glBindTexture(GL_TEXTURE_2D, ch.textureID);
       // Update content of VBOText memory
-      glBindBuffer(GL_ARRAY_BUFFER, VBOText);
+      glBindBuffer(GL_ARRAY_BUFFER, VBOgui);
       glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // Be sure to use glBufferSubData and not glBufferData
 
       glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -138,4 +139,42 @@ void CharRenderer::RenderText(std::string text, GLfloat x, GLfloat y, GLfloat sc
   }
   glBindVertexArray(0);
   glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void GUIRenderer::drawRectangle(float x1, float y1, float x2, float y2, glm::vec3 color)
+{
+  //std::cout << x1 << "," << y1 << "," << x2 << "," << y2 << "\n";
+  guiShader.use();
+  guiShader.setVec3("textColor",color);
+  guiShader.setBool("isText",false);
+  glActiveTexture(GL_TEXTURE0);
+  glBindVertexArray(VAOgui);
+  Character c = Characters[65];
+
+
+  GLfloat vertices[6][4] =
+  {
+    {x1,y1,0.0,1.0},
+    {x2,y1,1.0,1.0},
+    {x1,y2,0.0,0.0},
+
+
+    {x1,y2,0.0,0.0},
+    {x2,y1,1.0,1.0},
+    {x2,y2,1.0,0.0}
+
+  };
+  glBindTexture(GL_TEXTURE_2D, c.textureID);
+  glBindBuffer(GL_ARRAY_BUFFER, VBOgui);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glDrawArrays(GL_TRIANGLES,0,6);
+
+  glBindVertexArray(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void GUIRenderer::drawRectangle(glm::vec2 a,glm::vec2 b,glm::vec3 color)
+{
+    drawRectangle(a.x,a.y,b.x,b.y,color);
 }

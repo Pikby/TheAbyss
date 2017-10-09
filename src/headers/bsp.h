@@ -27,7 +27,7 @@ private:
   int addVertex(int renderType, float x, float y, float z,float xn, float yn, float zn, float texX, float texY);
   void addIndices(int renderType,int index1, int index2, int index3, int index4);
 
-  char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
+  unsigned char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
 
 public:
   long int xCoord;

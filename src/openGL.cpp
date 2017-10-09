@@ -5,7 +5,7 @@
 World* newWorld;
 MainChar* mainCharacter;
 GLFWwindow* window;
-CharRenderer* text;
+
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -31,14 +31,11 @@ GLFWwindow* createWindow(int width, int height)
   return window;
 }
 
-void initWorld(int numbBuildThreads,unsigned int width, unsigned int height)
+void initWorld(int numbBuildThreads, int width,  int height)
 {
   //glfwMakeContextCurrent(window);
-  newWorld = new World(numbBuildThreads);
+  newWorld = new World(numbBuildThreads,width,height);
   mainCharacter = new MainChar(0, 204, 0,newWorld);
-  text = new CharRenderer;
-  screenWidth = width;
-  screenHeight = height;
   //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
 }
 
@@ -47,8 +44,6 @@ void* draw(void* )
   glfwMakeContextCurrent(window);
   long long totalFrame = 0;
   std::string fpsString;
-
-
 
   while(!glfwWindowShouldClose(window))
   {
@@ -60,15 +55,6 @@ void* draw(void* )
     lastFrame = currentFrame;
 
     //Create a time for every second and displays the FPS
-    float timer = glfwGetTime();
-    float timerDec = timer - floor(timer);
-    if(timerDec+deltaTime>=1.0f)
-    {
-      fpsString = "FPS: ";
-      fpsString.append(std::to_string(totalFrame));
-      totalFrame = 0;
-
-    }
 
     glfwPollEvents();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -77,7 +63,7 @@ void* draw(void* )
     newWorld->drawWorld(&(mainCharacter->mainCam));
     mainCharacter->drawHud();
     //std::cout << glGetError() << "update loop\n";
-    text->RenderText(fpsString, 50.0f,1000.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+
     glfwSwapBuffers(window);
   }
       std::cout << "exiting draw thread \n";
@@ -130,7 +116,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		mainCharacter->moveRight();
   if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     mainCharacter->moveUp();
-  if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
     mainCharacter->moveDown();
 }
 
