@@ -14,12 +14,14 @@ GLuint WorldWrap::VIEW_WIDTH;
 GLuint WorldWrap::VIEW_HEIGHT;
 unsigned int WorldWrap::totalChunks;
 glm::vec3 WorldWrap::lightPos;
-Block** WorldWrap::dictionary;
+Block* WorldWrap::dictionary;
 FastNoise WorldWrap::perlin;
 GLuint WorldWrap::glTexture;
 std::string WorldWrap::worldName;
 unsigned int WorldWrap::screenWidth;
 unsigned int WorldWrap::screenHeight;
+std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> WorldWrap::BSPmap;
+
 
 World::World(int numbBuildThreads,int width,int height)
 {
@@ -41,9 +43,9 @@ World::World(int numbBuildThreads,int width,int height)
   blockShader = Shader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
   depthShader =  Shader("../src/shaders/depthShader.vs","../src/shaders/depthShader.fs");
   const char* texture = "../assets/textures/atlas.png";
-  loadDictionary("../assets/dictionary.dat");
+  loadDictionary("../assets/blockDictionary.dat");
 
-  
+
   std::experimental::filesystem::create_directory("saves");
   std::experimental::filesystem::create_directory("saves/"+worldName);
   std::experimental::filesystem::create_directory("saves/"+worldName+"/chunks");
@@ -271,7 +273,7 @@ void World::buildWorld(int threadNumb)
 }
 
 
-std::shared_ptr<BSPNode>  World::getChunk(int x, int y, int z)
+std::shared_ptr<BSPNode>  WorldWrap::getChunk(int x, int y, int z)
 {
   if(BSPmap.count(x) == 1)
    {
@@ -471,12 +473,25 @@ bool World::chunkExists(int x ,int y, int z)
   return false;
 }
 
-bool World::blockExists(int x, int y, int z)
+glm::vec3 rayTrace(glm::vec3 pos, glm::vec3 front, int max)
+{
+  float parts = 4;
+  for(float i = 0; i<max;i += 1/parts)
+  {
+    blockExists(pos+i*front)
+  }
+}
+
+bool WorldWrap::blockExists(float x, float y, float z)
 {
   /*
   Finds which ever chunk holds the block and then calls the blockExists
   function on that chunk with the localized coordinates
   */
+
+  float xd = x-((int)x);
+  float yd = y-((int)y);
+  float zd = z-((int)z);
   int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
   int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
   int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
@@ -493,12 +508,17 @@ bool World::blockExists(int x, int y, int z)
   if(tempChunk = getChunk(xchunk,ychunk,zchunk))
   {
 
-    if(tempChunk->blockExists(xlocal,ylocal, zlocal))
+    if(tempChunk->blockExists(xlocal+xd,ylocal+yd, zlocal+zd))
     {
       return true;
     }
   }
   return false;
+}
+
+bool WorldWrap::blockExists(glm::vec3 pos)
+{
+  blockExists(pos.x,pos.y,pos.z);
 }
 
 Block::Block(std::string newName,int newId, int* array, int newVisibleType, int newWidth,int newHeight,int newAtlasWidth, int newAtlasHeight)
@@ -524,13 +544,15 @@ bool World::loadDictionary(const char* file)
 
 
   */
-  dictionary = new Block*[5];
+  dictionary = new Block[256];
   int id = 0;
   using namespace std;
   string line;
   ifstream dictionaryf (file);
+
   if(dictionaryf.is_open())
   {
+    std::cout << "Loading dictionary\n";
     getline(dictionaryf,line);
     int atlasWidth = stoi(line);
     getline(dictionaryf,line);
@@ -539,6 +561,8 @@ bool World::loadDictionary(const char* file)
     int curBlock=0;
     while(getline(dictionaryf,line))
     {
+      if(line != "{") continue;
+      getline(dictionaryf,line);
       string name = line;
       getline(dictionaryf,line);
 
@@ -558,8 +582,14 @@ bool World::loadDictionary(const char* file)
       int width = stoi(line);
       getline(dictionaryf,line);
       int height = stoi(line);
-      dictionary[curBlock] = new Block(name,id++,texArray,visibleType,width,height,atlasWidth,atlasHeight);
+      dictionary[curBlock] = Block(name,id++,texArray,visibleType,width,height,atlasWidth,atlasHeight);
       curBlock++;
     }
+    return true;
+  }
+  else
+  {
+    std::cout <<"ERROR: block dictionary not found\n";
+    return false;
   }
 }

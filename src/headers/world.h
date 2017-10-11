@@ -16,12 +16,17 @@ protected:
   static int vertRenderDistance;
   static glm::vec3 lightPos;
   static int seed;
-  static Block** dictionary;
+  static Block* dictionary;
   static FastNoise perlin;
   static int numbOfThreads;
   static std::string worldName;
   static unsigned int screenWidth;
   static unsigned int screenHeight;
+  static bool blockExists(float x, float y, float z);
+  static bool blockExists(glm::vec3 pos);
+  static std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> BSPmap;
+  static std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
+  static glm::vec3 rayTrace(glm::vec3 pos, glm::vec3 front, int max);
 };
 
 class World : public WorldWrap
@@ -39,14 +44,13 @@ class World : public WorldWrap
      void drawWorld(Camera* camera);
      void buildWorld(int threadNumb);
      bool chunkExists(int x, int y, int z);
-     std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
-     bool blockExists(int x, int y, int z);
+
+
      void delChunk(int x, int y, int z);
      void delScan(float* mainx, float* mainy, float* mainz);
      void generateChunk(int chunkx, int chunky, int chunkz);
      void drawTranslucent(Camera* camera);
      void drawOpaque(Camera* camera);
-     std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> BSPmap;
      std::queue<std::shared_ptr<BSPNode>>* buildQueue;
 };
 
@@ -63,10 +67,17 @@ public:
   int atlasHeight;
   int visibleType;
 
-  Block(std::string name, int newId, int* array,int newVisibleType, int newWidth,
+  Block(std::string newName, int newId, int* array,int newVisibleType, int newWidth,
     int newHeight,int newAtlasWidth, int newAtlasHeight);
 
-  Block();
+
+  void print()
+  {
+    std::cout << name << "\n"
+              << id << "\n"
+              << visibleType << "\n";
+  }
+  Block(){};
   void getTop(float* x1, float* y1, float* x2, float* y2)
   {
     *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[0]);
@@ -115,5 +126,6 @@ public:
     *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[11]+1);
   };
 
+  bool isInBlock(glm::vec3 pos);
 
 };

@@ -216,15 +216,16 @@ void BSP::addIndices(int renderType,int index1, int index2, int index3, int inde
 }
 
 
-bool BSP::blockExists(int x, int y, int z)
+bool BSP::blockExists(float x, float y, float z)
 {
-  if(worldMap[x+CHUNKSIZE*y+z*CHUNKSIZE*CHUNKSIZE] == 0) return false;
+  Block temp = worldMap[x+CHUNKSIZE*y+z*CHUNKSIZE*CHUNKSIZE];
+  if(temp.isInBlock(glm::vec3(x - (int)x,y - (int)y,z - (int)z ))) return true;
   else return true;
 }
 
 int BSP::blockVisibleType(int x, int y, int z)
 {
-  return dictionary[getBlock(x,y,z)]->visibleType;
+  return dictionary[getBlock(x,y,z)].visibleType;
 }
 
 void BSP::addBlock(int x, int y, int z, char id)
@@ -344,14 +345,13 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          }
          else if(renderType == blockVisibleType(x,y,z-1)) frontNeigh = true;
 
-         Block* tempBlock = dictionary[(getBlock(x,y,z))];
-         if(tempBlock == NULL) return;
+         Block tempBlock = dictionary[(getBlock(x,y,z))];
          float x1, y1, x2, y2;
 
          glm::vec3 tempVec;
          if(!topNeigh)
          {
-           tempBlock->getTop(&x1,&y1,&x2,&y2);
+           tempBlock.getTop(&x1,&y1,&x2,&y2);
            tempVec = offset(realX,realY+1.0f,realZ);
            int index1 = addVertex(renderType,tempVec.x, tempVec.y, tempVec.z,0.0f,1.0f,0.0f,x1,y1);
 
@@ -369,7 +369,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(!bottomNeigh)
          {
-           tempBlock->getBottom(&x1,&y1,&x2,&y2);
+           tempBlock.getBottom(&x1,&y1,&x2,&y2);
 
            tempVec = offset(realX,realY,realZ);
            int index1 = addVertex(renderType,tempVec.x, tempVec.y, tempVec.z,0.0f,-1.0f,0.0f,x1,y1);
@@ -388,7 +388,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(!rightNeigh)
          {
-           tempBlock->getRight(&x1,&y1,&x2,&y2);
+           tempBlock.getRight(&x1,&y1,&x2,&y2);
 
            tempVec = offset(realX+1.0f,realY,realZ);
            int index1 = addVertex(renderType,tempVec.x, tempVec.y, tempVec.z,1.0f,0.0f,0.0f,x1,y1);
@@ -407,7 +407,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(!leftNeigh)
          {
-           tempBlock->getLeft(&x1,&y1,&x2,&y2);
+           tempBlock.getLeft(&x1,&y1,&x2,&y2);
 
            tempVec = offset(realX,realY,realZ);
            int index1 = addVertex(renderType,tempVec.x, tempVec.y, tempVec.z,-1.0f,0.0f,0.0f,x1,y1);
@@ -422,7 +422,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          }
          if(!backNeigh)
          {
-           tempBlock->getBack(&x1,&y1,&x2,&y2);
+           tempBlock.getBack(&x1,&y1,&x2,&y2);
 
            tempVec = offset(realX,realY,realZ+1.0f);
            int index1 = addVertex(renderType,tempVec.x, tempVec.y, tempVec.z,0.0f,0.0f,1.0f,x1,y1);
@@ -438,7 +438,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(!frontNeigh)
          {
-           tempBlock->getFront(&x1,&y1,&x2,&y2);
+           tempBlock.getFront(&x1,&y1,&x2,&y2);
            tempVec = offset(realX,realY,realZ);
            int index1 = addVertex(renderType,tempVec.x, tempVec.y, tempVec.z,0.0f,0.0f,-1.0f,x1,y1);
            tempVec = offset(realX+1.0f,realY,realZ);

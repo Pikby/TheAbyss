@@ -41,7 +41,7 @@ public:
   void render();
   void addBlock(int x, int y, int z,char id);
   void freeGL();
-  bool blockExists(int x,int y,int z);
+  bool blockExists(float x,float y,float z);
   int blockVisibleType(int x, int y, int z);
   int getBlock(int x, int y, int z);
   int removeBlock(int x, int y, int z);
@@ -59,7 +59,7 @@ class BSPNode
   BSP curBSP;
   BSPNode(long int x, long int y, long int z);
   ~BSPNode();
-  bool blockExists(int x, int y, int z);
+  bool blockExists(float x, float y, float z);
   int blockVisibleType(int x, int y, int z);
   void build();
   void drawOpaque(Camera* camera);

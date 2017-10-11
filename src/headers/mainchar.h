@@ -1,5 +1,6 @@
 #pragma once
 
+class Item;
 class MainChar : public WorldWrap
 {
   struct ActionBar
@@ -13,7 +14,8 @@ private:
   ActionBar actionMain;
   World* curWorld;
   GUIRenderer gui;
-
+  int* inventory;
+  Item** dictionary;
   //Rendering objects
   GLuint VBO, VAO, EBO;
   GLuint glTexture;
