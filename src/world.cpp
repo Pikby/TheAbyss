@@ -473,13 +473,26 @@ bool World::chunkExists(int x ,int y, int z)
   return false;
 }
 
-glm::vec3 rayTrace(glm::vec3 pos, glm::vec3 front, int max)
+//If there is an entity, returns it id and position,
+//If there is a block, return its position and an id of 0
+//If there is nothing return a 0 vector  with -1 id
+glm::vec4 WorldWrap::rayCast(glm::vec3 pos, glm::vec3 front, int max)
 {
   float parts = 4;
   for(float i = 0; i<max;i += 1/parts)
   {
-    blockExists(pos+i*front)
+    glm::vec3 curPos = pos+i*front;
+    int id = entityExists(curPos);
+    if(id != 0)
+    {
+      return glm::vec4(curPos,BLOCK);
+    }
+    else if(blockExists(curPos))
+    {
+      return glm::vec4(curPos,NOTHING);
+    }
   }
+  return glm::vec4(0,0,0,-1);
 }
 
 bool WorldWrap::blockExists(float x, float y, float z)
@@ -518,8 +531,24 @@ bool WorldWrap::blockExists(float x, float y, float z)
 
 bool WorldWrap::blockExists(glm::vec3 pos)
 {
-  blockExists(pos.x,pos.y,pos.z);
+  return blockExists(pos.x,pos.y,pos.z);
 }
+
+int WorldWrap::anyExists(glm::vec3 pos)
+{
+  if( entityExists(pos.x,pos.y,pos.z))
+    return 2;
+  else if( blockExists(pos.x,pos.y,pos.z))
+    return 1;
+  else return 0;
+
+}
+
+bool WorldWrap::entityExists(glm::vec3 pos)
+{
+  //TODO
+}
+
 
 Block::Block(std::string newName,int newId, int* array, int newVisibleType, int newWidth,int newHeight,int newAtlasWidth, int newAtlasHeight)
 {
@@ -582,7 +611,9 @@ bool World::loadDictionary(const char* file)
       int width = stoi(line);
       getline(dictionaryf,line);
       int height = stoi(line);
-      dictionary[curBlock] = Block(name,id++,texArray,visibleType,width,height,atlasWidth,atlasHeight);
+      getline(dictionaryf,line);
+      int depth = stoi(line);
+      dictionary[curBlock] = Block(name,id++,texArray,visibleType,width,height,depth,atlasWidth,atlasHeight);
       curBlock++;
     }
     return true;

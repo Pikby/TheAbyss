@@ -7,7 +7,7 @@ class Item : public WorldWrap
   int reach = 3;
   int damage = 0.5;
 
-  int leftClick(glm::vec3 pos, glm::vec3 front);
+  int mouse1(glm::vec3 pos, glm::vec3 front);
   int rightClick();
 };
 

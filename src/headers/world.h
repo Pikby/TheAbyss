@@ -6,27 +6,42 @@ class Block;
 class WorldWrap
 {
 protected:
+  //
+
   static GLuint SHADOW_WIDTH, SHADOW_HEIGHT, VIEW_WIDTH, VIEW_HEIGHT;
   static unsigned int totalChunks;
+  //global texture atlas
   static GLuint glTexture;
+  //shader for world geometry
   static Shader blockShader;
   static Shader depthShader;
+  //File path to atlas
   static const char* texture;
+  //Render distances
   static int horzRenderDistance;
   static int vertRenderDistance;
+  //Postion of sun
   static glm::vec3 lightPos;
+  //The seed of the world, for generation
   static int seed;
+  //Array of blocks that make up the dictionary
   static Block* dictionary;
+  //Perlin noise object
   static FastNoise perlin;
+  //Number of build threads
   static int numbOfThreads;
+  //The name of the world, for saving and loading
   static std::string worldName;
   static unsigned int screenWidth;
   static unsigned int screenHeight;
   static bool blockExists(float x, float y, float z);
   static bool blockExists(glm::vec3 pos);
+  static int anyExists(glm::vec3 pos);
+  static bool entityExists(glm::vec3 pos);
   static std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> BSPmap;
   static std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
-  static glm::vec3 rayTrace(glm::vec3 pos, glm::vec3 front, int max);
+  enum target{BLOCK = 0, NOTHING = -1};
+  static glm::vec3 rayCast(glm::vec3 pos, glm::vec3 front, int max);
 };
 
 class World : public WorldWrap
@@ -55,6 +70,7 @@ class World : public WorldWrap
 };
 
 //The class for each individual block in the dictionary
+#define BLOCKRES 128;
 class Block
 {
 public:
@@ -63,12 +79,13 @@ public:
   int texArray[12]; //array of coordinates of all sides of the block from the texture array
   int width;
   int height;
+  int depth;
   int atlasWidth;
   int atlasHeight;
   int visibleType;
 
   Block(std::string newName, int newId, int* array,int newVisibleType, int newWidth,
-    int newHeight,int newAtlasWidth, int newAtlasHeight);
+    int newHeight, int newDepth,int newAtlasWidth, int newAtlasHeight);
 
 
   void print()
@@ -126,6 +143,16 @@ public:
     *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[11]+1);
   };
 
-  bool isInBlock(glm::vec3 pos);
+  bool isInBlock(glm::vec3 pos)
+  {
+    if(pos.x>0 && pos.x<width/BLOCKRES)
+      if(pos.y>0 && pos.y<height/BLOCKRES)
+        if(pos.z>0 && pos.z<depth/BLOCKRES)
+        {
+          return true;
+        }
+
+    return false;
+  };
 
 };
