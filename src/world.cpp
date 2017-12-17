@@ -505,9 +505,9 @@ bool WorldWrap::blockExists(float x, float y, float z)
   float xd = x-((int)x);
   float yd = y-((int)y);
   float zd = z-((int)z);
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
+  int xlocal = x >= 0 ? (int)x % CHUNKSIZE : CHUNKSIZE + ((int)x % CHUNKSIZE);
+  int ylocal = y >= 0 ? (int)y % CHUNKSIZE : CHUNKSIZE + ((int)y % CHUNKSIZE);
+  int zlocal = z >= 0 ? (int)z % CHUNKSIZE : CHUNKSIZE + ((int)z % CHUNKSIZE);
 
   if(xlocal == CHUNKSIZE)xlocal = 0;
   if(ylocal == CHUNKSIZE)ylocal = 0;
@@ -536,7 +536,7 @@ bool WorldWrap::blockExists(glm::vec3 pos)
 
 int WorldWrap::anyExists(glm::vec3 pos)
 {
-  if( entityExists(pos.x,pos.y,pos.z))
+  if(entityExists(pos.x,pos.y,pos.z))
     return 2;
   else if( blockExists(pos.x,pos.y,pos.z))
     return 1;
@@ -548,9 +548,12 @@ bool WorldWrap::entityExists(glm::vec3 pos)
 {
   //TODO
 }
+bool WorldWrap::entityExists(float x, float y, float z)
+{
+  //TODO
+}
 
-
-Block::Block(std::string newName,int newId, int* array, int newVisibleType, int newWidth,int newHeight,int newAtlasWidth, int newAtlasHeight)
+Block::Block(std::string newName,int newId, int* array, int newVisibleType, int newWidth,int newHeight,int newDepth, int newAtlasWidth, int newAtlasHeight)
 {
   visibleType = newVisibleType;
   name = newName;
@@ -561,6 +564,7 @@ Block::Block(std::string newName,int newId, int* array, int newVisibleType, int 
   }
   width = newWidth;
   height = newHeight;
+  depth = newDepth;
   atlasWidth = newAtlasWidth;
   atlasHeight = newAtlasHeight;
 }

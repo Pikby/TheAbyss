@@ -82,35 +82,67 @@ BSP::BSP(long int x, long int y, long int z)
     xCoord = x;
     yCoord = y;
     zCoord = z;
-    for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
+    //for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
 
     using namespace std;
 
+    //The directoy to the chunk to be saved
     string directory = "saves/" + worldName + "/chunks/";
-    string chunkName = to_string(x) + '_'+to_string(y) + '_' + to_string(z) + ".dat";
+    string chunkName = to_string(x) + '_' + to_string(y) + '_' + to_string(z) + ".dat";
     string chunkPath = directory+chunkName;
-    int numbOfInts = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
+
+    //Max size of a chunk
+    int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
     ifstream ichunk(chunkPath,ios::binary);
+
+    //Checks if the file exists
     if(!ichunk.is_open())
     {
       generateTerrain();
       ichunk.close();
-      ofstream ochunk(chunkPath, ios::binary);
-      for(int i = 0 ;i<numbOfInts;i++)
-      {
-        ochunk << worldMap[i];
-      }
+      ofstream ochunk(chunkPath,ios::binary);
 
+      unsigned int curTotal = 1;
+      char lastId = worldMap[0];
+
+      for(int i = 1; i<numbOfBlocks;i++)
+      {
+        if(lastId == worldMap[i])
+        {
+          curTotal++;
+        }
+        else
+        {
+          ochunk.write((char*) &lastId,sizeof(lastId));
+          ochunk.write((char*) &curTotal,sizeof(curTotal));
+          curTotal = 1;
+          lastId = worldMap[i];
+        }
+      }
+      ochunk.write((char*) &lastId,sizeof(lastId));
+      ochunk.write((char*) &curTotal,sizeof(curTotal));
       ochunk.close();
     }
     else
     {
-      for(int i = 0;i<numbOfInts;i++)
+      int i = 0;
+      char curId=0;
+      unsigned int curLength=0;
+      while(i<numbOfBlocks)
       {
-        ichunk >> worldMap[i];
+
+        ichunk.read((char*) &curId,sizeof(curId));
+        ichunk.read((char*) &curLength,sizeof(curLength));
+
+        for(int j = 0; j<curLength; j++)
+        {
+          worldMap[i+j] = curId;
+        }
+        i+= curLength;
       }
       ichunk.close();
     }
+
 
     oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
     oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
@@ -216,10 +248,10 @@ void BSP::addIndices(int renderType,int index1, int index2, int index3, int inde
 }
 
 
-bool BSP::blockExists(float x, float y, float z)
+bool BSP::blockExists(int x, int y, int z)
 {
-  Block temp = worldMap[x+CHUNKSIZE*y+z*CHUNKSIZE*CHUNKSIZE];
-  if(temp.isInBlock(glm::vec3(x - (int)x,y - (int)y,z - (int)z ))) return true;
+  Block temp = dictionary[worldMap[(int)x+CHUNKSIZE*(int)y+(int)z*CHUNKSIZE*CHUNKSIZE]];
+  if(temp.id == 0 ) return false;
   else return true;
 }
 

@@ -1,4 +1,5 @@
- #define CHUNKSIZE 32
+
+#define CHUNKSIZE 32
 //Class which encapsulates all the chunks as well as the shaders and dicionary
 class BSPNode;
 class BSP;
@@ -38,10 +39,11 @@ protected:
   static bool blockExists(glm::vec3 pos);
   static int anyExists(glm::vec3 pos);
   static bool entityExists(glm::vec3 pos);
+  static bool entityExists(float x, float y, float z);
   static std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> BSPmap;
   static std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
   enum target{BLOCK = 0, NOTHING = -1};
-  static glm::vec3 rayCast(glm::vec3 pos, glm::vec3 front, int max);
+  static glm::vec4 rayCast(glm::vec3 pos, glm::vec3 front, int max);
 };
 
 class World : public WorldWrap
@@ -70,7 +72,7 @@ class World : public WorldWrap
 };
 
 //The class for each individual block in the dictionary
-#define BLOCKRES 128;
+#define BLOCKRES 128
 class Block
 {
 public:
@@ -145,9 +147,9 @@ public:
 
   bool isInBlock(glm::vec3 pos)
   {
-    if(pos.x>0 && pos.x<width/BLOCKRES)
-      if(pos.y>0 && pos.y<height/BLOCKRES)
-        if(pos.z>0 && pos.z<depth/BLOCKRES)
+    if(pos.x>0 && pos.x<(float)width/BLOCKRES)
+      if(pos.y>0 && pos.y<(float)height/BLOCKRES)
+        if(pos.z>0 && pos.z<(float)depth/BLOCKRES)
         {
           return true;
         }

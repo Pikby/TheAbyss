@@ -41,7 +41,7 @@ public:
   void render();
   void addBlock(int x, int y, int z,char id);
   void freeGL();
-  bool blockExists(float x,float y,float z);
+  bool blockExists(int x,int y,int z);
   int blockVisibleType(int x, int y, int z);
   int getBlock(int x, int y, int z);
   int removeBlock(int x, int y, int z);
@@ -59,20 +59,25 @@ class BSPNode
   BSP curBSP;
   BSPNode(long int x, long int y, long int z);
   ~BSPNode();
-  bool blockExists(float x, float y, float z);
+  bool blockExists(int x, int y, int z);
   int blockVisibleType(int x, int y, int z);
   void build();
   void drawOpaque(Camera* camera);
   void drawTranslucent(Camera* camera);
   void generateTerrain();
+  //next and prev node for the linked list of all nodes
   std::shared_ptr<BSPNode>  nextNode;
   std::shared_ptr<BSPNode>  prevNode;
+
+  //references to the 6 cardinal neighbours of the chunk
   std::shared_ptr<BSPNode>  leftChunk;
   std::shared_ptr<BSPNode>  rightChunk;
   std::shared_ptr<BSPNode>  frontChunk;
   std::shared_ptr<BSPNode>  backChunk;
   std::shared_ptr<BSPNode>  topChunk;
   std::shared_ptr<BSPNode>  bottomChunk;
+
+  //Flags for use inbetween pointers
   bool inUse;
   bool toRender;
   bool toBuild;
