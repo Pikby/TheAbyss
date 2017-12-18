@@ -44,7 +44,7 @@ public:
   bool blockExists(int x,int y,int z);
   int blockVisibleType(int x, int y, int z);
   int getBlock(int x, int y, int z);
-  int removeBlock(int x, int y, int z);
+  void delBlock(int x, int y, int z);
   glm::vec3 offset(float x, float y,float z);
   void build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
                        std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
@@ -65,6 +65,7 @@ class BSPNode
   void drawOpaque(Camera* camera);
   void drawTranslucent(Camera* camera);
   void generateTerrain();
+  void delBlock(int x, int y, int z);
   //next and prev node for the linked list of all nodes
   std::shared_ptr<BSPNode>  nextNode;
   std::shared_ptr<BSPNode>  prevNode;

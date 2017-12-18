@@ -426,6 +426,7 @@ void World::delChunk(int x, int y, int z)
   }
 }
 
+
 void World::delScan(float* mainx, float* mainy, float* mainz)
 {
   /*
@@ -482,32 +483,33 @@ glm::vec4 WorldWrap::rayCast(glm::vec3 pos, glm::vec3 front, int max)
   for(float i = 0; i<max;i += 1/parts)
   {
     glm::vec3 curPos = pos+i*front;
+    //std::cout << curPos.x << ":" << curPos.y << ":" << curPos.z << "\n";
+/*
     int id = entityExists(curPos);
     if(id != 0)
     {
       return glm::vec4(curPos,BLOCK);
     }
-    else if(blockExists(curPos))
+    */
+    if(blockExists(curPos))
     {
-      return glm::vec4(curPos,NOTHING);
+      return glm::vec4(curPos,0);
     }
   }
   return glm::vec4(0,0,0,-1);
 }
 
-bool WorldWrap::blockExists(float x, float y, float z)
+bool WorldWrap::blockExists(int x, int y, int z)
 {
   /*
   Finds which ever chunk holds the block and then calls the blockExists
   function on that chunk with the localized coordinates
   */
 
-  float xd = x-((int)x);
-  float yd = y-((int)y);
-  float zd = z-((int)z);
-  int xlocal = x >= 0 ? (int)x % CHUNKSIZE : CHUNKSIZE + ((int)x % CHUNKSIZE);
-  int ylocal = y >= 0 ? (int)y % CHUNKSIZE : CHUNKSIZE + ((int)y % CHUNKSIZE);
-  int zlocal = z >= 0 ? (int)z % CHUNKSIZE : CHUNKSIZE + ((int)z % CHUNKSIZE);
+
+  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
+  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
+  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
 
   if(xlocal == CHUNKSIZE)xlocal = 0;
   if(ylocal == CHUNKSIZE)ylocal = 0;
@@ -521,7 +523,7 @@ bool WorldWrap::blockExists(float x, float y, float z)
   if(tempChunk = getChunk(xchunk,ychunk,zchunk))
   {
 
-    if(tempChunk->blockExists(xlocal+xd,ylocal+yd, zlocal+zd))
+    if(tempChunk->blockExists(xlocal,ylocal, zlocal))
     {
       return true;
     }
@@ -529,6 +531,57 @@ bool WorldWrap::blockExists(float x, float y, float z)
   return false;
 }
 
+void World::delBlock(int x, int y, int z)
+{
+  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
+  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
+  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
+
+  if(xlocal == CHUNKSIZE) xlocal = 0;
+  if(ylocal == CHUNKSIZE) ylocal = 0;
+  if(zlocal == CHUNKSIZE) zlocal = 0;
+
+std::cout<< "deleting block at: " << x << ":" << y << ":" << z << "\n";
+
+  int xchunk = floor((float)x/(float)CHUNKSIZE);
+  int ychunk = floor((float)y/(float)CHUNKSIZE);
+  int zchunk = floor((float)z/(float)CHUNKSIZE);
+
+  std::shared_ptr<BSPNode>  tempChunk;
+  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
+  {
+    tempChunk->delBlock(xlocal,ylocal,zlocal);
+  }
+  addToBuildQueue(tempChunk);
+
+  updateBlock(x+1,y,z);
+  updateBlock(x-1,y,z);
+  updateBlock(x,y+1,z);
+  updateBlock(x,y-1,z);
+  updateBlock(x,y,z+1);
+  updateBlock(x,y,z-1);
+}
+
+void World::updateBlock(int x, int y, int z)
+{
+  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
+  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
+  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
+
+  if(xlocal == CHUNKSIZE) xlocal = 0;
+  if(ylocal == CHUNKSIZE) ylocal = 0;
+  if(zlocal == CHUNKSIZE) zlocal = 0;
+
+  int xchunk = floor((float)x/(float)CHUNKSIZE);
+  int ychunk = floor((float)y/(float)CHUNKSIZE);
+  int zchunk = floor((float)z/(float)CHUNKSIZE);
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(xchunk,ychunk,zchunk);
+  if(!tempChunk->toBuild)
+  {
+    addToBuildQueue(tempChunk);
+  }
+
+}
 bool WorldWrap::blockExists(glm::vec3 pos)
 {
   return blockExists(pos.x,pos.y,pos.z);
@@ -547,10 +600,12 @@ int WorldWrap::anyExists(glm::vec3 pos)
 bool WorldWrap::entityExists(glm::vec3 pos)
 {
   //TODO
+  return false;
 }
 bool WorldWrap::entityExists(float x, float y, float z)
 {
   //TODO
+  return false;
 }
 
 Block::Block(std::string newName,int newId, int* array, int newVisibleType, int newWidth,int newHeight,int newDepth, int newAtlasWidth, int newAtlasHeight)

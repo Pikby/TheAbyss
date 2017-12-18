@@ -35,11 +35,12 @@ protected:
   static std::string worldName;
   static unsigned int screenWidth;
   static unsigned int screenHeight;
-  static bool blockExists(float x, float y, float z);
+  static bool blockExists(int x, int y, int z);
   static bool blockExists(glm::vec3 pos);
   static int anyExists(glm::vec3 pos);
   static bool entityExists(glm::vec3 pos);
   static bool entityExists(float x, float y, float z);
+
   static std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> BSPmap;
   static std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
   enum target{BLOCK = 0, NOTHING = -1};
@@ -63,7 +64,9 @@ class World : public WorldWrap
      bool chunkExists(int x, int y, int z);
 
 
+     void delBlock(int x, int y, int z);
      void delChunk(int x, int y, int z);
+     void updateBlock(int x, int y, int z);
      void delScan(float* mainx, float* mainy, float* mainz);
      void generateChunk(int chunkx, int chunky, int chunkz);
      void drawTranslucent(Camera* camera);

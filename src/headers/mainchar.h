@@ -46,6 +46,7 @@ public:
   void moveUp();
   void jump();
 
+  void destroyBlock();
   //Hud functions
   void calculateHud();
   void drawHud();

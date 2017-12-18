@@ -1,4 +1,3 @@
-enum Type {STATIC,DYNAMIC,STREAM};
 
 #include "headers/all.h"
 
@@ -87,6 +86,17 @@ void MainChar::jump()
 {
   if(grounded) deltay = 5.0f;
 }
+//Destroys the block ur looking at
+void MainChar::destroyBlock()
+{
+  std::cout << "attempting to destroy a block\n";
+  std::cout << mainCam.position.x << ":" << mainCam.position.y << ":" << mainCam.position.z << "\n";
+  glm::vec4 block = rayCast(mainCam.position,mainCam.front,200);
+
+  if(block.w == NOTHING) return;
+  curWorld->delBlock(block.x,block.y,block.z);
+
+}
 
 void MainChar::calculateHud()
 {
@@ -106,6 +116,8 @@ void MainChar::drawHud()
 
   gui.drawRectangle(topLeftx,topLefty,topLeftx+width,bottomRighty);
   gui.drawRectangle(topLeftx+width,topLefty,bottomRightx,topLefty+width);
+
+  gui.drawRectangle(screenWidth/2+5,screenHeight/2+5,screenWidth/2-5,screenHeight/2-5);
   showFPS();
 }
 

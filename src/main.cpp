@@ -14,6 +14,8 @@ int main()
   glfwSetKeyCallback(newWindow, key_callback);
   glfwSetCursorPosCallback(newWindow, mouse_callback);
   glfwSetScrollCallback(newWindow, scroll_callback);
+  glfwSetMouseButtonCallback(newWindow, mousekey_callback);
+  
   glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSwapInterval(0);//FPS Capping
   //Intialize glew and all related settings
