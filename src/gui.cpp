@@ -143,7 +143,7 @@ void GUIRenderer::renderText(std::string text, GLfloat x, GLfloat y, GLfloat sca
 
 void GUIRenderer::drawRectangle(float x1, float y1, float x2, float y2, glm::vec3 color)
 {
-  //std::cout << x1 << "," << y1 << "," << x2 << "," << y2 << "\n";
+
   guiShader.use();
   guiShader.setVec3("textColor",color);
   guiShader.setBool("isText",false);

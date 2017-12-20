@@ -36,7 +36,14 @@ protected:
   static unsigned int screenWidth;
   static unsigned int screenHeight;
   static bool blockExists(int x, int y, int z);
-  static bool blockExists(glm::vec3 pos);
+  static bool blockExists(glm::vec3 pos)
+  {
+    return blockExists((int)floor(pos.x),(int)floor(pos.y),(int)floor(pos.z));
+  }
+  static bool blockExists(double x,double y, double z)
+  {
+    return blockExists((int)floor(x),(int)floor(y),(int)floor(z));
+  }
   static int anyExists(glm::vec3 pos);
   static bool entityExists(glm::vec3 pos);
   static bool entityExists(float x, float y, float z);

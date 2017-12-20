@@ -493,6 +493,7 @@ glm::vec4 WorldWrap::rayCast(glm::vec3 pos, glm::vec3 front, int max)
     */
     if(blockExists(curPos))
     {
+      std::cout << curPos.x << ":" << curPos.y << ":" << curPos.z << "\n";
       return glm::vec4(curPos,0);
     }
   }
@@ -582,10 +583,7 @@ void World::updateBlock(int x, int y, int z)
   }
 
 }
-bool WorldWrap::blockExists(glm::vec3 pos)
-{
-  return blockExists(pos.x,pos.y,pos.z);
-}
+
 
 int WorldWrap::anyExists(glm::vec3 pos)
 {

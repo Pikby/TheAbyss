@@ -94,7 +94,7 @@ void MainChar::destroyBlock()
   glm::vec4 block = rayCast(mainCam.position,mainCam.front,200);
 
   if(block.w == NOTHING) return;
-  curWorld->delBlock(block.x,block.y,block.z);
+  curWorld->delBlock(floor(block.x),floor(block.y),floor(block.z));
 
 }
 
@@ -117,7 +117,7 @@ void MainChar::drawHud()
   gui.drawRectangle(topLeftx,topLefty,topLeftx+width,bottomRighty);
   gui.drawRectangle(topLeftx+width,topLefty,bottomRightx,topLefty+width);
 
-  gui.drawRectangle(screenWidth/2+5,screenHeight/2+5,screenWidth/2-5,screenHeight/2-5);
+  gui.drawRectangle(screenWidth/2+3,screenHeight/2+3,screenWidth/2-3,screenHeight/2-3);
   showFPS();
 }
 
