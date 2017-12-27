@@ -35,7 +35,7 @@ void initWorld(int numbBuildThreads, int width,  int height)
 {
   //glfwMakeContextCurrent(window);
   newWorld = new World(numbBuildThreads,width,height);
-  mainCharacter = new MainChar(200, 204, 200,newWorld);
+  mainCharacter = new MainChar(0,100, 0,newWorld);
   //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
 }
 
@@ -78,6 +78,7 @@ void* render(void* )
     newWorld->renderWorld(&mainCharacter->xpos,&mainCharacter->ypos,&mainCharacter->zpos);
     //std::cout << "Finished render loop" << renderLoop << "\n";
   }
+  newWorld->saveWorld();
   std::cout << "exiting render thread \n";
 }
 
@@ -99,7 +100,7 @@ void* build(void*i)
   {
     newWorld->buildWorld(threadNumb);
   }
-      std::cout << "exiting build thread \n";
+      std::cout << "exiting build thread #" << threadNumb << "\n";
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
@@ -118,7 +119,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     mainCharacter->moveUp();
   if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
     mainCharacter->moveDown();
-
+  if(glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
+    newWorld->setLightLocation(mainCharacter->mainCam.position);
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -147,4 +149,6 @@ void mousekey_callback(GLFWwindow* window, int button, int action, int mods)
 {
   if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
       mainCharacter->destroyBlock();
+  if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+    mainCharacter->addBlock(1);
 }

@@ -2,7 +2,7 @@ class Shader
 {
 public:
   //The actual shader program
-  GLuint Program;
+  GLuint id;
 
   //Create the shader with a path to the vertex and fragment shaders
   Shader(const GLchar* vertexPath, const GLchar* fragmentShader);
@@ -15,4 +15,5 @@ public:
   void setVec3(const char* name, float x, float y, float z);
   void setInt(const char* name, int x);
   void setBool(const char* name, bool val);
+  void setFloat(const char* name, float val);
 };

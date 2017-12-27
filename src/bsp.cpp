@@ -43,7 +43,7 @@ void BSPNode::build()
   inUse = false;
 }
 
-void BSPNode::drawOpaque(Camera* camera)
+void BSPNode::drawOpaque()
 {
   inUse = true;
   if(toRender == true)
@@ -51,11 +51,11 @@ void BSPNode::drawOpaque(Camera* camera)
      curBSP.render();
      toRender = false;
   }
-  curBSP.drawOpaque(camera);
+  curBSP.drawOpaque();
   inUse = false;
 }
 
-void BSPNode::drawTranslucent(Camera* camera)
+void BSPNode::drawTranslucent()
 {
 
   inUse = true;
@@ -64,8 +64,13 @@ void BSPNode::drawTranslucent(Camera* camera)
      curBSP.render();
      toRender = false;
   }
-  curBSP.drawTranslucent(camera);
+  curBSP.drawTranslucent();
   inUse = false;
+}
+
+void BSPNode::saveChunk()
+{
+  curBSP.saveChunk();
 }
 
 bool BSPNode::blockExists(int x, int y, int z)
@@ -76,6 +81,11 @@ bool BSPNode::blockExists(int x, int y, int z)
 void BSPNode::delBlock(int x, int y, int z)
 {
   curBSP.delBlock(x, y, z);
+}
+
+void BSPNode::addBlock(int x, int y, int z, int id)
+{
+  curBSP.addBlock(x,y,z,id);
 }
 
 int BSPNode::blockVisibleType(int x, int y, int z)
@@ -162,7 +172,11 @@ BSP::BSP(long int x, long int y, long int z)
 
 BSP::~BSP()
 {
+  saveChunk();
+}
 
+void BSP::saveChunk()
+{
   using namespace std;
   //The directoy to the chunk to be saved
   string directory = "saves/" + worldName + "/chunks/";
@@ -193,6 +207,7 @@ BSP::~BSP()
   ochunk.write((char*) &curTotal,sizeof(curTotal));
   ochunk.close();
 }
+
 void BSP::freeGL()
 {
   //Frees all the used opengl resourses
@@ -589,14 +604,14 @@ void BSP::render()
 
 }
 
-void BSP::drawOpaque(Camera* camera)
+void BSP::drawOpaque()
 {
   glBindVertexArray(oVAO);
   glDrawElements(GL_TRIANGLES, oIndices->size(), GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
 }
 
-void BSP::drawTranslucent(Camera* camera)
+void BSP::drawTranslucent()
 {
   glBindVertexArray(tVAO);
   glDrawElements(GL_TRIANGLES, tIndices->size(), GL_UNSIGNED_INT,0);

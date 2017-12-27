@@ -15,7 +15,7 @@ int main()
   glfwSetCursorPosCallback(newWindow, mouse_callback);
   glfwSetScrollCallback(newWindow, scroll_callback);
   glfwSetMouseButtonCallback(newWindow, mousekey_callback);
-  
+
   glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSwapInterval(0);//FPS Capping
   //Intialize glew and all related settings
@@ -30,9 +30,11 @@ int main()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   //Cull face unrenders the back side of polygons
 
+
+
   glEnable(GL_CULL_FACE);
-  glCullFace(GL_FRONT);
-  glFrontFace(GL_CW);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
 
 
 

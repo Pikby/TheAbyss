@@ -27,7 +27,6 @@ void BSP::generateTerrain()
           //addBlock(x,y,z,3);
         }
 
-        if(realx*realx+realy*realy-realz*realz < 1) addBlock(x,y,z,0);
       }
     }
   }

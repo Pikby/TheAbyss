@@ -25,6 +25,7 @@ private:
   float gravity;
   float moveSpeed;
   float deltax,deltay,deltaz;
+  int reach = 200;
   bool grounded;
 public:
   Camera mainCam;
@@ -46,6 +47,7 @@ public:
   void moveUp();
   void jump();
 
+  void addBlock(int id);
   void destroyBlock();
   //Hud functions
   void calculateHud();

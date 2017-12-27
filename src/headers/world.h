@@ -16,6 +16,7 @@ protected:
   //shader for world geometry
   static Shader blockShader;
   static Shader depthShader;
+  static Shader debugShader;
   //File path to atlas
   static const char* texture;
   //Render distances
@@ -60,24 +61,31 @@ class World : public WorldWrap
     std::shared_ptr<BSPNode> frontNode;
     std::shared_ptr<BSPNode> frontDelNode;
   public:
-     unsigned int depthMapFBO,depthMap;
+     unsigned int depthMapFBO,depthMap,depthMapEBO;
+     unsigned int quadVAO = 0;
+     unsigned int quadVBO;
      void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
      bool loadDictionary(const char* file);
      World(int numbBuildThreads,int width,int height);
-     void destroyWorld();
+
      void renderWorld(float* mainx, float* mainy, float* mainz);
      void drawWorld(Camera* camera);
      void buildWorld(int threadNumb);
      bool chunkExists(int x, int y, int z);
 
-
+     void setLightLocation(glm::vec3 pos)
+     {
+      lightPos = pos; 
+     }
      void delBlock(int x, int y, int z);
      void delChunk(int x, int y, int z);
+     void addBlock(int x, int y, int z, int id);
      void updateBlock(int x, int y, int z);
      void delScan(float* mainx, float* mainy, float* mainz);
      void generateChunk(int chunkx, int chunky, int chunkz);
-     void drawTranslucent(Camera* camera);
-     void drawOpaque(Camera* camera);
+     void drawTranslucent();
+     void drawOpaque();
+     void saveWorld();
      std::queue<std::shared_ptr<BSPNode>>* buildQueue;
 };
 

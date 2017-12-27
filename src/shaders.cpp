@@ -71,10 +71,10 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
   }
 
   //Create the shader program
-  this->Program = glCreateProgram();
-  glAttachShader(this->Program, vertex);
-  glAttachShader(this->Program, fragment);
-  glLinkProgram(this->Program);
+  id= glCreateProgram();
+  glAttachShader(id, vertex);
+  glAttachShader(id, fragment);
+  glLinkProgram(id);
 
   glDeleteShader(vertex);
   glDeleteShader(fragment);
@@ -82,28 +82,32 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 
 void Shader::use()
 {
-  glUseProgram(this->Program);
+  glUseProgram(id);
 }
 
 void Shader::setMat4(const char* name, glm::mat4 value)
 {
-  glUniformMatrix4fv(glGetUniformLocation(this->Program, name), 1, GL_FALSE, glm::value_ptr(value));
+  glUniformMatrix4fv(glGetUniformLocation(id, name), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void Shader::setVec3(const char* name, glm::vec3 value)
 {
-  glUniform3f(glGetUniformLocation(this->Program, name),value.x,value.y,value.z);
+  glUniform3f(glGetUniformLocation(id, name),value.x,value.y,value.z);
 }
 
 void Shader::setVec3(const char* name, float x, float y, float z)
 {
-  glUniform3f(glGetUniformLocation(this->Program, name),x,y,z);
+  glUniform3f(glGetUniformLocation(id, name),x,y,z);
 }
 void Shader::setInt(const char* name, int x)
 {
-  glUniform1i(glGetUniformLocation(this->Program, name),x);
+  glUniform1i(glGetUniformLocation(id, name),x);
 }
 void Shader::setBool(const char* name, bool val)
 {
-  glUniform1i(glGetUniformLocation(this->Program, name),val);
+  glUniform1i(glGetUniformLocation(id, name),val);
+}
+void Shader::setFloat(const char* name, float val)
+{
+  glUniform1f(glGetUniformLocation(id,name),val);
 }

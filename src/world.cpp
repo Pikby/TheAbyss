@@ -6,6 +6,7 @@ int WorldWrap::numbOfThreads;
 int WorldWrap::seed;
 Shader WorldWrap::blockShader;
 Shader WorldWrap::depthShader;
+Shader WorldWrap::debugShader;
 int WorldWrap::horzRenderDistance;
 int WorldWrap::vertRenderDistance;
 GLuint WorldWrap::SHADOW_WIDTH;
@@ -42,6 +43,7 @@ World::World(int numbBuildThreads,int width,int height)
 
   blockShader = Shader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
   depthShader =  Shader("../src/shaders/depthShader.vs","../src/shaders/depthShader.fs");
+  debugShader = Shader("../src/shaders/debugQuad.vs","../src/shaders/debugQuad.fs");
   const char* texture = "../assets/textures/atlas.png";
   loadDictionary("../assets/blockDictionary.dat");
 
@@ -71,9 +73,12 @@ World::World(int numbBuildThreads,int width,int height)
   SOIL_free_image_data(image);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  glGenFramebuffers(1, &depthMapFBO);
 
-  int shadowSize = 1024*4;
+  glGenFramebuffers(1, &depthMapFBO);
+  glGenFramebuffers(1, &depthMapEBO);
+
+
+  int shadowSize = 10240;
   SHADOW_WIDTH = shadowSize;
   SHADOW_HEIGHT = shadowSize;
   VIEW_WIDTH = width;
@@ -92,19 +97,115 @@ World::World(int numbBuildThreads,int width,int height)
 
   glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+
+
   glDrawBuffer(GL_NONE);
   glReadBuffer(GL_NONE);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  depthShader.use();
-  depthShader.setInt("textureInfo", 0);
-  depthShader.setInt("shadowMap", 1);
+  blockShader.use();
+  blockShader.setInt("curTexture", 0);
+  blockShader.setInt("shadowMap", 1);
+  debugShader.use();
+  debugShader.setInt("depthMap",0);
 }
 
-void World::destroyWorld()
+void World::drawWorld(Camera* camera)
 {
+  /*
+  Iterates through all the chunks and draws them unless they're marked for destruciton
+  then it calls freeGl which will free up all opengl resourses on the chunk and then
+  removes all refrences to it
+  At that point the chunk should be deleted by the smart pointers;
+  */
+
+  //lightPos = camera->position;
+  //std::cout << lightPos.x << ":" << lightPos.y<< ":" << lightPos.z << "\n";
+
+
+  float near = -1;
+  float far = 400;
+  glm::mat4 lightProjection;
+  glm::mat4 lightView;
+  glm::mat4 lightSpaceMatrix;
+
+  float orthoSize = 400;
+  lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,near, far);
+  lightView  = glm::lookAt(lightPos,
+                                    glm::vec3(0,0,0),
+                                    glm::vec3(0.0f,1.0f,0.0f));
+
+  lightSpaceMatrix = lightProjection * lightView;
+  depthShader.use();
+  depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+  glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+      glClear(GL_DEPTH_BUFFER_BIT);
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, glTexture);
+      drawOpaque();
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glViewport(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  blockShader.use();
+
+  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1920/ (float)1080, 0.1f, (float)horzRenderDistance*CHUNKSIZE*4);
+  blockShader.setMat4("projection", projection);
+
+  glm::mat4 view = camera->getViewMatrix();
+  blockShader.setMat4("view", view);
+
+  blockShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+  blockShader.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
+  blockShader.setVec3("lightPos",  lightPos);
+  blockShader.setVec3("viewPos", camera->position);
+  blockShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, glTexture);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+
+  drawOpaque();
+
+  /*
+  debugShader.use();
+  debugShader.setFloat("near_plane", near);
+  debugShader.setFloat("far_plane", far);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+
+
+  if (quadVAO == 0)
+  {
+      float quadVertices[] = {
+          // positions        // texture Coords
+           0.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+           0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+           1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+           1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+      };
+      // setup plane VAO
+      glGenVertexArrays(1, &quadVAO);
+      glGenBuffers(1, &quadVBO);
+      glBindVertexArray(quadVAO);
+      glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+      glEnableVertexAttribArray(0);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+      glEnableVertexAttribArray(1);
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+  }
+  glBindVertexArray(quadVAO);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glBindVertexArray(0);
+
+  */
 
 }
+
 
 void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
 {
@@ -289,66 +390,8 @@ std::shared_ptr<BSPNode>  WorldWrap::getChunk(int x, int y, int z)
 }
 
 
-void World::drawWorld(Camera* camera)
-{
-  /*
-  Iterates through all the chunks and draws them unless they're marked for destruciton
-  then it calls freeGl which will free up all opengl resourses on the chunk and then
-  removes all refrences to it
-  At that point the chunk should be deleted by the smart pointers;
-  */
 
-  lightPos = glm::vec3(0.0f,5.0f,0.0f);
-  //std::cout << lightPos.x << ":" << lightPos.y<< ":" << lightPos.z << "\n";
-  glm::mat4 model = glm::mat4();
-  /*
-  glm::mat4 lightProjection,lightView,lightSpaceMatrix;
-  float orthoSize = 128;
-  lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,1.0f, 128.0f);
-  lightView  = glm::lookAt(lightPos,
-                                    glm::vec3(8.0f,0.0f,8.0f),
-                                    glm::vec3( 0.0f,1.0f,0.0f));
-
-
-  lightSpaceMatrix = lightProjection * lightView;
-  depthShader->use();
-  depthShader->setMat4("lightSpaceMatrix",lightSpaceMatrix);
-  glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-
-      glClear(GL_DEPTH_BUFFER_BIT);
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, glTexture);
-      depthShader->setMat4("model",model);
-      drawOpaque(camera);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  glViewport(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-*/
-
-  blockShader.use();
-
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1920/ (float)1080, 0.1f, (float)horzRenderDistance*CHUNKSIZE*4);
-  blockShader.setMat4("projection", projection);
-
-  glm::mat4 view = camera->getViewMatrix();
-  blockShader.setMat4("view", view);
-
-  blockShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-  blockShader.setVec3("lightColor",  0.5f, 0.5f, 0.5f);
-  blockShader.setVec3("lightPos",  lightPos);
-  blockShader.setVec3("viewPos", camera->position);
-  //blockShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
-  blockShader.setMat4("model",model);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, glTexture);
-  drawOpaque(camera);
-  //drawTranslucent(camera);
-}
-
-void World::drawOpaque(Camera* camera)
+void World::drawOpaque()
 {
   std::shared_ptr<BSPNode>  curNode = frontNode;
   std::shared_ptr<BSPNode>  nextNode;
@@ -365,12 +408,12 @@ void World::drawOpaque(Camera* camera)
       curNode->prevNode = NULL;
       curNode->curBSP.freeGL();
     }
-    else curNode->drawOpaque(camera);
+    else curNode->drawOpaque();
     curNode = nextNode;
   }
 }
 
-void World::drawTranslucent(Camera* camera)
+void World::drawTranslucent()
 {
   std::shared_ptr<BSPNode> curNode = frontNode;
   std::shared_ptr<BSPNode> nextNode;
@@ -387,7 +430,7 @@ void World::drawTranslucent(Camera* camera)
       curNode->prevNode = NULL;
       curNode->curBSP.freeGL();
     }
-    else curNode->drawTranslucent(camera);
+    else curNode->drawTranslucent();
     curNode = nextNode;
   }
 }
@@ -459,6 +502,16 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
   }
 }
 
+void World::saveWorld()
+{
+    std::shared_ptr<BSPNode>  curNode = frontNode;
+    while(curNode != NULL)
+    {
+      curNode->saveChunk();
+      curNode = curNode->nextNode;
+    }
+}
+
 bool World::chunkExists(int x ,int y, int z)
 {
   if(BSPmap.count(x) == 1)
@@ -479,7 +532,7 @@ bool World::chunkExists(int x ,int y, int z)
 //If there is nothing return a 0 vector  with -1 id
 glm::vec4 WorldWrap::rayCast(glm::vec3 pos, glm::vec3 front, int max)
 {
-  float parts = 4;
+  float parts = 10;
   for(float i = 0; i<max;i += 1/parts)
   {
     glm::vec3 curPos = pos+i*front;
@@ -493,8 +546,7 @@ glm::vec4 WorldWrap::rayCast(glm::vec3 pos, glm::vec3 front, int max)
     */
     if(blockExists(curPos))
     {
-      std::cout << curPos.x << ":" << curPos.y << ":" << curPos.z << "\n";
-      return glm::vec4(curPos,0);
+        return glm::vec4(curPos,0);
     }
   }
   return glm::vec4(0,0,0,-1);
@@ -531,6 +583,56 @@ bool WorldWrap::blockExists(int x, int y, int z)
   }
   return false;
 }
+void World::addBlock(int x, int y, int z, int id)
+{
+  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
+  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
+  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
+
+  if(xlocal == CHUNKSIZE) xlocal = 0;
+  if(ylocal == CHUNKSIZE) ylocal = 0;
+  if(zlocal == CHUNKSIZE) zlocal = 0;
+
+  int xchunk = floor((float)x/(float)CHUNKSIZE);
+  int ychunk = floor((float)y/(float)CHUNKSIZE);
+  int zchunk = floor((float)z/(float)CHUNKSIZE);
+
+  std::shared_ptr<BSPNode>  tempChunk;
+  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
+  {
+    tempChunk->addBlock(xlocal,ylocal,zlocal,id);
+  }
+  tempChunk->build();
+
+  if(xlocal+1>=CHUNKSIZE)
+  {
+    getChunk(xchunk+1,ychunk,zchunk)->build();
+  }
+  else if(xlocal-1 < 0)
+  {
+    getChunk(xchunk-1,ychunk,zchunk)->build();
+  }
+
+  if(ylocal+1>=CHUNKSIZE)
+  {
+    getChunk(xchunk,ychunk+1,zchunk)->build();
+  }
+  else if(ylocal-1 < 0)
+  {
+    getChunk(xchunk,ychunk-1,zchunk)->build();
+  }
+
+  if(zlocal+1>=CHUNKSIZE)
+  {
+    getChunk(xchunk,ychunk,zchunk+1)->build();
+  }
+  else if(zlocal-1 < 0)
+  {
+    getChunk(xchunk,ychunk,zchunk-1)->build();
+  }
+
+
+}
 
 void World::delBlock(int x, int y, int z)
 {
@@ -542,8 +644,6 @@ void World::delBlock(int x, int y, int z)
   if(ylocal == CHUNKSIZE) ylocal = 0;
   if(zlocal == CHUNKSIZE) zlocal = 0;
 
-std::cout<< "deleting block at: " << x << ":" << y << ":" << z << "\n";
-
   int xchunk = floor((float)x/(float)CHUNKSIZE);
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
@@ -553,14 +653,34 @@ std::cout<< "deleting block at: " << x << ":" << y << ":" << z << "\n";
   {
     tempChunk->delBlock(xlocal,ylocal,zlocal);
   }
-  addToBuildQueue(tempChunk);
+  tempChunk->build();
 
-  updateBlock(x+1,y,z);
-  updateBlock(x-1,y,z);
-  updateBlock(x,y+1,z);
-  updateBlock(x,y-1,z);
-  updateBlock(x,y,z+1);
-  updateBlock(x,y,z-1);
+  if(xlocal+1>=CHUNKSIZE)
+  {
+    getChunk(xchunk+1,ychunk,zchunk)->build();
+  }
+  else if(xlocal-1 < 0)
+  {
+    getChunk(xchunk-1,ychunk,zchunk)->build();
+  }
+
+  if(ylocal+1>=CHUNKSIZE)
+  {
+    getChunk(xchunk,ychunk+1,zchunk)->build();
+  }
+  else if(ylocal-1 < 0)
+  {
+    getChunk(xchunk,ychunk-1,zchunk)->build();
+  }
+
+  if(zlocal+1>=CHUNKSIZE)
+  {
+    getChunk(xchunk,ychunk,zchunk+1)->build();
+  }
+  else if(zlocal-1 < 0)
+  {
+    getChunk(xchunk,ychunk,zchunk-1)->build();
+  }
 }
 
 void World::updateBlock(int x, int y, int z)
