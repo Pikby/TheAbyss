@@ -4,7 +4,7 @@ int main()
 {
   glfwInit();
 
-  int numbBuildThreads = 4;
+  const int numbBuildThreads = 4;
 
 
   int winWidth = 1280;
@@ -31,7 +31,9 @@ int main()
   //Cull face unrenders the back side of polygons
 
 
-
+  glfwWindowHint(GLFW_SAMPLES, 4);
+  glEnable(GL_MULTISAMPLE);
+  
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
@@ -40,6 +42,7 @@ int main()
 
   initWorld(numbBuildThreads,winWidth,winHeight);
   std::cout << "staring main\n";
+
 
   pthread_t renderThreads[2];
   pthread_create(&renderThreads[1],NULL,render,NULL);

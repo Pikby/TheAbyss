@@ -363,7 +363,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          bool rightNeigh = false;
          bool frontNeigh = false;
          bool backNeigh = false;
-         bool defaultNull = true;
+         bool defaultNull = false;
 
          if(x+1 >= CHUNKSIZE)
          {

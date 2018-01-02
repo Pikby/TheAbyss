@@ -1,6 +1,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#define GLEW_STATIC
 
 #include <GL/glew.h>
 

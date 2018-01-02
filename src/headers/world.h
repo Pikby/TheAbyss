@@ -9,21 +9,16 @@ class WorldWrap
 protected:
   //
 
-  static GLuint SHADOW_WIDTH, SHADOW_HEIGHT, VIEW_WIDTH, VIEW_HEIGHT;
+  static int screenWidth;
+  static int screenHeight;
   static unsigned int totalChunks;
   //global texture atlas
-  static GLuint glTexture;
-  //shader for world geometry
-  static Shader blockShader;
-  static Shader depthShader;
-  static Shader debugShader;
-  //File path to atlas
-  static const char* texture;
+
   //Render distances
   static int horzRenderDistance;
   static int vertRenderDistance;
-  //Postion of sun
-  static glm::vec3 lightPos;
+
+  static int renderBuffer;
   //The seed of the world, for generation
   static int seed;
   //Array of blocks that make up the dictionary
@@ -34,8 +29,6 @@ protected:
   static int numbOfThreads;
   //The name of the world, for saving and loading
   static std::string worldName;
-  static unsigned int screenWidth;
-  static unsigned int screenHeight;
   static bool blockExists(int x, int y, int z);
   static bool blockExists(glm::vec3 pos)
   {
@@ -58,6 +51,8 @@ protected:
 class World : public WorldWrap
 {
   private:
+    GLuint glTexture;
+    const char* texture;
     std::shared_ptr<BSPNode> frontNode;
     std::shared_ptr<BSPNode> frontDelNode;
   public:
@@ -69,13 +64,12 @@ class World : public WorldWrap
      World(int numbBuildThreads,int width,int height);
 
      void renderWorld(float* mainx, float* mainy, float* mainz);
-     void drawWorld(Camera* camera);
+     void drawWorld();
      void buildWorld(int threadNumb);
      bool chunkExists(int x, int y, int z);
 
      void setLightLocation(glm::vec3 pos)
      {
-      lightPos = pos; 
      }
      void delBlock(int x, int y, int z);
      void delChunk(int x, int y, int z);
@@ -86,6 +80,7 @@ class World : public WorldWrap
      void drawTranslucent();
      void drawOpaque();
      void saveWorld();
+     void renderQuad();
      std::queue<std::shared_ptr<BSPNode>>* buildQueue;
 };
 

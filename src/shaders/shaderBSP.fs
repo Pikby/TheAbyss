@@ -21,7 +21,21 @@ float shadowCalculation(vec4 fragPosLightSpace)
   float nearestDepth = texture(shadowMap, projCoords.xy).r;
   float curDepth = projCoords.z;
 
-  float shadow = curDepth -0.005> nearestDepth ? 1.0 : 0.0;
+  float shadow = 0.0;
+  /*
+  vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+  for(int x = -1; x <= 1; ++x)
+  {
+      for(int y = -1; y <= 1; ++y)
+      {
+          float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+          shadow += curDepth - 0.005 > pcfDepth ? 1.0 : 0.0;
+      }
+  }
+  shadow /= 9.0;
+  */
+
+  shadow = curDepth-0.005 > nearestDepth ? 1.0 : 0.0;
   return shadow;
 }
 
@@ -45,5 +59,5 @@ void main()
 
   float shadow = shadowCalculation(FragPosLightSpace);
   vec3 result = (ambient+(1.0-shadow)*(diffuse+specular));
-  color = texture(curTexture,TexCoord)* vec4(result, 1.0);
+  color = texture(curTexture,TexCoord)*vec4(objectColor,1)*vec4(result, 1.0);
 }

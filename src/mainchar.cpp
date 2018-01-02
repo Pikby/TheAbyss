@@ -116,7 +116,7 @@ void MainChar::addBlock(int id)
     if(block.w == NOTHING) return;
 
     glm::vec3 p1 = glm::vec3(block);
-    glm::vec3 p2 = p1 - mainCam.front/10;
+    glm::vec3 p2 = p1 - mainCam.front/10.0f;
 
     int x = floor(p1.x)-floor(p2.x);
     int y = floor(p1.y)-floor(p2.y);

@@ -1,26 +1,17 @@
 
 #include "headers/all.h"
 
-
+int WorldWrap::screenWidth;
+int WorldWrap::screenHeight;
 int WorldWrap::numbOfThreads;
 int WorldWrap::seed;
-Shader WorldWrap::blockShader;
-Shader WorldWrap::depthShader;
-Shader WorldWrap::debugShader;
 int WorldWrap::horzRenderDistance;
 int WorldWrap::vertRenderDistance;
-GLuint WorldWrap::SHADOW_WIDTH;
-GLuint WorldWrap::SHADOW_HEIGHT;
-GLuint WorldWrap::VIEW_WIDTH;
-GLuint WorldWrap::VIEW_HEIGHT;
+int WorldWrap::renderBuffer;
 unsigned int WorldWrap::totalChunks;
-glm::vec3 WorldWrap::lightPos;
 Block* WorldWrap::dictionary;
 FastNoise WorldWrap::perlin;
-GLuint WorldWrap::glTexture;
 std::string WorldWrap::worldName;
-unsigned int WorldWrap::screenWidth;
-unsigned int WorldWrap::screenHeight;
 std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> WorldWrap::BSPmap;
 
 
@@ -41,28 +32,28 @@ World::World(int numbBuildThreads,int width,int height)
   perlin.SetFractalGain(5);
   worldName = "default";
 
-  blockShader = Shader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
-  depthShader =  Shader("../src/shaders/depthShader.vs","../src/shaders/depthShader.fs");
-  debugShader = Shader("../src/shaders/debugQuad.vs","../src/shaders/debugQuad.fs");
   const char* texture = "../assets/textures/atlas.png";
   loadDictionary("../assets/blockDictionary.dat");
 
-
+/*
   std::experimental::filesystem::create_directory("saves");
   std::experimental::filesystem::create_directory("saves/"+worldName);
   std::experimental::filesystem::create_directory("saves/"+worldName+"/chunks");
+*/
 
   frontNode = NULL;
   horzRenderDistance = 7;
   vertRenderDistance = 7;
+  renderBuffer = 1;
   totalChunks = 0;
+
   glGenTextures(1, &glTexture);
   glBindTexture(GL_TEXTURE_2D, glTexture);
-
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 
   //Load and bind the texture from the class
   int texWidth, texHeight;
@@ -73,9 +64,8 @@ World::World(int numbBuildThreads,int width,int height)
   SOIL_free_image_data(image);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-
+  /*
   glGenFramebuffers(1, &depthMapFBO);
-  glGenFramebuffers(1, &depthMapEBO);
 
 
   int shadowSize = 10240;
@@ -108,84 +98,19 @@ World::World(int numbBuildThreads,int width,int height)
   blockShader.setInt("shadowMap", 1);
   debugShader.use();
   debugShader.setInt("depthMap",0);
+  */
 }
 
-void World::drawWorld(Camera* camera)
+void World::renderQuad()
 {
-  /*
-  Iterates through all the chunks and draws them unless they're marked for destruciton
-  then it calls freeGl which will free up all opengl resourses on the chunk and then
-  removes all refrences to it
-  At that point the chunk should be deleted by the smart pointers;
-  */
-
-  //lightPos = camera->position;
-  //std::cout << lightPos.x << ":" << lightPos.y<< ":" << lightPos.z << "\n";
-
-
-  float near = -1;
-  float far = 400;
-  glm::mat4 lightProjection;
-  glm::mat4 lightView;
-  glm::mat4 lightSpaceMatrix;
-
-  float orthoSize = 400;
-  lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,near, far);
-  lightView  = glm::lookAt(lightPos,
-                                    glm::vec3(0,0,0),
-                                    glm::vec3(0.0f,1.0f,0.0f));
-
-  lightSpaceMatrix = lightProjection * lightView;
-  depthShader.use();
-  depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-  glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-      glClear(GL_DEPTH_BUFFER_BIT);
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, glTexture);
-      drawOpaque();
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glViewport(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  blockShader.use();
-
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1920/ (float)1080, 0.1f, (float)horzRenderDistance*CHUNKSIZE*4);
-  blockShader.setMat4("projection", projection);
-
-  glm::mat4 view = camera->getViewMatrix();
-  blockShader.setMat4("view", view);
-
-  blockShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-  blockShader.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
-  blockShader.setVec3("lightPos",  lightPos);
-  blockShader.setVec3("viewPos", camera->position);
-  blockShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, glTexture);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, depthMap);
-
-  drawOpaque();
-
-  /*
-  debugShader.use();
-  debugShader.setFloat("near_plane", near);
-  debugShader.setFloat("far_plane", far);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, depthMap);
-
-
   if (quadVAO == 0)
   {
       float quadVertices[] = {
           // positions        // texture Coords
-           0.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-           0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+           -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+           -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
            1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-           1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+           1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
       };
       // setup plane VAO
       glGenVertexArrays(1, &quadVAO);
@@ -201,8 +126,20 @@ void World::drawWorld(Camera* camera)
   glBindVertexArray(quadVAO);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
+}
 
+void World::drawWorld()
+{
+  /*
+  Iterates through all the chunks and draws them unless they're marked for destruciton
+  then it calls freeGl which will free up all opengl resourses on the chunk and then
+  removes all refrences to it
+  At that point the chunk should be deleted by the smart pointers;
   */
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, glTexture);
+  drawOpaque();
 
 }
 
@@ -493,9 +430,9 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
     int chunkz = curNode->curBSP.zCoord;
 
     curNode = curNode->nextNode;
-    if(abs(chunkx-x) > horzRenderDistance + 1
-    || abs(chunky-y) > horzRenderDistance + 1
-    || abs(chunkz-z) > horzRenderDistance + 1)
+    if(abs(chunkx-x) > horzRenderDistance + renderBuffer
+    || abs(chunky-y) > horzRenderDistance + renderBuffer
+    || abs(chunkz-z) > horzRenderDistance + renderBuffer)
     {
       delChunk(chunkx,chunky,chunkz);
     }

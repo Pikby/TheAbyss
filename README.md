@@ -1,6 +1,7 @@
 # OpenGLPractice
 
 Well this was a practice, but now im turning it into a minecraft like game
+Update: Windows builds works, run the game.exe in the build folder
 
 # Finished
 

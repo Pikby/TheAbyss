@@ -1,5 +1,5 @@
 #pragma once
-#include <experimental/filesystem>
+//#include <experimental/filesystem>
 #include <string>
 #include "SOIL.h"
 #include <iostream>
@@ -11,9 +11,11 @@
 #include <sstream>
 #include <thread>
 #include <queue>
+#include <pthread.h>
 
+#define PI 3.14159265
 // GLEW
-// #define GLEW_STATIC
+#define GLEW_STATIC
 #include <GL/glew.h>
 
 // GLFW

@@ -39,15 +39,62 @@ void initWorld(int numbBuildThreads, int width,  int height)
   //newWorld->renderWorld(round(mainCharacter->xpos/16),round(mainCharacter->ypos/16),round(mainCharacter->zpos/16));
 }
 
+
+
+
 void* draw(void* )
 {
   glfwMakeContextCurrent(window);
   long long totalFrame = 0;
   std::string fpsString;
+  Shader blockShader("../src/shaders/shaderBSP.vs","../src/shaders/shaderBSP.fs");
+  Shader depthShader("../src/shaders/depthShader.vs","../src/shaders/depthShader.fs");
+  Shader debugShader("../src/shaders/debugQuad.vs","../src/shaders/debugQuad.fs");
 
+  blockShader.use();
+  blockShader.setInt("curTexture", 0);
+  blockShader.setInt("shadowMap", 1);
+  /*
+  unsigned int HDRbuffer;
+  glBindTexture(GL_TEXTURE_2D, HDRbuffer);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,curWorld->VIEW_WIDTH,curWorld->)
+  */
+  glm::vec3 lightPos;
+
+  int shadowSize = 10240;
+  int SHADOW_WIDTH = shadowSize;
+  int SHADOW_HEIGHT = shadowSize;
+  int VIEW_WIDTH = 1280;
+  int VIEW_HEIGHT = 720;
+
+  unsigned int depthMapFBO, depthMap;
+  glGenFramebuffers(1,&depthMapFBO);
+
+  glGenTextures(1, &depthMap);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+               SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+
+
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+  double sunAngle = 10;
   while(!glfwWindowShouldClose(window))
   {
 
+    int vertRenderDistance = 7;
+    int horzRenderDistance = 7;
+    int renderBuffer = 1;
     totalFrame++;
 	   // update the delta time each frame
 	 float currentFrame = glfwGetTime();
@@ -60,13 +107,67 @@ void* draw(void* )
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     mainCharacter->update();
-    newWorld->drawWorld(&(mainCharacter->mainCam));
+
+
+    Camera camera = mainCharacter->mainCam;
+    sunAngle += 0.001;
+    int distToSun = (vertRenderDistance+renderBuffer+1)*CHUNKSIZE;
+    lightPos.x = cos(sunAngle*PI/180)*distToSun+camera.position.x;
+    lightPos.y = sin(sunAngle*PI/180)*distToSun+camera.position.y;
+    lightPos.z = camera.position.z;
+    float near = -1;
+    float far = distToSun*2;
+    glm::mat4 lightProjection;
+    glm::mat4 lightView;
+    glm::mat4 lightSpaceMatrix;
+
+    float orthoSize = (horzRenderDistance+renderBuffer)*CHUNKSIZE;
+    lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,near, far);
+    lightView  = glm::lookAt(lightPos,
+                                      camera.position,
+                                      glm::vec3(0.0f,1.0f,0.0f));
+
+    lightSpaceMatrix = lightProjection * lightView;
+    depthShader.use();
+    depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glActiveTexture(GL_TEXTURE0);
+        newWorld->drawWorld();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    blockShader.use();
+
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1920/ (float)1080, 0.1f, (float)horzRenderDistance*CHUNKSIZE*4);
+    blockShader.setMat4("projection", projection);
+
+    glm::mat4 view = camera.getViewMatrix();
+    blockShader.setMat4("view", view);
+
+    blockShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+    blockShader.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
+    blockShader.setVec3("lightPos",  lightPos);
+    blockShader.setVec3("viewPos", camera.position);
+    blockShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    newWorld->drawWorld();
+
+
     mainCharacter->drawHud();
     //std::cout << glGetError() << "update loop\n";
 
     glfwSwapBuffers(window);
   }
-      std::cout << "exiting draw thread \n";
+  std::cout << "exiting draw thread \n";
+
+  return NULL;
 }
 
 void* render(void* )
@@ -80,6 +181,7 @@ void* render(void* )
   }
   newWorld->saveWorld();
   std::cout << "exiting render thread \n";
+  return NULL;
 }
 
 void* del(void* )
@@ -89,7 +191,8 @@ void* del(void* )
     //std::cout << "finished delete scan\n";
     newWorld->delScan(&mainCharacter->xpos,&mainCharacter->ypos,&mainCharacter->zpos);
   }
-    std::cout << "exiting delete thread \n";
+  std::cout << "exiting delete thread \n";
+  return NULL;
 }
 
 void* build(void*i)
@@ -100,7 +203,8 @@ void* build(void*i)
   {
     newWorld->buildWorld(threadNumb);
   }
-      std::cout << "exiting build thread #" << threadNumb << "\n";
+  std::cout << "exiting build thread #" << threadNumb << "\n";
+  return NULL;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
