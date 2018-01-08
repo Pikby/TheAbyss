@@ -48,6 +48,7 @@ public:
 	// Processes input received from a mouse scroll-wheel event.
 	void processMouseScroll(float yoffset);
 
+	glm::mat4 getHSRMatrix();
 	void setPosition(float x, float y, float z);
 private:
 	// Calculates the front vector from the Camera's updated Eular Angles

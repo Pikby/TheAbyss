@@ -6,7 +6,7 @@ public:
   GLuint id;
 
   //Create the shader with a path to the vertex and fragment shaders
-  Shader(const GLchar* vertexPath, const GLchar* fragmentShader);
+  Shader(std::string vertexPath, std::string fragmentShader);
   Shader(){};
   //Command to use the program
   void use();

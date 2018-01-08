@@ -4,6 +4,7 @@
 class BSPNode;
 class BSP;
 class Block;
+class MainChar;
 class WorldWrap
 {
 protected:
@@ -15,6 +16,7 @@ protected:
   //global texture atlas
 
   //Render distances
+
   static int horzRenderDistance;
   static int vertRenderDistance;
 
@@ -46,6 +48,9 @@ protected:
   static std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
   enum target{BLOCK = 0, NOTHING = -1};
   static glm::vec4 rayCast(glm::vec3 pos, glm::vec3 front, int max);
+
+public:
+  static int drawnChunks;
 };
 
 class World : public WorldWrap
@@ -64,7 +69,7 @@ class World : public WorldWrap
      World(int numbBuildThreads,int width,int height);
 
      void renderWorld(float* mainx, float* mainy, float* mainz);
-     void drawWorld();
+     void drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR);
      void buildWorld(int threadNumb);
      bool chunkExists(int x, int y, int z);
 
@@ -77,10 +82,8 @@ class World : public WorldWrap
      void updateBlock(int x, int y, int z);
      void delScan(float* mainx, float* mainy, float* mainz);
      void generateChunk(int chunkx, int chunky, int chunkz);
-     void drawTranslucent();
-     void drawOpaque();
      void saveWorld();
-     void renderQuad();
+
      std::queue<std::shared_ptr<BSPNode>>* buildQueue;
 };
 

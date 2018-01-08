@@ -1,5 +1,6 @@
 #pragma once
-//#include <experimental/filesystem>
+
+#include <boost/filesystem.hpp>
 #include <string>
 #include "SOIL.h"
 #include <iostream>
@@ -12,6 +13,7 @@
 #include <thread>
 #include <queue>
 #include <pthread.h>
+
 
 #define PI 3.14159265
 // GLEW
@@ -27,11 +29,12 @@
 #include <glm/ext.hpp>
 
 //Add the shader configs
+
 #include "FastNoise.h"
 #include "shaders.h"
 #include "camera.h"
 #include "bsp.h"
-
 #include "openGL.h"
 #include "gui.h"
 #include "mainchar.h"
+#include "inputhandling.h"

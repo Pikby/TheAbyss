@@ -34,7 +34,6 @@ public:
   float xpos,ypos,zpos;
 
   MainChar(float x, float y, float z, World* curWorld );
-
   //Update movement
   void update();
 
