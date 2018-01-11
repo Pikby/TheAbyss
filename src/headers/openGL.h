@@ -9,3 +9,4 @@ void* del(void *);
 void* mainBuild(void* );
 void* build(void *i);
 void initWorld(int numbBuildThreads,int width, int height);
+void closeGame();

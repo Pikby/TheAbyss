@@ -2,38 +2,53 @@
 
 
 // timing
-float deltaTime = 0.0f;	// time between current frame and last frame
-float lastFrame = 0.0f;
+static float deltaTime = 0.0f;	// time between current frame and last frame
+static float lastFrame = 0.0f;
 
 // mouse position variables
-float lastX = 400;
-float lastY = 300;
-bool firstMouse = true;
+static float lastX = 400;
+static float lastY = 300;
+static bool firstMouse = true;
+static MainChar* mainCharacter;
+std::map<int,int> keyMap;
 
-MainChar* mainChar;
 
 void initializeInputs(MainChar* mc)
 {
-	mainChar = mc;
+	mainCharacter = mc;
+}
+
+void updateInputs()
+{
+	for(std::map<int,int>::iterator it=keyMap.begin(); it!=keyMap.end(); ++it)
+	{
+		switch(it->first)
+		{
+			case GLFW_KEY_ESCAPE: closeGame();                            break;
+			case GLFW_KEY_W:			mainCharacter->moveForward(); 					break;
+			case GLFW_KEY_Q:			mainCharacter->moveDown();							break;
+			case GLFW_KEY_A:			mainCharacter->moveLeft();							break;
+			case GLFW_KEY_D:			mainCharacter->moveRight();							break;
+			case GLFW_KEY_S:			mainCharacter->moveBackward();					break;
+			case GLFW_KEY_SPACE:	mainCharacter->moveUp();								break;
+		}
+	}
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
 
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		mainChar->moveForward();
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		mainChar->moveBackward();
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		mainChar->moveLeft();
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		mainChar->moveRight();
-  if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-    mainChar->moveUp();
-  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-    mainChar->moveDown();
+	if(keyMap.count(key) == 1)
+	{
+		if(action == GLFW_RELEASE)
+		{
+			keyMap.erase(key);
+		}
+	}
+	else
+	{
+		keyMap[key] = action;
+	}
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -50,19 +65,27 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	lastX = xpos;
 	lastY = ypos;
 
-	mainChar->mainCam.processMouseMovement(xoffset, yoffset, true);
+	mainCharacter->mainCam.processMouseMovement(xoffset, yoffset, true);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	mainChar->mainCam.processMouseScroll(yoffset);
+	mainCharacter->mainCam.processMouseScroll(yoffset);
 }
 
 void mousekey_callback(GLFWwindow* window, int button, int action, int mods)
 {
 
   if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-      mainChar->destroyBlock();
+      mainCharacter->destroyBlock();
   if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-    mainChar->addBlock(1);
+    mainCharacter->addBlock(1);
+}
+
+void moveForward(bool isOn)
+{
+	static bool on = false;
+	on = isOn;
+
+	if(on) mainCharacter->moveForward();
 }

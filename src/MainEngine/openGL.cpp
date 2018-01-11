@@ -1,9 +1,9 @@
 #include "../headers/all.h"
 
 //Global maincharacter reference which encapsulates the camera
-World* newWorld;
-GLFWwindow* window;
-MainChar* mainCharacter;
+static World* newWorld;
+static GLFWwindow* window;
+static MainChar* mainCharacter;
 
 
 
@@ -31,11 +31,15 @@ void initWorld(int numbBuildThreads, int width,  int height)
 
 }
 
-
+void closeGame()
+{
+  glfwSetWindowShouldClose(window, true);
+}
 
 
 void draw()
 {
+
   float deltaTime = 0.0f;	// time between current frame and last frame
   float lastFrame = 0.0f;
   glfwMakeContextCurrent(window);
@@ -88,6 +92,7 @@ void draw()
   double sunAngle = 10;
   while(!glfwWindowShouldClose(window))
   {
+    updateInputs();
     //std::cout << newWorld->drawnChunks << "\n";
     newWorld->drawnChunks = 0;
     int vertRenderDistance = 7;

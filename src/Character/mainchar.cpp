@@ -66,36 +66,36 @@ void MainChar::update()
 
 void MainChar::moveRight()
 {
-  deltax = cos((mainCam.yaw+90)*PI/180.0)*moveSpeed;
-  deltaz = sin((mainCam.yaw+90)*PI/180.0)*moveSpeed;
+  deltax += cos((mainCam.yaw+90)*PI/180.0)*moveSpeed;
+  deltaz += sin((mainCam.yaw+90)*PI/180.0)*moveSpeed;
 }
 
 void MainChar::moveLeft()
 {
-  deltax = cos((mainCam.yaw-90)*PI/180.0)*moveSpeed;
-  deltaz = sin((mainCam.yaw-90)*PI/180.0)*moveSpeed;
+  deltax += cos((mainCam.yaw-90)*PI/180.0)*moveSpeed;
+  deltaz += sin((mainCam.yaw-90)*PI/180.0)*moveSpeed;
 }
 
 void MainChar::moveForward()
 {
-  deltax = cos(mainCam.yaw*PI/180.0)*moveSpeed;
-  deltaz = sin(mainCam.yaw*PI/180.0)*moveSpeed;
+  deltax += cos(mainCam.yaw*PI/180.0)*moveSpeed;
+  deltaz += sin(mainCam.yaw*PI/180.0)*moveSpeed;
 }
 
 void MainChar::moveBackward()
 {
-  deltax = -cos(mainCam.yaw*PI/180.0)*moveSpeed;
-  deltaz = -sin(mainCam.yaw*PI/180.0)*moveSpeed;
+  deltax += -cos(mainCam.yaw*PI/180.0)*moveSpeed;
+  deltaz += -sin(mainCam.yaw*PI/180.0)*moveSpeed;
 }
 
 void MainChar::moveDown()
 {
-  deltay = -moveSpeed;
+  deltay += -moveSpeed;
 }
 
 void MainChar::moveUp()
 {
-  deltay = moveSpeed;
+  deltay += moveSpeed;
 }
 
 void MainChar::jump()
