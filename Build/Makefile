@@ -26,7 +26,7 @@ FPATH = ../src/
 TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/openGL.cpp MainEngine/bsp.cpp \
 				 Character/camera.cpp Character/gui.cpp TerrainGeneration/FastNoise.cpp\
 				 Character/mainchar.cpp TerrainGeneration/bspterraingen.cpp Shader/shaders.cpp \
-				 InputHandling/inputhandling.cpp
+				 InputHandling/inputhandling.cpp Inventory/items.cpp
 NAME = -o game
 linux:
 	cd ../src &&	$(CC) $(NAME) $(TARGET) $(CFLAGSLINUX)

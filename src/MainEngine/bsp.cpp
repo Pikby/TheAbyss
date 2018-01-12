@@ -295,14 +295,14 @@ void BSP::addIndices(int renderType,int index1, int index2, int index3, int inde
 
 bool BSP::blockExists(int x, int y, int z)
 {
-  Block temp = dictionary[worldMap[(int)x+CHUNKSIZE*(int)y+(int)z*CHUNKSIZE*CHUNKSIZE]];
-  if(temp.id == 0 ) return false;
+  int id = worldMap[(int)x+CHUNKSIZE*(int)y+(int)z*CHUNKSIZE*CHUNKSIZE];
+  if(id == 0 ) return false;
   else return true;
 }
 
 int BSP::blockVisibleType(int x, int y, int z)
 {
-  return dictionary[getBlock(x,y,z)].visibleType;
+  return ItemDatabase::blockDictionary[getBlock(x,y,z)].visibleType;
 }
 
 void BSP::addBlock(int x, int y, int z, char id)
@@ -423,7 +423,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          }
          else if(renderType == blockVisibleType(x,y,z-1)) frontNeigh = true;
 
-         Block tempBlock = dictionary[(getBlock(x,y,z))];
+         Block tempBlock = ItemDatabase::blockDictionary[(getBlock(x,y,z))];
          float x1, y1, x2, y2;
 
          glm::vec3 tempVec;

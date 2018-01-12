@@ -62,7 +62,7 @@ void draw()
   */
   glm::vec3 lightPos;
 
-  int shadowSize = 10240;
+  int shadowSize = 10024;
   int SHADOW_WIDTH = shadowSize;
   int SHADOW_HEIGHT = shadowSize;
   int VIEW_WIDTH = 1280;
@@ -88,16 +88,16 @@ void draw()
   glReadBuffer(GL_NONE);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-
+  int vertRenderDistance = 7;
+  int horzRenderDistance = 7;
+  int renderBuffer = 1;
   double sunAngle = 10;
   while(!glfwWindowShouldClose(window))
   {
     updateInputs();
     //std::cout << newWorld->drawnChunks << "\n";
     newWorld->drawnChunks = 0;
-    int vertRenderDistance = 7;
-    int horzRenderDistance = 7;
-    int renderBuffer = 1;
+
     totalFrame++;
 	   // update the delta time each frame
 	 float currentFrame = glfwGetTime();

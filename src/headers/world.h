@@ -23,8 +23,6 @@ protected:
   static int renderBuffer;
   //The seed of the world, for generation
   static int seed;
-  //Array of blocks that make up the dictionary
-  static Block* dictionary;
   //Perlin noise object
   static FastNoise perlin;
   //Number of build threads
@@ -65,7 +63,6 @@ class World : public WorldWrap
      unsigned int quadVAO = 0;
      unsigned int quadVBO;
      void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
-     bool loadDictionary(const char* file);
      World(int numbBuildThreads,int width,int height);
 
      void renderWorld(float* mainx, float* mainy, float* mainz);
@@ -89,88 +86,3 @@ class World : public WorldWrap
 
 //The class for each individual block in the dictionary
 #define BLOCKRES 128
-class Block
-{
-public:
-  std::string name;
-  int id;
-  int texArray[12]; //array of coordinates of all sides of the block from the texture array
-  int width;
-  int height;
-  int depth;
-  int atlasWidth;
-  int atlasHeight;
-  int visibleType;
-
-  Block(std::string newName, int newId, int* array,int newVisibleType, int newWidth,
-    int newHeight, int newDepth,int newAtlasWidth, int newAtlasHeight);
-
-
-  void print()
-  {
-    std::cout << name << "\n"
-              << id << "\n"
-              << visibleType << "\n";
-  }
-  Block(){};
-  void getTop(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[0]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[1]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[0]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[1]+1);
-  };
-
-  void getBottom(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[2]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[3]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[2]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[3]+1);
-  };
-
-  void getLeft(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[4]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[5]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[4]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[5]+1);
-  };
-
-  void getRight(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[6]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[7]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[6]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[7]+1);
-  };
-
-  void getFront(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[8]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[9]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[8]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[9]+1);
-  };
-
-  void getBack(float* x1, float* y1, float* x2, float* y2)
-  {
-    *x1 = ((float)width/(float)atlasWidth)*(float)(texArray[10]);
-    *y1 = ((float)height/(float)atlasHeight)*(float)(texArray[11]);
-    *x2 = ((float)width/(float)atlasWidth)*(float)(texArray[10]+1);
-    *y2 = ((float)height/(float)atlasHeight)*(float)(texArray[11]+1);
-  };
-
-  bool isInBlock(glm::vec3 pos)
-  {
-    if(pos.x>0 && pos.x<(float)width/BLOCKRES)
-      if(pos.y>0 && pos.y<(float)height/BLOCKRES)
-        if(pos.z>0 && pos.z<(float)depth/BLOCKRES)
-        {
-          return true;
-        }
-
-    return false;
-  };
-
-};

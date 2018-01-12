@@ -7,4 +7,3 @@ win32/Debug/
 src/headers/SOIL.h
 src/headers/FastNoise.h
 src/FastNoise.cpp
-Build/saves/

@@ -2,6 +2,7 @@
 #include <memory>
 #include "perlinnoise.h"
 #include "world.h"
+#include "items.h"
 
 enum renderType {OPAQUE,TRANSLUCENT,TRANSPARENT};
 //Class which holds the data for each individual chunk

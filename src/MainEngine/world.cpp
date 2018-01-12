@@ -9,7 +9,6 @@ int WorldWrap::horzRenderDistance;
 int WorldWrap::vertRenderDistance;
 int WorldWrap::renderBuffer;
 unsigned int WorldWrap::totalChunks;
-Block* WorldWrap::dictionary;
 FastNoise WorldWrap::perlin;
 std::string WorldWrap::worldName;
 std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> WorldWrap::BSPmap;
@@ -34,7 +33,7 @@ World::World(int numbBuildThreads,int width,int height)
   worldName = "default";
 
   const char* texture = "../assets/textures/atlas.png";
-  loadDictionary("../assets/blockDictionary.dat");
+  ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
 
 
   boost::filesystem::create_directory("saves");
@@ -592,80 +591,4 @@ bool WorldWrap::entityExists(float x, float y, float z)
 {
   //TODO
   return false;
-}
-
-Block::Block(std::string newName,int newId, int* array, int newVisibleType, int newWidth,int newHeight,int newDepth, int newAtlasWidth, int newAtlasHeight)
-{
-  visibleType = newVisibleType;
-  name = newName;
-  id = newId;
-  for(int x=0;x<12;x++)
-  {
-    texArray[x] = array[x];
-  }
-  width = newWidth;
-  height = newHeight;
-  depth = newDepth;
-  atlasWidth = newAtlasWidth;
-  atlasHeight = newAtlasHeight;
-}
-
-bool World::loadDictionary(const char* file)
-{
-  /*
-  Loads the dictionary in such a format
-  TODO: work on improving and discribing that format
-
-
-  */
-  dictionary = new Block[256];
-  int id = 0;
-  using namespace std;
-  string line;
-  ifstream dictionaryf (file);
-
-  if(dictionaryf.is_open())
-  {
-    std::cout << "Loading dictionary\n";
-    getline(dictionaryf,line);
-    int atlasWidth = stoi(line);
-    getline(dictionaryf,line);
-    int atlasHeight = stoi(line);
-
-    int curBlock=0;
-    while(getline(dictionaryf,line))
-    {
-      if(line != "{") continue;
-      getline(dictionaryf,line);
-      string name = line;
-      getline(dictionaryf,line);
-
-      int texNumb;
-      int texArray[12];
-      stringstream ss;
-      ss << line;
-      for(int x = 0;x<12;x++)
-      {
-        ss >> texNumb;
-        texArray[x] = texNumb;
-        if(ss.peek() == ',') ss.ignore();
-      }
-      getline(dictionaryf,line);
-      int visibleType = stoi(line);
-      getline(dictionaryf,line);
-      int width = stoi(line);
-      getline(dictionaryf,line);
-      int height = stoi(line);
-      getline(dictionaryf,line);
-      int depth = stoi(line);
-      dictionary[curBlock] = Block(name,id++,texArray,visibleType,width,height,depth,atlasWidth,atlasHeight);
-      curBlock++;
-    }
-    return true;
-  }
-  else
-  {
-    std::cout <<"ERROR: block dictionary not found\n";
-    return false;
-  }
 }
