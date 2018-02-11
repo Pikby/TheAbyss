@@ -20,6 +20,7 @@ public:
   static bool loadItemDictionary(const char* file);
 };
 
+#define BLOCKRES 128
 
 class Block
 {

@@ -1,6 +1,5 @@
 #include "../headers/all.h"
 
-
 // timing
 static float deltaTime = 0.0f;	// time between current frame and last frame
 static float lastFrame = 0.0f;

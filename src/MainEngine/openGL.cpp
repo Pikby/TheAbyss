@@ -1,4 +1,8 @@
+//OpenGL libraries
+
 #include "../headers/all.h"
+
+
 
 //Global maincharacter reference which encapsulates the camera
 static World* newWorld;
@@ -40,11 +44,7 @@ void closeGame()
 void draw()
 {
 
-  float deltaTime = 0.0f;	// time between current frame and last frame
-  float lastFrame = 0.0f;
   glfwMakeContextCurrent(window);
-  long long totalFrame = 0;
-  std::string fpsString;
 
   std::string path = "../src/Shader/shaders/";
   //Create the shaders
@@ -92,13 +92,17 @@ void draw()
   int horzRenderDistance = 7;
   int renderBuffer = 1;
   double sunAngle = 10;
+
+  float deltaTime;
+  float lastFrame;
+
+  Camera* camera = &(mainCharacter->mainCam);
   while(!glfwWindowShouldClose(window))
   {
     updateInputs();
     //std::cout << newWorld->drawnChunks << "\n";
     newWorld->drawnChunks = 0;
 
-    totalFrame++;
 	   // update the delta time each frame
 	 float currentFrame = glfwGetTime();
     deltaTime = currentFrame - lastFrame;
@@ -112,22 +116,22 @@ void draw()
     mainCharacter->update();
 
 
-    Camera camera = mainCharacter->mainCam;
+
     sunAngle += 0.001;
 
     //Calculate shadow matrices
     int distToSun = (vertRenderDistance+renderBuffer+1)*CHUNKSIZE;
     //Makes sure the light is always at the correct angle above the player
-    lightPos.x = cos(sunAngle*PI/180)*distToSun+camera.position.x;
-    lightPos.y = sin(sunAngle*PI/180)*distToSun+camera.position.y;
-    lightPos.z = camera.position.z;
+    lightPos.x = cos(sunAngle*PI/180)*distToSun+camera->position.x;
+    lightPos.y = sin(sunAngle*PI/180)*distToSun+camera->position.y;
+    lightPos.z = camera->position.z;
     float near = -1;
     float far = distToSun*2;
     glm::mat4 lightProjection,lightView, lightSpaceMatrix;
     float orthoSize = (horzRenderDistance+renderBuffer)*CHUNKSIZE;
     lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,near, far);
     lightView  = glm::lookAt(lightPos,
-                                      camera.position,
+                                      camera->position,
                                       glm::vec3(0.0f,1.0f,0.0f));
 
     lightSpaceMatrix = lightProjection * lightView;
@@ -150,13 +154,13 @@ void draw()
     glm::mat4 camProjection = glm::perspective(glm::radians(45.0f),
                               (float)1920/ (float)1080, 0.1f,
                               (float)horzRenderDistance*CHUNKSIZE*4);
-    glm::mat4 camView = camera.getViewMatrix();
+    glm::mat4 camView = camera->getViewMatrix();
     blockShader.setMat4("projection",camProjection);
     blockShader.setMat4("view", camView);
     blockShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
     blockShader.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
     blockShader.setVec3("lightPos",  lightPos);
-    blockShader.setVec3("viewPos", camera.position);
+    blockShader.setVec3("viewPos", camera->position);
     blockShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
 
@@ -166,7 +170,7 @@ void draw()
     glm::mat4 hsrProjection = glm::perspective(glm::radians(50.0f),
                               (float)1920/ (float)1080, 0.1f,
                               (float)horzRenderDistance*CHUNKSIZE*4);
-    newWorld->drawWorld(camera.getHSRMatrix(), hsrProjection,true);
+    newWorld->drawWorld(camera->getHSRMatrix(), hsrProjection,true);
 
 
     mainCharacter->drawHud();

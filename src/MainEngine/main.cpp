@@ -1,10 +1,19 @@
-#include "../headers/all.h"
+//#include "../headers/all.h"
+
+#include <pthread.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <iostream>
+
+#include "../headers/openGL.h"
+#include "../headers/inputhandling.h"
 
 int main()
 {
   glfwInit();
 
   const int numbBuildThreads = 4;
+
 
 
   int winWidth = 1280;

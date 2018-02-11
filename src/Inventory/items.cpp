@@ -1,6 +1,5 @@
 #include "../headers/all.h"
 Block* ItemDatabase::blockDictionary;
-GLuint ItemDatabase::textureAtlas;
 /*
 int Item::mouse1(glm::vec3 pos, glm::vec3 front)
 {
@@ -102,7 +101,7 @@ bool ItemDatabase::loadBlockDictionary(const char* file)
 
 
 }
-
+/*
 Block::Block(std::string newName,int newId, int* array, int newVisibleType,
             int newWidth,int newHeight,int newDepth, int newAtlasWidth, int newAtlasHeight)
 {
@@ -119,3 +118,4 @@ Block::Block(std::string newName,int newId, int* array, int newVisibleType,
   atlasWidth = newAtlasWidth;
   atlasHeight = newAtlasHeight;
 }
+*/

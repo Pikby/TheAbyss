@@ -85,4 +85,3 @@ class World : public WorldWrap
 };
 
 //The class for each individual block in the dictionary
-#define BLOCKRES 128
