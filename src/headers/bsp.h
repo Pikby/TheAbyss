@@ -47,6 +47,7 @@ public:
   int getBlock(int x, int y, int z);
   void delBlock(int x, int y, int z);
   void saveChunk();
+  std::string compressChunk();
   glm::vec3 offset(float x, float y,float z);
   void build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
                        std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
@@ -68,6 +69,7 @@ class BSPNode
   void drawOpaque();
   void drawTranslucent();
   void generateTerrain();
+  std::string getCompressedChunk();
   void delBlock(int x, int y, int z);
   void addBlock(int x, int y, int z, int id);
   //next and prev node for the linked list of all nodes

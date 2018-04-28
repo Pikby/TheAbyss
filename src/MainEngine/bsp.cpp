@@ -73,6 +73,7 @@ void BSPNode::saveChunk()
   curBSP.saveChunk();
 }
 
+
 bool BSPNode::blockExists(int x, int y, int z)
 {
   return curBSP.blockExists(x, y, z);
@@ -92,6 +93,8 @@ int BSPNode::blockVisibleType(int x, int y, int z)
 {
   return curBSP.blockVisibleType(x, y, z);
 }
+
+
 BSP::BSP(long int x, long int y, long int z)
 {
     xCoord = x;
@@ -117,25 +120,8 @@ BSP::BSP(long int x, long int y, long int z)
       ichunk.close();
       ofstream ochunk(chunkPath,ios::binary);
 
-      unsigned int curTotal = 1;
-      char lastId = worldMap[0];
-
-      for(int i = 1; i<numbOfBlocks;i++)
-      {
-        if(lastId == worldMap[i])
-        {
-          curTotal++;
-        }
-        else
-        {
-          ochunk.write((char*) &lastId,sizeof(lastId));
-          ochunk.write((char*) &curTotal,sizeof(curTotal));
-          curTotal = 1;
-          lastId = worldMap[i];
-        }
-      }
-      ochunk.write((char*) &lastId,sizeof(lastId));
-      ochunk.write((char*) &curTotal,sizeof(curTotal));
+      string compressed = compressChunk();
+      ochunk << compressed;
       ochunk.close();
     }
     else
@@ -173,7 +159,34 @@ BSP::~BSP()
   saveChunk();
 }
 
-void BSP::saveChunk()
+inline std::string BSP::compressChunk()
+{
+    using namespace std;
+    ostringstream chunk(ios::binary);
+    unsigned int curTotal = 1;
+    int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
+    char lastId = worldMap[0];
+    for(int i = 1; i<numbOfBlocks;i++)
+    {
+      if(lastId == worldMap[i])
+      {
+        curTotal++;
+      }
+      else
+      {
+        chunk.write((char*) &lastId,sizeof(lastId));
+        chunk.write((char*) &curTotal,sizeof(curTotal));
+        curTotal = 1;
+        lastId = worldMap[i];
+      }
+    }
+    chunk.write((char*) &lastId,sizeof(lastId));
+    chunk.write((char*) &curTotal,sizeof(curTotal));
+    return chunk.str();
+
+}
+
+inline void BSP::saveChunk()
 {
   using namespace std;
   //The directoy to the chunk to be saved
@@ -226,7 +239,7 @@ BSP::BSP(){}
 
 
 
-int BSP::addVertex(int renderType,float x, float y, float z, float xn, float yn, float zn, float texX, float texY)
+inline int BSP::addVertex(int renderType,float x, float y, float z, float xn, float yn, float zn, float texX, float texY)
 {
   if(renderType == OPAQUE)
   {
@@ -268,7 +281,7 @@ int BSP::addVertex(int renderType,float x, float y, float z, float xn, float yn,
   }
 }
 
-void BSP::addIndices(int renderType,int index1, int index2, int index3, int index4)
+inline void BSP::addIndices(int renderType,int index1, int index2, int index3, int index4)
 {
   if(renderType == OPAQUE)
   {
@@ -293,14 +306,14 @@ void BSP::addIndices(int renderType,int index1, int index2, int index3, int inde
 }
 
 
-bool BSP::blockExists(int x, int y, int z)
+inline bool BSP::blockExists(int x, int y, int z)
 {
   int id = worldMap[(int)x+CHUNKSIZE*(int)y+(int)z*CHUNKSIZE*CHUNKSIZE];
   if(id == 0 ) return false;
   else return true;
 }
 
-int BSP::blockVisibleType(int x, int y, int z)
+inline int BSP::blockVisibleType(int x, int y, int z)
 {
   return ItemDatabase::blockDictionary[getBlock(x,y,z)].visibleType;
 }
@@ -310,18 +323,18 @@ void BSP::addBlock(int x, int y, int z, char id)
   worldMap[x+y*CHUNKSIZE+z*CHUNKSIZE*CHUNKSIZE] = id;
 }
 
-void BSP::delBlock(int x, int y, int z)
+inline void BSP::delBlock(int x, int y, int z)
 {
   worldMap[x + y*CHUNKSIZE + z*CHUNKSIZE*CHUNKSIZE] = 0;
 
 }
 
-int BSP::getBlock(int x, int y, int z)
+inline int BSP::getBlock(int x, int y, int z)
 {
   return worldMap[x+y*CHUNKSIZE+z*CHUNKSIZE*CHUNKSIZE];
 }
 
-glm::vec3 BSP::offset(float x, float y, float z)
+inline glm::vec3 BSP::offset(float x, float y, float z)
 {
   /*
   glm::vec3 newVec;
@@ -542,7 +555,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
 }
 
-void BSP::render()
+inline void BSP::render()
 {
   glDeleteBuffers(1, &oVBO);
   glDeleteBuffers(1, &oEBO);
