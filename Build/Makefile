@@ -1,9 +1,9 @@
 # the compiler: gcc for C program, define as g++ for C++
 CC = g++
-WCC = /media/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-g++
-WPATH = /media/WorkSpace/MXE/mxe/usr/i686-w64-mingw32.static
+WCC = /media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-g++
+WPATH = /media/kibby/WorkSpace/MXE/mxe/usr/i686-w64-mingw32.static
 
-WCC = /media/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-g++
+WCC = /media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-g++
 CFLAGSLINUX  = -I/usr/local/include/freetype2 -I/usr/include/libpng12 \
 					-lglfw3 -lGLEW -lGL -lm -ldl -lXinerama -lXrandr -lXi \
 					-lXcursor -lX11 -lXxf86vm -lpthread -lSOIL -std=c++17 \
@@ -11,9 +11,9 @@ CFLAGSLINUX  = -I/usr/local/include/freetype2 -I/usr/include/libpng12 \
 
 CFLAGSWINDOWS =-I/usr/local/include/freetype2 -I/usr/include/libpng12  \
 		-mwindows -lSOIL -lmingw32 -lGLEW \
-		-lopengl32 -lm `/media/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-pkg-config --libs glfw3` \
+		-lopengl32 -lm `/media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-pkg-config --libs glfw3` \
 		-lglu32 -lglew32 -lglew32s -std=c++17 -lpng -pthread -lz -lfreetype \
-		`/media/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-pkg-config --libs freetype2` \
+		`/media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-pkg-config --libs freetype2` \
 		-lboost_filesystem-mt -lboost_system-mt \
 		-lboost_serialization-mt \
 		-lboost_thread_win32-mt \
@@ -28,65 +28,93 @@ TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/openGL.cpp MainEngi
 				 Character/mainchar.cpp TerrainGeneration/bspterraingen.cpp Shader/shaders.cpp \
 				 InputHandling/inputhandling.cpp Inventory/items.cpp
 
-OBJECTLIST = main.o world.o openGL.o bsp.o camera.o gui.o mainchar.o FastNoise.o bspterraingen.o shaders.o inputhandling.o items.o
+COBJECTLIST = cmain.o cworld.o copenGL.o cbsp.o ccamera.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cshaders.o cinputhandling.o citems.o
+SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o
 
 OFLAGS = g++ -c $(CFLAGSLINUX) -O3
 # Main Engine
 default: linux
 
+# Server
+smain.o: ../serversrc/MainEngine/main.cpp
+	$(OFLAGS) ../serversrc/MainEngine/main.cpp -o smain.o
+
+sworld.o: ../serversrc/MainEngine/world.cpp
+	$(OFLAGS) ../serversrc/MainEngine/world.cpp -o sworld.o
+
+sbsp.o: ../serversrc/MainEngine/bsp.cpp
+	$(OFLAGS) ../serversrc/MainEngine/bsp.cpp -o sbsp.o
+
+sbspterraingen.o: ../serversrc/TerrainGeneration/bspterraingen.cpp
+	$(OFLAGS) ../serversrc/TerrainGeneration/bspterraingen.cpp -o sbspterraingen.o
+
+sFastNoise.o: ../serversrc/TerrainGeneration/FastNoise.cpp
+	$(OFLAGS) ../serversrc/TerrainGeneration/FastNoise.cpp -o sFastNoise.o
+
+sitems.o: ../serversrc/Inventory/items.cpp
+	$(OFLAGS) ../serversrc/Inventory/items.cpp -o sitems.o
+
+sclients.o: ../serversrc/MainEngine/clients.cpp
+	$(OFLAGS) ../serversrc/MainEngine/clients.cpp -o sclients.o
+# Client
 
 ME = ../src/MainEngine
-main.o: $(ME)/main.cpp
-	 $(OFLAGS) $(ME)/main.cpp
+cmain.o: $(ME)/main.cpp
+	 $(OFLAGS) $(ME)/main.cpp -o cmain.o
 
-world.o: $(ME)/world.cpp
-	$(OFLAGS) $(ME)/world.cpp
+cworld.o: $(ME)/world.cpp
+	$(OFLAGS) $(ME)/world.cpp -o cworld.o
 
-openGL.o: $(ME)/openGL.cpp
-	$(OFLAGS) $(ME)/openGL.cpp
+copenGL.o: $(ME)/openGL.cpp
+	$(OFLAGS) $(ME)/openGL.cpp -o copenGL.o
 
-bsp.o: $(ME)/bsp.cpp
-	$(OFLAGS) $(ME)/bsp.cpp
+cbsp.o: $(ME)/bsp.cpp
+	$(OFLAGS) $(ME)/bsp.cpp -o cbsp.o
 
 # Character
 CH = ../src/Character
-camera.o: $(CH)/camera.cpp
-	$(OFLAGS) $(CH)/camera.cpp
+ccamera.o: $(CH)/camera.cpp
+	$(OFLAGS) $(CH)/camera.cpp -o ccamera.o
 
-gui.o: $(CH)/gui.cpp
-	$(OFLAGS) $(CH)/gui.cpp
+cgui.o: $(CH)/gui.cpp
+	$(OFLAGS) $(CH)/gui.cpp -o cgui.o
 
-mainchar.o: $(CH)/mainchar.cpp
-	$(OFLAGS) $(CH)/mainchar.cpp
+cmainchar.o: $(CH)/mainchar.cpp
+	$(OFLAGS) $(CH)/mainchar.cpp -o cmainchar.o
 
 # Terrain Gen
 TG = ../src/TerrainGeneration
-FastNoise.o: $(TG)/FastNoise.cpp
-	$(OFLAGS) $(TG)/FastNoise.cpp
+cFastNoise.o: $(TG)/FastNoise.cpp
+	$(OFLAGS) $(TG)/FastNoise.cpp -o cFastNoise.o
 
-bspterraingen.o: $(TG)/bspterraingen.cpp
-	$(OFLAGS) $(TG)/bspterraingen.cpp
+cbspterraingen.o: $(TG)/bspterraingen.cpp
+	$(OFLAGS) $(TG)/bspterraingen.cpp -o cbspterraingen.o
 
 #Shaders
 
-shaders.o: ../src/Shader/shaders.cpp
-	$(OFLAGS) ../src/Shader/shaders.cpp
+cshaders.o: ../src/Shader/shaders.cpp
+	$(OFLAGS) ../src/Shader/shaders.cpp -o cshaders.o
 
 #IO
 IO = ../src/InputHandling
-inputhandling.o: $(IO)/inputhandling.cpp
-	$(OFLAGS) $(IO)/inputhandling.cpp
+cinputhandling.o: $(IO)/inputhandling.cpp
+	$(OFLAGS) $(IO)/inputhandling.cpp -o cinputhandling.o
 
 #Inventory
 IT = ../src/Inventory
-items.o: $(IT)/items.cpp
-	$(OFLAGS) $(IT)/items.cpp
+citems.o: $(IT)/items.cpp
+	$(OFLAGS) $(IT)/items.cpp -o citems.o
 
-linux: $(OBJECTLIST)
-	$(CC) -o linux  $(OBJECTLIST) $(CFLAGSLINUX) -O3
+linux: $(COBJECTLIST)
+	$(CC) -o linux  $(COBJECTLIST) $(CFLAGSLINUX) -O3
 
 windows:
-	$(WCC) $(TARGET) $(CFLAGSWINDOWS) -o game.exe
+	cd ../src && $(WCC) -o windows.exe $(TARGET) $(CFLAGSWINDOWS)
+	mv ../src/windows.exe ../Build
+
+server: $(SOBJECTLIST)
+	$(CC) -o server $(SOBJECTLIST) $(CFLAGSLINUX) -O3
+
 
 clean:
 	rm *.o
