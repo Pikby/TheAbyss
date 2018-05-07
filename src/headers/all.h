@@ -15,6 +15,7 @@
 #include <pthread.h>
 
 
+
 #define PI 3.14159265
 // GLEW
 #define GLEW_STATIC
@@ -28,6 +29,21 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/ext.hpp>
 
+#include <iostream>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <thread>
+#include <fstream>
+#include <bitset>
+#include <mutex>
+
+#define PORT 3030
+#define ADDRESS "127.0.0.1"
+
+#include "3dmap.h"
+
+typedef unsigned char uchar;
 //Add the shader configs
 
 #include "FastNoise.h"

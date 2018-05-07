@@ -30,9 +30,14 @@ void initWorld(int numbBuildThreads, int width,  int height)
 {
   //glfwMakeContextCurrent(window);
   newWorld = new World(numbBuildThreads,width,height);
-  mainCharacter = new MainChar(0,100,0,newWorld);
+  mainCharacter = new MainChar(0,50,0,newWorld);
   initializeInputs(mainCharacter);
 
+  /*
+  for(int x =0;x<20;x++)
+    for(int y =0;y<20;y++)
+      for(int z=0;z<20;z++)newWorld->requestChunk(x-10,y-10,z-10);
+      */
 }
 
 void closeGame()
@@ -177,6 +182,7 @@ void draw()
     //std::cout << glGetError() << "update loop\n";
 
     glfwSwapBuffers(window);
+    //std::cout << newWorld->drawnChunks << "\n";
   }
   std::cout << "exiting draw thread \n";
 }
@@ -204,6 +210,52 @@ void* del(void* )
   }
   std::cout << "exiting delete thread \n";
   return NULL;
+}
+
+void* send(void*)
+{
+  while(!glfwWindowShouldClose(window))
+  {
+    if(newWorld->messageQueue.empty()) continue;
+    newWorld->msgQueueMutex.lock();
+    Message msg = newWorld->messageQueue.front();
+    newWorld->messageQueue.pop();
+    newWorld->msgQueueMutex.unlock();
+    uchar opcode = msg.opcode;
+    switch(opcode)
+    {
+      case(0):
+        newWorld->requestChunk(msg.x,msg.y,msg.z);
+        break;
+      case(1):
+        newWorld->requestDelBlock(msg.x,msg.y,msg.z);
+        break;
+      default:
+        std::cout << "Sending unknown opcode" << (int)msg.opcode << "\n";
+    }
+  }
+  newWorld->requestExit();
+  std::cout << "exiting server send thread\n";
+}
+
+void* receive(void*)
+{
+  while(!glfwWindowShouldClose(window))
+  {
+    Message msg = newWorld->receiveAndDecodeMessage();
+    switch(msg.opcode)
+    {
+      case(0):
+        newWorld->receiveChunk(msg.x,msg.y,msg.z,msg.length);
+        break;
+      case(0xFF):
+        std::cout << "Received exit message\n";
+        break;
+      default:
+        std::cout << "Receiving unknown opcode " << (int)msg.opcode << "\n";
+    }
+  }
+  std::cout << "Exiting receive thread \n";
 }
 
 void* build(void*i)

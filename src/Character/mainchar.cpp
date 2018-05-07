@@ -108,7 +108,7 @@ void MainChar::destroyBlock()
   glm::vec4 block = rayCast(mainCam.position,mainCam.front,reach);
 
   if(block.w == NOTHING) return;
-  curWorld->delBlock(floor(block.x),floor(block.y),floor(block.z));
+  curWorld->createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
 
 }
 void MainChar::addBlock(int id)

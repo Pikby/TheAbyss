@@ -4,9 +4,10 @@
 int totalChunks;
 
 
-BSPNode::BSPNode(long int x, long int y, long int z)
+BSPNode::BSPNode(int x,int y,int z)
 {
   //std::cout << totalChunks << "\n";
+
   curBSP = BSP(x,y,z);
 
   isGenerated = false;
@@ -24,6 +25,22 @@ BSPNode::~BSPNode()
   totalChunks--;
 }
 
+BSPNode::BSPNode(int x,int y, int z,std::string val)
+{
+  //std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
+  BSPMutex.lock();
+  curBSP = BSP(x,y,z,val);
+  isGenerated = false;
+  nextNode = NULL;
+  prevNode = NULL;
+  inUse = false;
+  toRender = false;
+  toBuild = false;
+  toDelete = false;
+  totalChunks++;
+  BSPMutex.unlock();
+}
+
 void BSPNode::generateTerrain()
 {
   curBSP.generateTerrain();
@@ -31,28 +48,25 @@ void BSPNode::generateTerrain()
 
 void BSPNode::build()
 {
-  while(inUse)
-  {
-    std::cout << "build waiting\n";
-    if(toDelete == true) return;
-  }
+  BSPMutex.lock();
   inUse = true;
   curBSP.build(rightChunk,leftChunk,topChunk,bottomChunk,frontChunk,backChunk);
   toRender = true;
   toBuild = false;
   inUse = false;
+  BSPMutex.unlock();
 }
 
 void BSPNode::drawOpaque()
 {
-  inUse = true;
+  BSPMutex.try_lock();
   if(toRender == true)
   {
      curBSP.render();
      toRender = false;
   }
   curBSP.drawOpaque();
-  inUse = false;
+  BSPMutex.unlock();
 }
 
 void BSPNode::drawTranslucent()
@@ -73,6 +87,31 @@ void BSPNode::saveChunk()
   curBSP.saveChunk();
 }
 
+void BSPNode::del()
+{
+  BSPMutex.lock();
+  if(nextNode != NULL) nextNode->prevNode = prevNode;
+  if(prevNode != NULL) prevNode->nextNode = nextNode;
+  curBSP.freeGL();
+  nextNode = NULL;
+  prevNode = NULL;
+
+
+  BSPMutex.unlock();
+}
+
+void BSPNode::disconnect()
+{
+  BSPMutex.lock();
+  toDelete = true;
+  if(leftChunk != NULL) leftChunk->rightChunk = NULL;
+  if(rightChunk != NULL) rightChunk->leftChunk = NULL;
+  if(frontChunk != NULL) frontChunk->backChunk = NULL;
+  if(backChunk != NULL) backChunk->frontChunk = NULL;
+  if(topChunk != NULL) topChunk->bottomChunk = NULL;
+  if(bottomChunk != NULL) bottomChunk->topChunk = NULL;
+  BSPMutex.unlock();
+}
 
 bool BSPNode::blockExists(int x, int y, int z)
 {
@@ -95,7 +134,55 @@ int BSPNode::blockVisibleType(int x, int y, int z)
 }
 
 
-BSP::BSP(long int x, long int y, long int z)
+
+BSP::BSP(int x, int y, int z,std::string val)
+{
+  xCoord = x;
+  yCoord = y;
+  zCoord = z;
+  for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
+  using namespace std;
+  //The directoy to the chunk to be saved
+  string directory = "saves/" + worldName + "/chunks/";
+  string chunkName = to_string(x) + '_' + to_string(y) + '_' + to_string(z) + ".dat";
+  string chunkPath = directory+chunkName;
+  ofstream ochunk(chunkPath,ios::binary);
+  ochunk << val;
+  ochunk.close();
+  ifstream ichunk(chunkPath,ios::binary);
+
+  const int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
+  int i = 0;
+  char curId=0;
+  unsigned int curLength=0;
+  while(i<numbOfBlocks)
+  {
+
+    ichunk.read((char*) &curId,sizeof(curId));
+    ichunk.read((char*) &curLength,sizeof(curLength));
+
+    for(int j = 0; j<curLength; j++)
+    {
+      worldMap[i+j] = curId;
+    }
+    i+= curLength;
+  }
+  ichunk.close();
+
+
+
+  oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+  tVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  tIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+
+  oVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  oIndices  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+  tVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  tIndices = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+}
+
+BSP::BSP(int x, int y, int z)
 {
     xCoord = x;
     yCoord = y;
@@ -116,6 +203,7 @@ BSP::BSP(long int x, long int y, long int z)
     //Checks if the file exists
     if(!ichunk.is_open())
     {
+      /*
       generateTerrain();
       ichunk.close();
       ofstream ochunk(chunkPath,ios::binary);
@@ -123,6 +211,7 @@ BSP::BSP(long int x, long int y, long int z)
       string compressed = compressChunk();
       ochunk << compressed;
       ochunk.close();
+      */
     }
     else
     {

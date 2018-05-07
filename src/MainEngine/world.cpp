@@ -11,7 +11,8 @@ int WorldWrap::renderBuffer;
 unsigned int WorldWrap::totalChunks;
 FastNoise WorldWrap::perlin;
 std::string WorldWrap::worldName;
-std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> WorldWrap::BSPmap;
+Map3D<std::shared_ptr<BSPNode>> WorldWrap::BSPmap;
+Map3D<bool> WorldWrap::requestMap;
 int WorldWrap::drawnChunks;
 
 
@@ -63,13 +64,162 @@ World::World(int numbBuildThreads,int width,int height)
 
   SOIL_free_image_data(image);
   glBindTexture(GL_TEXTURE_2D, 0);
+
+
+  fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (fd < 0) {
+      std::cout << "ERROR: failed to create socket." << std::endl;
+      return;
+  }
+  std::cout << "Successfully created socket." << std::endl;
+
+  sockaddr_in serveraddress;
+  serveraddress.sin_family = AF_INET;
+  serveraddress.sin_port = htons(PORT);
+  inet_pton(AF_INET, ADDRESS, &(serveraddress.sin_addr));
+
+
+  // connect to the server
+  if (connect(fd, (sockaddr*) &serveraddress, sizeof(serveraddress)) < 0)
+  {
+      std::cout << "ERROR: failed to connect to server." << std::endl;
+      return;
+  }
+  std::cout << "Successfully connected to server" << std::endl;
+
+  /*
+  // send the name of the client first
+  float position[3] = {0,100,0};
+  if (send(fd, position, sizeof(position), 0) < 0)
+  {
+      std::cout << "ERROR: failed to send position to server." << std::endl;
+      return;
+  }
+
+  for(int i = 0;i<1100;i++)
+  {
+    int pos[4];
+    if (recv(fd, pos, sizeof(pos), 0) < 0)
+    {
+      std::cout << "ERROR: failed to send name to server." << std::endl;
+      return;
+    }
+    std::cout << pos[0] << ":" << pos[1] << ":" << pos[2] << ":" << pos[3] << "\n";
+    int length = pos[3];
+
+
+    uchar* buffer = new uchar[length];
+    if(recv(fd,buffer,length,0) < 0)
+    {
+      std::cout << "ERROR: failed to send name to server." << std::endl;
+      return;
+    }
+
+    std::string x(buffer,length);
+    newWorld->generateChunkFromString(pos[0],pos[1],pos[2],x);
+  }
+  */
+}
+
+Message World::receiveAndDecodeMessage()
+{
+  int buf[5];
+  if (recv(fd, buf, 5*sizeof(int), 0) < 0)
+  {
+    std::cout << "ERROR: failed to recieve message from server." << std::endl;
+  }
+  uchar opcode = (buf[0] >> 24) & 0xFF;
+  uchar ext1 = (buf[0] >> 16) & 0xFF;
+  uchar ext2 = (buf[0] >> 8) & 0xFF;
+  uchar ext3 = buf[0] & 0xFF;
+  //std::cout << "Message is:" <<(int)opcode<<":"<<(int)ext1<<":"<<(int)ext2<<":"<<(int)ext3<<":"<<buf[1]<<":"<<buf[2]<<":"<<buf[3]<<":"<<buf[4] << "\n";
+  Message msg = {opcode,ext1,ext2,ext3,buf[1],buf[2],buf[3],buf[4]};
+  return msg;
+}
+
+void World::receiveChunk(int x, int y, int z, int length)
+{
+  //std::cout << "Receiving chunk" << x << ":" << y << ":" << z << "\n";
+  char* buffer = new char[length];
+  if(recv(fd,buffer,length,0) < 0)
+  {
+    std::cout << "ERROR: receive chunk." << std::endl;
+    return;
+  }
+
+  std::string val(buffer,length);
+  generateChunkFromString(x,y,z,val);
+  delete[] buffer;
+}
+
+
+void World::requestChunk(int x, int y, int z)
+{
+  int request[4];
+  request[0] = 0;
+  request[1] = x;
+  request[2] = y;
+  request[3] = z;
+
+
+  if(send(fd,request,4*sizeof(int),0)<0)
+  {
+    std::cout << "Failed to send message to server\n";
+    return;
+  }
+  //std::cout << "Requesting chunk" << x << ":" << y << ":" << z << "\n";
+
+
+
+}
+void World::requestExit()
+{
+  int request[4];
+  request[0] = 0xFFFFFFFF;
+  if(send(fd,request,4*sizeof(int),0)<0)
+  {
+    std::cout << "Failed to send exit message to server\n";
+    return;
+  }
+  std::cout << "exit message Sent\n";
+}
+void World::createChunkRequest(int x, int y, int z)
+{
+  if(!requestMap.exists(x,y,z))
+  {
+    Message tmp = {0,0,0,0,x,y,z,0};
+    msgQueueMutex.lock();
+    messageQueue.push(tmp);
+    msgQueueMutex.unlock();
+    requestMap.add(x,y,z,true);
+  }
+}
+
+inline void World::sendMessage(int* buf, int length)
+{
+  if(send(fd,buf,length,0)<0)
+  {
+    std::cout << "Failed to send message to server\n";
+    return;
+  }
+}
+
+
+inline void World::receiveMessage(int* buf, int length)
+{
+  //std::cout << "Receiving message \n";
+  if (recv(fd, buf, length, 0) < 0)
+  {
+    std::cout << "ERROR: failed to recieve message from server." << std::endl;
+    return;
+  }
 }
 
 void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
 {
   /*
   Iterates through all the chunks and draws them unless they're marked for destruciton
-  then it calls freeGl which will free up all opengl resourses on the chunk and then
+  then it calls freeGl which will free up all  resourses on the chunk and then
   removes all refrences to it
   At that point the chunk should be deleted by the smart pointers;
   */
@@ -88,13 +238,8 @@ void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
     nextNode = curNode->nextNode;
     if(curNode->toDelete == true)
     {
-      if(curNode->nextNode != NULL) curNode->nextNode->prevNode = curNode->prevNode;
-      if(curNode->prevNode != NULL) curNode->prevNode->nextNode = curNode->nextNode;
-      else frontNode = curNode->nextNode;
-
-      curNode->nextNode = NULL;
-      curNode->prevNode = NULL;
-      curNode->curBSP.freeGL();
+      if(curNode->prevNode == NULL) frontNode = curNode->nextNode;
+      curNode->del();
     }
     else
     {
@@ -120,22 +265,17 @@ void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
   }
 }
 
-void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
+void World::generateChunkFromString(int chunkx, int chunky, int chunkz,std::string value)
 {
-  static int currentThread = 0;
-  buildQueue[currentThread].push(curNode);
-  curNode->toBuild = true;
+  std::cout << "Generating chunk" << chunkx << ":" << chunky << ":" << chunkz << "\n";
+  if(chunkExists(chunkx,chunky,chunkz))
+  {
+    std::cout << "Replacing CHunk \n";
+    delChunk(chunkx,chunky,chunkz);
+  }
+  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,value));
+  BSPmap.add(chunkx,chunky,chunkz,tempChunk);
 
-  currentThread++;
-  if(currentThread >= numbOfThreads) currentThread = 0;
-}
-
-void World::generateChunk(int chunkx, int chunky, int chunkz)
-{
-  if(chunkExists(chunkx,chunky,chunkz)) return;
-
-  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz));
-  BSPmap[chunkx][chunky][chunkz] = tempChunk;
   if(frontNode == NULL)
   {
     frontNode = tempChunk;
@@ -146,6 +286,8 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
     frontNode->prevNode = tempChunk;
     frontNode = tempChunk;
   }
+
+
   /*
     At this point the chunk is in both the linked list as well as the unorderedmap
     now it will attempt to find any nearby chunks and store a refrence to it
@@ -222,6 +364,113 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   }
 }
 
+
+void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
+{
+  static int currentThread = 0;
+  buildQueue[currentThread].push(curNode);
+  curNode->toBuild = true;
+
+  currentThread++;
+  if(currentThread >= numbOfThreads) currentThread = 0;
+}
+
+
+void World::generateChunk(int chunkx, int chunky, int chunkz)
+{
+  if(chunkExists(chunkx,chunky,chunkz)) return;
+  requestChunk(chunkx,chunky,chunkz);
+  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz));
+  BSPmap.add(chunkx,chunky,chunkz,tempChunk);
+  if(frontNode == NULL)
+  {
+    frontNode = tempChunk;
+  }
+  else
+  {
+    tempChunk->nextNode = frontNode;
+    frontNode->prevNode = tempChunk;
+    frontNode = tempChunk;
+  }
+
+
+  /*
+    At this point the chunk is in both the linked list as well as the unorderedmap
+    now it will attempt to find any nearby chunks and store a refrence to it
+  */
+  std::shared_ptr<BSPNode>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
+  if(otherChunk  != NULL )
+  {
+    tempChunk->frontChunk = otherChunk;
+    otherChunk->backChunk = tempChunk;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
+  }
+
+  otherChunk = getChunk(chunkx,chunky,chunkz+1);
+  if(otherChunk != NULL)
+  {
+    tempChunk->backChunk = otherChunk;
+    otherChunk->frontChunk = tempChunk;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
+  }
+
+  otherChunk = getChunk(chunkx,chunky-1,chunkz);
+  if(otherChunk != NULL)
+  {
+    tempChunk->bottomChunk = otherChunk;
+    otherChunk->topChunk = tempChunk;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
+  }
+
+  otherChunk = getChunk(chunkx,chunky+1,chunkz);
+  if(otherChunk != NULL)
+  {
+    tempChunk->topChunk = otherChunk;
+    otherChunk->bottomChunk = tempChunk;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
+  }
+
+
+  otherChunk = getChunk(chunkx-1,chunky,chunkz);
+  if(otherChunk != NULL)
+  {
+    tempChunk->leftChunk = otherChunk;
+    otherChunk->rightChunk = tempChunk;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);
+    }
+  }
+
+  otherChunk = getChunk(chunkx+1,chunky,chunkz);
+  if(otherChunk != NULL)
+  {
+    tempChunk->rightChunk = otherChunk;
+    otherChunk->leftChunk = tempChunk;
+    if(!otherChunk->toBuild)
+    {
+      addToBuildQueue(otherChunk);;
+    }
+  }
+  //Adds the chunk to the current mainBuildQueue if it is not already;
+  if(!tempChunk->toBuild)
+  {
+      addToBuildQueue(tempChunk);
+  }
+}
+
 void World::renderWorld(float* mainx, float* mainy, float* mainz)
 {
   for(int curDis = 0; curDis < horzRenderDistance; curDis++)
@@ -248,26 +497,26 @@ void World::renderWorld(float* mainx, float* mainy, float* mainz)
        xchunk = x;
        for(int i = -curDis+1;i<curDis;i++)
        {
-         generateChunk(xchunk+i,ychunk,zchunk);
+         createChunkRequest(xchunk+i,ychunk,zchunk);
        }
 
        zchunk = z-curDis;
        xchunk = x;
        for(int i = -curDis+1;i<curDis;i++)
        {
-         generateChunk(xchunk+i,ychunk,zchunk);
+         createChunkRequest(xchunk+i,ychunk,zchunk);
        }
        zchunk = z;
        xchunk = x+curDis;
        for(int i = -curDis;i<=curDis;i++)
        {
-         generateChunk(xchunk,ychunk,zchunk+i);
+         createChunkRequest(xchunk,ychunk,zchunk+i);
        }
        zchunk = z;
        xchunk = x-curDis;
        for(int i = -curDis;i<=curDis;i++)
        {
-         generateChunk(xchunk,ychunk,zchunk+i);
+         createChunkRequest(xchunk,ychunk,zchunk+i);
        }
      }
    }
@@ -285,20 +534,9 @@ void World::buildWorld(int threadNumb)
   }
 }
 
-
 std::shared_ptr<BSPNode>  WorldWrap::getChunk(int x, int y, int z)
 {
-  if(BSPmap.count(x) == 1)
-   {
-     if(BSPmap[x].count(y) == 1)
-     {
-       if(BSPmap[x][y].count(z) == 1)
-       {
-         return BSPmap[x][y][z];
-       }
-     }
-   }
-  return NULL;
+  return BSPmap.get(x,y,z);
 }
 
 
@@ -308,16 +546,8 @@ void World::delChunk(int x, int y, int z)
   std::shared_ptr<BSPNode>  tempChunk = getChunk(x,y,z);
   if(tempChunk != NULL)
   {
-    BSPmap[x][y].erase(z);
-    if(BSPmap[x][y].empty())
-    {
-      BSPmap[x].erase(y);
-      if(BSPmap[x].empty())
-      {
-        BSPmap.erase(x);
-      }
-    }
-
+    BSPmap.del(x,y,z);
+    tempChunk->disconnect();
     /*
     Essentially marks the chunk for death
     Removes all connected pointers besides the linked list
@@ -325,13 +555,6 @@ void World::delChunk(int x, int y, int z)
     since that is the sole string using opengl functions;
     othereise the vao wont get freed causing a memory leak
     */
-    tempChunk->toDelete = true;
-    if(tempChunk->leftChunk != NULL) tempChunk->leftChunk->rightChunk = NULL;
-    if(tempChunk->rightChunk != NULL) tempChunk->rightChunk->leftChunk = NULL;
-    if(tempChunk->frontChunk != NULL) tempChunk->frontChunk->backChunk = NULL;
-    if(tempChunk->backChunk != NULL) tempChunk->backChunk->frontChunk = NULL;
-    if(tempChunk->topChunk != NULL) tempChunk->topChunk->bottomChunk = NULL;
-    if(tempChunk->bottomChunk != NULL) tempChunk->bottomChunk->topChunk = NULL;
 
   }
 }
@@ -381,17 +604,7 @@ void World::saveWorld()
 
 bool World::chunkExists(int x ,int y, int z)
 {
-  if(BSPmap.count(x) == 1)
-   {
-     if(BSPmap[x].count(y) == 1)
-     {
-       if(BSPmap[x][y].count(z) == 1)
-       {
-         return true;
-       }
-     }
-   }
-  return false;
+  return BSPmap.exists(x,y,z);
 }
 
 //If there is an entity, returns it id and position,
@@ -501,8 +714,33 @@ void World::addBlock(int x, int y, int z, int id)
 
 }
 
-void World::delBlock(int x, int y, int z)
+void World::createDelBlockRequest(int x, int y, int z)
 {
+  Message tmp = {1,0,0,0,x,y,z,0};
+  msgQueueMutex.lock();
+  messageQueue.push(tmp);
+  msgQueueMutex.unlock();
+
+}
+void World::requestDelBlock(int x, int y, int z)
+{
+  int request[4];
+  request[0] = ((1 << 24) | (0 << 16) | (0 << 8) | 0);
+  request[1] = x;
+  request[2] = y;
+  request[3] = z;
+
+  if(send(fd,request,4*sizeof(int),0)<0)
+  {
+    std::cout << "Failed to send message to server\n";
+    return;
+  }
+}
+
+/*
+void World::requestBlockPlace(int x, int y, int z)
+{
+  /*
   int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
   int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
   int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
@@ -514,6 +752,8 @@ void World::delBlock(int x, int y, int z)
   int xchunk = floor((float)x/(float)CHUNKSIZE);
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
+
+
 
   std::shared_ptr<BSPNode>  tempChunk;
   if(tempChunk = getChunk(xchunk,ychunk,zchunk))
@@ -548,7 +788,9 @@ void World::delBlock(int x, int y, int z)
   {
     getChunk(xchunk,ychunk,zchunk-1)->build();
   }
+
 }
+*/
 
 void World::updateBlock(int x, int y, int z)
 {

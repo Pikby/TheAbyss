@@ -5,7 +5,7 @@ int main()
 {
   glfwInit();
 
-  const int numbBuildThreads = 4;
+  const int numbBuildThreads = 1;
 
 
 
@@ -44,13 +44,12 @@ int main()
 
   initWorld(numbBuildThreads,winWidth,winHeight);
   std::cout << "staring main\n";
-
-
-  pthread_t renderThreads[2];
-  pthread_create(&renderThreads[1],NULL,render,NULL);
-  pthread_create(&renderThreads[2],NULL,del,NULL);
+  pthread_t mainThreads[5];
+  pthread_create(&mainThreads[1],NULL,render,NULL);
+  pthread_create(&mainThreads[2],NULL,del,NULL);
+  pthread_create(&mainThreads[3],NULL,send,NULL);
+  pthread_create(&mainThreads[4],NULL,receive,NULL);
   std::cout << "Render threads created \n";
-
   pthread_t buildThreads[numbBuildThreads];
   for(int i = 0;i<numbBuildThreads;i++)
   {

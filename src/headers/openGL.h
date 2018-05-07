@@ -7,6 +7,8 @@ void draw();
 void* render(void *);
 void* del(void *);
 void* mainBuild(void* );
+void* send(void*);
+void* receive(void*);
 void* build(void *i);
 void initWorld(int numbBuildThreads,int width, int height);
 void closeGame();
