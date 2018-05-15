@@ -1,34 +1,51 @@
 #include "../headers/all.h"
 
 
-Client::Client(int Fd,int Id,World* world,ClientList* par)
+Client::Client(int Fd,uchar Id,World* world,ClientList* par)
 {
   parent = par;
   curWorld = world;
   fd = Fd;
   id = Id;
-  pos = glm::vec3(0,0,0);
-
+  xpos = 10;
+  ypos = 50;
+  zpos = 10;
   open = true;
+
+  if (send(fd, &id, sizeof(id), 0) == -1)
+  {
+      std::cout << "ERROR: failed to send id message." << std::endl;
+  }
+
+  parent->sendInitAll(this);
+  parent->retClients(this);
   sendThread = std::thread(&Client::sendMessages,this);
   recvThread = std::thread(&Client::recvMessages,this);
   sendThread.detach();
   recvThread.detach();
 }
+
 int Client::getFD()
 {
   return fd;
 }
-void Client::changePos(glm::vec3 newPos)
+void Client::setPos(glm::vec3 newPos)
 {
-  pos=newPos;
+  xpos = newPos.x;
+  ypos = newPos.y;
+  zpos = newPos.z;
+}
+
+std::shared_ptr<Message> Client::getInfo()
+{
+  std::shared_ptr<Message> tmp(new Message(90,id,0,0,*(int*)&xpos,*(int*)&ypos,*(int*)&zpos,NULL));
+  return tmp;
 }
 
 void Client::sendMessages()
 {
   while(open)
   {
-    //std::cout << "Starting loop\n";
     queueMutex.lock();
     if(msgQueue.empty())
     {
@@ -43,6 +60,8 @@ void Client::sendMessages()
     arr[2] = m->y;
     arr[3] = m->z;
     arr[4] = m->data == NULL ? 0 : m->data->length();
+
+
     if (send(fd, arr, 5*sizeof(int), 0) == -1)
     {
         std::cout << "ERROR: failed to send message" << std::endl;
@@ -95,11 +114,15 @@ void Client::recvMessages()
         break;
       case (1):
         curWorld->delBlock(x,y,z);
-        sendChunkAll(floor((float)x/(float)CHUNKSIZE),
-                  floor((float)y/(float)CHUNKSIZE),
-                  floor((float)z/(float)CHUNKSIZE));
+        sendDelBlockAll(x,y,z);
         break;
-        //curWorld->updatePlayerPos(x,y,z,fd)
+      case (2):
+        curWorld->addBlock(x,y,z,ext1);
+        sendAddBlockAll(x,y,z,ext1);
+        break;
+      case (91):
+        sendPositionAll(*(float*)&x,*(float*)&y,*(float*)&z);
+        break;
       case (0xFF):
         open = false;
         break;
@@ -108,6 +131,22 @@ void Client::recvMessages()
     }
   }
   std::cout << "Client Disconnecting \n";
+  parent->remove(id);
+}
+
+
+void Client::sendPositionAll(float x, float y,float z)
+{
+  setPos(glm::vec3(x,y,z));
+
+  std::shared_ptr<Message> tmp(new Message(91,id,0,0,*(int*)&x,*(int*)&y,*(int*)&z,NULL));
+  parent->messageAll(tmp);
+}
+
+void Client::sendAddBlockAll(int x, int y, int z, uchar id)
+{
+  std::shared_ptr<Message> tmp(new Message(2,id,0,0,x,y,z,NULL));
+  parent->messageAll(tmp);
 }
 
 void Client::sendChunk(int x,int y,int z)
@@ -124,9 +163,12 @@ void Client::sendChunkAll(int x,int y,int z)
   curWorld->generateChunk(x,y,z);
   std::shared_ptr<std::string> msg = curWorld->getChunk(x,y,z)->getCompressedChunk();
   std::shared_ptr<Message> tmp(new Message(0,0,0,0,x,y,z,msg));
-  queueMutex.lock();
   parent->messageAll(tmp);
-  queueMutex.unlock();
+}
+void Client::sendDelBlockAll(int x, int y, int z)
+{
+  std::shared_ptr<Message> tmp(new Message(1,0,0,0,x,y,z,NULL));
+  parent->messageAll(tmp);
 }
 
 void Client::sendExit()
@@ -146,30 +188,77 @@ ClientList::ClientList(World* temp)
 
 void ClientList::add(int fd)
 {
+  clientMutex.lock();
   for(int i = 0;i<MAX_CLIENTS;i++)
   {
     if(clients[i] == NULL)
     {
+      std::cout << "Adding client " << i << '\n';
+      clientMutex.unlock();
       std::shared_ptr<Client> tmp(new Client(fd,i,curWorld,this));
+      clientMutex.lock();
       clients[i] = tmp;
+      clientMutex.unlock();
       break;
     }
   }
 }
 void ClientList::remove(int id)
 {
-  clients[id] == NULL;
+  std::cout << clients[id].use_count() << "\n";
+  clientMutex.lock();
+  clients[id] = NULL;
+  clientMutex.unlock();
+  std::shared_ptr<Message> tmp(new Message(99,id,0,0,0,0,0,NULL));
+  messageAll(tmp);
 }
 
+void ClientList::sendInitAll(Client* target)
+{
+  clientMutex.lock();
+  std::shared_ptr<Message> msg = target->getInfo();
+  for(int i =0;i<MAX_CLIENTS;i++)
+  {
+    std::shared_ptr<Client> curClient = clients[i];
+    if(curClient != NULL && curClient.get() != target)
+    {
+      curClient->queueMutex.lock();
+      curClient->msgQueue.push(msg);
+      curClient->queueMutex.unlock();
+    }
+  }
+  clientMutex.unlock();
+}
+
+void ClientList::retClients(Client* target)
+{
+  clientMutex.lock();
+  for(int i =0;i<MAX_CLIENTS;i++)
+  {
+    std::shared_ptr<Client> curClient = clients[i];
+    if(curClient != NULL && curClient.get() != target)
+    {
+      target->queueMutex.lock();
+      target->msgQueue.push(curClient->getInfo());
+      target->queueMutex.unlock();
+    }
+  }
+  clientMutex.unlock();
+}
 
 void ClientList::messageAll(std::shared_ptr<Message> msg)
 {
+  clientMutex.lock();
   for(int i=0;i<MAX_CLIENTS;i++)
   {
+
     std::shared_ptr<Client> curClient = clients[i];
     if(curClient != NULL)
     {
+      curClient->queueMutex.lock();
       curClient->msgQueue.push(msg);
+      curClient->queueMutex.unlock();
     }
   }
+   clientMutex.unlock();
 }

@@ -30,6 +30,7 @@ void updateInputs()
 			case GLFW_KEY_D:			mainCharacter->moveRight();							break;
 			case GLFW_KEY_S:			mainCharacter->moveBackward();					break;
 			case GLFW_KEY_SPACE:	mainCharacter->moveUp();								break;
+			case GLFW_KEY_N: std::cout << mainCharacter->xpos << ":" << mainCharacter->ypos << ":" << mainCharacter->zpos << "\n";
 		}
 	}
 }

@@ -74,25 +74,36 @@ class World : public WorldWrap
     std::shared_ptr<BSPNode> frontNode;
     std::shared_ptr<BSPNode> frontDelNode;
   public:
+     std::mutex playerListMutex;
+     std::map<uchar, std::shared_ptr<Player>> playerList;
      unsigned int depthMapFBO,depthMap,depthMapEBO;
      unsigned int quadVAO = 0;
      unsigned int quadVBO;
      int fd;
+     char mainId;
      void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
      World(int numbBuildThreads,int width,int height);
 
      void renderWorld(float* mainx, float* mainy, float* mainz);
      void drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR);
+     void drawPlayers(glm::mat4* view);
      void buildWorld(int threadNumb);
      bool chunkExists(int x, int y, int z);
      void createDelBlockRequest(int x, int y, int z);
      void requestDelBlock(int x, int y, int z);
      void requestChunk(int x, int y, int z);
      void requestExit();
+     void requestMove(float x, float y, float z);
      void createChunkRequest(int x, int y, int z);
+     void createMoveRequest(float x, float y,float z);
+     void createAddBlockRequest(int x, int y, int z, uchar id);
+     void requestAddBlock(int x, int y, int z, uchar id);
      void receiveChunk(int x, int y, int z, int length);
      inline void receiveMessage(int* buf,int length);
      Message receiveAndDecodeMessage();
+     void addPlayer(float x, float y, float z, uchar id);
+     void removePlayer(uchar id);
+     void movePlayer(float x,float y, float z, uchar id);
 
      inline void sendMessage(int* buf,int length);
      void setLightLocation(glm::vec3 pos)

@@ -48,6 +48,8 @@ public:
 
   void addBlock(int id);
   void destroyBlock();
+  void setPosition(float x, float y, float z);
+  void draw();
   //Hud functions
   void calculateHud();
   void drawHud();

@@ -1,9 +1,9 @@
 # the compiler: gcc for C program, define as g++ for C++
 CC = g++
-WCC = /media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-g++
-WPATH = /media/kibby/WorkSpace/MXE/mxe/usr/i686-w64-mingw32.static
+WCC = /media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static.posix-g++
+WPATH = /media/kibby/WorkSpace/MXE/mxe/usr/i686-w64-mingw32.static.posix-g++
 
-WCC = /media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-g++
+WCC = /media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static.posix-g++
 CFLAGSLINUX  = -I/usr/local/include/freetype2 -I/usr/include/libpng12 \
 					-lglfw3 -lGLEW -lGL -lm -ldl -lXinerama -lXrandr -lXi \
 					-lXcursor -lX11 -lXxf86vm -lpthread -lSOIL -std=c++17 \
@@ -23,12 +23,12 @@ CFLAGSWINDOWS =-I/usr/local/include/freetype2 -I/usr/include/libpng12  \
 
 
 FPATH = ../src/
-TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/openGL.cpp MainEngine/bsp.cpp \
+TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/openGL.cpp MainEngine/bsp.cpp MainEngine/entity.cpp \
 				 Character/camera.cpp Character/gui.cpp TerrainGeneration/FastNoise.cpp\
 				 Character/mainchar.cpp TerrainGeneration/bspterraingen.cpp Shader/shaders.cpp \
 				 InputHandling/inputhandling.cpp Inventory/items.cpp
 
-COBJECTLIST = cmain.o cworld.o copenGL.o cbsp.o ccamera.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cshaders.o cinputhandling.o citems.o
+COBJECTLIST = cmain.o cworld.o centity.o copenGL.o cbsp.o ccamera.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cshaders.o cinputhandling.o citems.o
 SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o
 
 OFLAGS = g++ -c $(CFLAGSLINUX) -O3
@@ -71,6 +71,8 @@ copenGL.o: $(ME)/openGL.cpp
 cbsp.o: $(ME)/bsp.cpp
 	$(OFLAGS) $(ME)/bsp.cpp -o cbsp.o
 
+centity.o: $(ME)/entity.cpp
+	$(OFLAGS) $(ME)/entity.cpp -o centity.o
 # Character
 CH = ../src/Character
 ccamera.o: $(CH)/camera.cpp

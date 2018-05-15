@@ -43,8 +43,8 @@ World::World(int numbBuildThreads,int width,int height)
 
   drawnChunks = 0;
   frontNode = NULL;
-  horzRenderDistance = 7;
-  vertRenderDistance = 7;
+  horzRenderDistance = 4;
+  vertRenderDistance = 4;
   renderBuffer = 1;
   totalChunks = 0;
 
@@ -76,6 +76,48 @@ World::World(int numbBuildThreads,int width,int height)
   sockaddr_in serveraddress;
   serveraddress.sin_family = AF_INET;
   serveraddress.sin_port = htons(PORT);
+
+  #ifdef _WIN32
+  WSADATA wsa_data;
+  WSAStartup(MAKEWORD(1,1), &wsa_data);
+
+  std::cout << "Doing windows shit\n";
+  // addrinfo contains a sockaddr struct
+  struct addrinfo *result = NULL, *ptr = NULL, hints;
+  // initialize the addrInfo structs
+  ZeroMemory(&hints, sizeof(hints));  // fills a block of memory with 0s
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_protocol = IPPROTO_TCP;
+
+  if (getaddrinfo(ADDRESS,"3030", &hints, &result) != 0)
+  {
+    std::cout << "getaddrinfo failed" << std::endl;
+    WSACleanup();
+    return;
+  }
+
+  // attempt to connect to the first address returned by the call to getaddrinfo
+  ptr = result;
+  // create a SOCKET for the connecting server
+  fd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+  // error check to make sure it is a valid socket
+  if (fd == INVALID_SOCKET)
+  {
+      std::cout << "Error at socket(): " << WSAGetLastError() << std::endl;
+      freeaddrinfo(result);
+      WSACleanup();
+      return;
+  }
+  if(connect(fd, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
+  {
+    closesocket(fd);
+    fd = INVALID_SOCKET;
+  }
+
+
+  #else
+  std::cout << "Doing linux shit\n";
   inet_pton(AF_INET, ADDRESS, &(serveraddress.sin_addr));
 
 
@@ -85,46 +127,20 @@ World::World(int numbBuildThreads,int width,int height)
       std::cout << "ERROR: failed to connect to server." << std::endl;
       return;
   }
+  #endif
   std::cout << "Successfully connected to server" << std::endl;
 
-  /*
-  // send the name of the client first
-  float position[3] = {0,100,0};
-  if (send(fd, position, sizeof(position), 0) < 0)
+  if(recv(fd,&mainId,sizeof(mainId),0)<0)
   {
-      std::cout << "ERROR: failed to send position to server." << std::endl;
-      return;
+    std::cout << "Failed to retrieve id from server\n";
   }
 
-  for(int i = 0;i<1100;i++)
-  {
-    int pos[4];
-    if (recv(fd, pos, sizeof(pos), 0) < 0)
-    {
-      std::cout << "ERROR: failed to send name to server." << std::endl;
-      return;
-    }
-    std::cout << pos[0] << ":" << pos[1] << ":" << pos[2] << ":" << pos[3] << "\n";
-    int length = pos[3];
-
-
-    uchar* buffer = new uchar[length];
-    if(recv(fd,buffer,length,0) < 0)
-    {
-      std::cout << "ERROR: failed to send name to server." << std::endl;
-      return;
-    }
-
-    std::string x(buffer,length);
-    newWorld->generateChunkFromString(pos[0],pos[1],pos[2],x);
-  }
-  */
 }
 
 Message World::receiveAndDecodeMessage()
 {
   int buf[5];
-  if (recv(fd, buf, 5*sizeof(int), 0) < 0)
+  if (recv(fd, (char*)buf, 5*sizeof(int), 0) < 0)
   {
     std::cout << "ERROR: failed to recieve message from server." << std::endl;
   }
@@ -162,27 +178,118 @@ void World::requestChunk(int x, int y, int z)
   request[3] = z;
 
 
-  if(send(fd,request,4*sizeof(int),0)<0)
+  if(send(fd,(char*)request,4*sizeof(int),0)<0)
   {
     std::cout << "Failed to send message to server\n";
     return;
   }
   //std::cout << "Requesting chunk" << x << ":" << y << ":" << z << "\n";
+}
 
 
+void World::createMoveRequest(float x, float y, float z)
+{
+  Message tmp = {91,0,0,0,*(int*)&x,*(int*)&y,*(int*)&z,0};
+  msgQueueMutex.lock();
+  messageQueue.push(tmp);
+  msgQueueMutex.unlock();
+}
+
+void World::createAddBlockRequest(int x, int y, int z, uchar id)
+{
+  Message tmp = {2,id,0,0,x,y,z,0};
+  msgQueueMutex.lock();
+  messageQueue.push(tmp);
+  msgQueueMutex.unlock();
+}
+
+void World::requestAddBlock(int x, int y, int z, uchar id)
+{
+  int request[4];
+  request[0] = ((2 << 24) | (id << 16) | (0 << 8) | 0);
+  request[1] = x;
+  request[2] = y;
+  request[3] = z;
+  if(send(fd,(char*)request,4*sizeof(int),0)<0)
+  {
+    std::cout << "Failed to send message to server\n";
+    return;
+  }
+}
+
+void World::createDelBlockRequest(int x, int y, int z)
+{
+  Message tmp = {1,0,0,0,x,y,z,0};
+  msgQueueMutex.lock();
+  messageQueue.push(tmp);
+  msgQueueMutex.unlock();
 
 }
+void World::requestDelBlock(int x, int y, int z)
+{
+  int request[4];
+  request[0] = ((1 << 24) | (0 << 16) | (0 << 8) | 0);
+  request[1] = x;
+  request[2] = y;
+  request[3] = z;
+
+  if(send(fd,(char*)request,4*sizeof(int),0)<0)
+  {
+    std::cout << "Failed to send message to server\n";
+    return;
+  }
+}
+
+void World::requestMove(float x, float y, float z)
+{
+
+  int request[4];
+  request[0] = ((91 << 24) | (0 << 16) | (0 << 8) | 0);
+  request[1] = *(int*)&x;
+  request[2] = *(int*)&y;
+  request[3] = *(int*)&z;
+  if(send(fd,(char*)request,4*sizeof(int),0)<0)
+  {
+    std::cout << "Failed to send message to server\n";
+    return;
+  }
+}
+
+void World::movePlayer(float x, float y, float z, uchar id)
+{
+  //std::cout << "Moving player" << x << y << z << '\n';
+  std::shared_ptr<Entity> tmp = playerList[id];
+  if(tmp != NULL)
+  {
+    //std::cout << "Moving player" << x << y << z << '\n';
+    playerList[id]->setPostion(x,y,z);
+  }
+}
+
 void World::requestExit()
 {
   int request[4];
   request[0] = 0xFFFFFFFF;
-  if(send(fd,request,4*sizeof(int),0)<0)
+  if(send(fd,(char*)request,4*sizeof(int),0)<0)
   {
     std::cout << "Failed to send exit message to server\n";
     return;
   }
   std::cout << "exit message Sent\n";
 }
+
+void World::addPlayer(float x, float y, float z, uchar id)
+{
+  std::cout << "Adding player at" << x << ":" << y << ":" << z << ":"<< (int) id << "\n";
+  std::shared_ptr<Player> temp(new Player(glm::vec3(x,y,z)));
+  playerList[id] = temp;
+}
+void World::removePlayer(uchar id)
+{
+  std::cout << "Removing PLayer\n";
+  playerList.erase(id);
+}
+
 void World::createChunkRequest(int x, int y, int z)
 {
   if(!requestMap.exists(x,y,z))
@@ -195,23 +302,13 @@ void World::createChunkRequest(int x, int y, int z)
   }
 }
 
-inline void World::sendMessage(int* buf, int length)
-{
-  if(send(fd,buf,length,0)<0)
-  {
-    std::cout << "Failed to send message to server\n";
-    return;
-  }
-}
 
-
-inline void World::receiveMessage(int* buf, int length)
+void World::drawPlayers(glm::mat4* view)
 {
-  //std::cout << "Receiving message \n";
-  if (recv(fd, buf, length, 0) < 0)
+  //std::cout << "Map has: " << playerList.size() << "\n";
+  for(auto it = playerList.begin(); it != playerList.end();it++)
   {
-    std::cout << "ERROR: failed to recieve message from server." << std::endl;
-    return;
+    it->second->draw(view);
   }
 }
 
@@ -267,7 +364,7 @@ void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
 
 void World::generateChunkFromString(int chunkx, int chunky, int chunkz,std::string value)
 {
-  std::cout << "Generating chunk" << chunkx << ":" << chunky << ":" << chunkz << "\n";
+  //std::cout << "Generating chunk" << chunkx << ":" << chunky << ":" << chunkz << "\n";
   if(chunkExists(chunkx,chunky,chunkz))
   {
     std::cout << "Replacing CHunk \n";
@@ -354,7 +451,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,std::stri
     otherChunk->leftChunk = tempChunk;
     if(!otherChunk->toBuild)
     {
-      addToBuildQueue(otherChunk);;
+      addToBuildQueue(otherChunk);
     }
   }
   //Adds the chunk to the current mainBuildQueue if it is not already;
@@ -547,6 +644,7 @@ void World::delChunk(int x, int y, int z)
   if(tempChunk != NULL)
   {
     BSPmap.del(x,y,z);
+    requestMap.del(x,y,z);
     tempChunk->disconnect();
     /*
     Essentially marks the chunk for death
@@ -714,26 +812,53 @@ void World::addBlock(int x, int y, int z, int id)
 
 }
 
-void World::createDelBlockRequest(int x, int y, int z)
-{
-  Message tmp = {1,0,0,0,x,y,z,0};
-  msgQueueMutex.lock();
-  messageQueue.push(tmp);
-  msgQueueMutex.unlock();
 
-}
-void World::requestDelBlock(int x, int y, int z)
+void World::delBlock(int x, int y, int z)
 {
-  int request[4];
-  request[0] = ((1 << 24) | (0 << 16) | (0 << 8) | 0);
-  request[1] = x;
-  request[2] = y;
-  request[3] = z;
+  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
+  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
+  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
 
-  if(send(fd,request,4*sizeof(int),0)<0)
+  if(xlocal == CHUNKSIZE) xlocal = 0;
+  if(ylocal == CHUNKSIZE) ylocal = 0;
+  if(zlocal == CHUNKSIZE) zlocal = 0;
+
+  int xchunk = floor((float)x/(float)CHUNKSIZE);
+  int ychunk = floor((float)y/(float)CHUNKSIZE);
+  int zchunk = floor((float)z/(float)CHUNKSIZE);
+
+  std::shared_ptr<BSPNode>  tempChunk;
+  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
   {
-    std::cout << "Failed to send message to server\n";
-    return;
+    tempChunk->delBlock(xlocal,ylocal,zlocal);
+  }
+  tempChunk->build();
+
+  if(xlocal+1>=CHUNKSIZE)
+  {
+    getChunk(xchunk+1,ychunk,zchunk)->build();
+  }
+  else if(xlocal-1 < 0)
+  {
+    getChunk(xchunk-1,ychunk,zchunk)->build();
+  }
+
+  if(ylocal+1>=CHUNKSIZE)
+  {
+    getChunk(xchunk,ychunk+1,zchunk)->build();
+  }
+  else if(ylocal-1 < 0)
+  {
+    getChunk(xchunk,ychunk-1,zchunk)->build();
+  }
+
+  if(zlocal+1>=CHUNKSIZE)
+  {
+    getChunk(xchunk,ychunk,zchunk+1)->build();
+  }
+  else if(zlocal-1 < 0)
+  {
+    getChunk(xchunk,ychunk,zchunk-1)->build();
   }
 }
 

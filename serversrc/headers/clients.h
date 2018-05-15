@@ -28,9 +28,11 @@ class Client : public WorldWrap
 {
   private:
     int fd;
-    int id;
+    uchar id;
     std::atomic_bool open;
-    glm::vec3 pos;
+    std::atomic<float> xpos;
+    std::atomic<float> ypos;
+    std::atomic<float> zpos;
     std::thread sendThread;
     std::thread recvThread;
     World* curWorld;
@@ -38,21 +40,27 @@ class Client : public WorldWrap
   public:
     std::mutex queueMutex;
     std::queue<std::shared_ptr<Message>> msgQueue;
-  Client(int Fd,int Id,World* world,ClientList* par);
-  int getFD();
-  void changePos(glm::vec3 newPos);
-  void sendMessages();
-  void recvMessages();
-  void sendChunk(int x,int y,int z);
-  void sendChunkAll(int x, int y, int z);
-  void sendExit();
+    Client(int Fd,uchar Id,World* world,ClientList* par);
+    int getFD();
+    void setPos(glm::vec3 newPos);
+    std::shared_ptr<Message> getInfo();
+    void sendMessages();
+    void recvMessages();
+    void sendChunk(int x,int y,int z);
+    void sendChunkAll(int x, int y, int z);
+    void sendAddBlockAll(int x, int y, int z, uchar id);
+    void sendDelBlockAll(int x, int y, int z);
+    void sendInitAll();
+    void sendPositionAll(float x, float y, float z);
+    void sendExit();
 
 };
 
-#define MAX_CLIENTS 32
+#define MAX_CLIENTS 4
 class ClientList
 {
   private:
+    std::mutex clientMutex;
     std::shared_ptr<Client> clients[MAX_CLIENTS];
     World* curWorld;
   public:
@@ -60,5 +68,6 @@ class ClientList
     void add(int fd);
     void remove(int id);
     void messageAll(std::shared_ptr<Message> msg);
-
+    void retClients(Client* target);
+    void sendInitAll(Client* target);
 };

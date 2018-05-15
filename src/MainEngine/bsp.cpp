@@ -59,7 +59,7 @@ void BSPNode::build()
 
 void BSPNode::drawOpaque()
 {
-  BSPMutex.try_lock();
+  BSPMutex.lock();
   if(toRender == true)
   {
      curBSP.render();
@@ -330,7 +330,7 @@ BSP::BSP(){}
 
 inline int BSP::addVertex(int renderType,float x, float y, float z, float xn, float yn, float zn, float texX, float texY)
 {
-  if(renderType == OPAQUE)
+  if(renderType == 0)
   {
     int numbVert = oVerticesBuffer->size()/8;
     //Adds position vector
@@ -349,7 +349,7 @@ inline int BSP::addVertex(int renderType,float x, float y, float z, float xn, fl
     //Returns the location of the vertice
     return numbVert;
   }
-  else if(renderType == TRANSLUCENT)
+  else if(renderType == 1)
   {
     int numbVert = tVerticesBuffer->size()/8;
     //Adds position vector
@@ -372,7 +372,7 @@ inline int BSP::addVertex(int renderType,float x, float y, float z, float xn, fl
 
 inline void BSP::addIndices(int renderType,int index1, int index2, int index3, int index4)
 {
-  if(renderType == OPAQUE)
+  if(renderType == 0)
   {
     oIndicesBuffer->push_back(index1);
     oIndicesBuffer->push_back(index2);
@@ -382,7 +382,7 @@ inline void BSP::addIndices(int renderType,int index1, int index2, int index3, i
     oIndicesBuffer->push_back(index4);
     oIndicesBuffer->push_back(index3);
   }
-  else if(renderType == TRANSLUCENT)
+  else if(renderType == 1)
   {
     tIndicesBuffer->push_back(index1);
     tIndicesBuffer->push_back(index2);

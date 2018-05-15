@@ -17,24 +17,84 @@ float max(float a, float b, float c)
 
 }
 
+float vertices[] = {
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+};
+unsigned int oVAO, oVBO;
+
 MainChar::MainChar(float x, float y, float z, World* world )
 {
-  mainCharShader = Shader("../src/Shader/shaders/shaderBlocks.vs","../src/Shader/shaders/shaderBlocks.fs");
+  mainCharShader = Shader("../src/Shader/shaders/shaderEntity.vs","../src/Shader/shaders/shaderEntity.fs");
   xpos = x;
   ypos = y;
   zpos = z;
   deltax = 0;
   deltay = 0;
   deltaz = 0;
-  moveSpeed = 0.5f;
+  moveSpeed = 0.1f;
   curWorld = world;
   mainCam = Camera(glm::vec3(xpos,ypos,zpos));
   calculateHud();
   gui = GUIRenderer(screenWidth,screenHeight);
   std::cout << screenWidth << "\n" << screenHeight <<"\n";
 
+  glGenVertexArrays(1, &oVAO);
+  glGenBuffers(1, &oVBO);
+  glBindVertexArray(oVAO);
 
+  glBindBuffer(GL_ARRAY_BUFFER,oVBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices),vertices, GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (GLvoid*)0);
+  glEnableVertexAttribArray(0);
+
+  glVertexAttribPointer(1,2,GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+  glEnableVertexAttribArray(1);
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
 }
+
 
 void MainChar::update()
 {
@@ -61,7 +121,9 @@ void MainChar::update()
     deltaz /= 5;
 
 
-  mainCam.setPosition(xpos,ypos+0.1,zpos);
+  mainCam.setPosition(xpos,ypos,zpos);
+  curWorld->createMoveRequest(xpos,ypos,zpos);
+
 }
 
 void MainChar::moveRight()
@@ -86,6 +148,14 @@ void MainChar::moveBackward()
 {
   deltax += -cos(mainCam.yaw*PI/180.0)*moveSpeed;
   deltaz += -sin(mainCam.yaw*PI/180.0)*moveSpeed;
+}
+
+void MainChar::setPosition(float x, float y, float z)
+{
+  if(sqrt(pow(x-xpos,2)+pow(y-ypos,2)+pow(z-zpos,2) <4)) return;
+  xpos = x;
+  ypos = y;
+  zpos = z;
 }
 
 void MainChar::moveDown()
@@ -125,15 +195,15 @@ void MainChar::addBlock(int id)
 
     if(x != 0)
     {
-      curWorld->addBlock(floor(p1.x)-sign(x),floor(p1.y),floor(p1.z),id);
+      curWorld->createAddBlockRequest(floor(p1.x)-sign(x),floor(p1.y),floor(p1.z),id);
     }
     else if(y != 0)
     {
-      curWorld->addBlock(floor(p1.x),floor(p1.y)-sign(y),floor(p1.z),id);
+      curWorld->createAddBlockRequest(floor(p1.x),floor(p1.y)-sign(y),floor(p1.z),id);
     }
     else if(z != 0)
     {
-      curWorld->addBlock(floor(p1.x),floor(p2.y),floor(p1.z)-sign(z),id);
+      curWorld->createAddBlockRequest(floor(p1.x),floor(p2.y),floor(p1.z)-sign(z),id);
     }
 
 }
@@ -159,6 +229,23 @@ void MainChar::drawHud()
 
   gui.drawRectangle(screenWidth/2+3,screenHeight/2+3,screenWidth/2-3,screenHeight/2-3);
   showFPS();
+}
+
+void MainChar::draw()
+{
+  mainCharShader.use();
+  glm::mat4 camProjection = glm::perspective(glm::radians(45.0f),
+                            (float)1920/ (float)1080, 0.1f,
+                            (float)7*CHUNKSIZE*4);
+  glm::mat4 model;
+  model = glm::translate(model,glm::vec3(xpos,ypos,zpos-3));
+  mainCharShader.setMat4("projection",camProjection);
+  mainCharShader.setMat4("view", mainCam.getViewMatrix());
+  mainCharShader.setMat4("model", model);
+
+  glBindVertexArray(oVAO);
+  glDrawArrays(GL_TRIANGLES,0,36);
+  glBindVertexArray(0);
 }
 
 void MainChar::showFPS()

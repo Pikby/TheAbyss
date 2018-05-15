@@ -30,7 +30,7 @@ void initWorld(int numbBuildThreads, int width,  int height)
 {
   //glfwMakeContextCurrent(window);
   newWorld = new World(numbBuildThreads,width,height);
-  mainCharacter = new MainChar(0,50,0,newWorld);
+  mainCharacter = new MainChar(10,50,10,newWorld);
   initializeInputs(mainCharacter);
 
   /*
@@ -130,11 +130,11 @@ void draw()
     lightPos.x = cos(sunAngle*PI/180)*distToSun+camera->position.x;
     lightPos.y = sin(sunAngle*PI/180)*distToSun+camera->position.y;
     lightPos.z = camera->position.z;
-    float near = -1;
-    float far = distToSun*2;
+    float camNear = -1;
+    float camFar = distToSun*2;
     glm::mat4 lightProjection,lightView, lightSpaceMatrix;
     float orthoSize = (horzRenderDistance+renderBuffer)*CHUNKSIZE;
-    lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,near, far);
+    lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,camNear, camFar);
     lightView  = glm::lookAt(lightPos,
                                       camera->position,
                                       glm::vec3(0.0f,1.0f,0.0f));
@@ -178,7 +178,11 @@ void draw()
     newWorld->drawWorld(camera->getHSRMatrix(), hsrProjection,true);
 
 
+    //mainCharacter->draw();
     mainCharacter->drawHud();
+    newWorld->drawPlayers(&camView);
+    //Player temp(camera->position);
+    //temp.draw(&camView);
     //std::cout << glGetError() << "update loop\n";
 
     glfwSwapBuffers(window);
@@ -230,8 +234,15 @@ void* send(void*)
       case(1):
         newWorld->requestDelBlock(msg.x,msg.y,msg.z);
         break;
+      case(2):
+        newWorld->requestAddBlock(msg.x,msg.y,msg.z,msg.ext1);
+        break;
+      case(91):
+        newWorld->requestMove(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z);
+        break;
       default:
         std::cout << "Sending unknown opcode" << (int)msg.opcode << "\n";
+
     }
   }
   newWorld->requestExit();
@@ -243,10 +254,34 @@ void* receive(void*)
   while(!glfwWindowShouldClose(window))
   {
     Message msg = newWorld->receiveAndDecodeMessage();
+  //  std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
+
     switch(msg.opcode)
     {
       case(0):
         newWorld->receiveChunk(msg.x,msg.y,msg.z,msg.length);
+        break;
+      case(1):
+        newWorld->delBlock(msg.x,msg.y,msg.z);
+        break;
+      case(2):
+        newWorld->addBlock(msg.x,msg.y,msg.z,msg.ext1);
+        break;
+      case(10):
+        //mainCharacter->(msg.x,msg.y,msg.z);
+        break;
+      case(90):
+        newWorld->addPlayer(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z,msg.ext1);
+        break;
+      case(91):
+        if(msg.ext1 == newWorld->mainId)
+        {
+          mainCharacter->setPosition(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z);
+        }
+        else newWorld->movePlayer(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z,msg.ext1);
+        break;
+      case(99):
+        newWorld->removePlayer(msg.ext1);
         break;
       case(0xFF):
         std::cout << "Received exit message\n";

@@ -26,6 +26,9 @@ typedef unsigned char uchar;
 
 #define PI 3.14159265
 
+#define PORT 3030
+#define ADDRESS "127.0.0.1"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>

@@ -60,13 +60,14 @@ int main(int argc, char* argv[])
     serveraddress.sin_family = AF_INET;
     serveraddress.sin_port = htons(PORT);
     serveraddress.sin_addr.s_addr = INADDR_ANY;
+
+
     if (bind(listenfd, (sockaddr*) &serveraddress, sizeof(serveraddress)) == -1)
     {
         std::cout << "ERROR: failed to bind socket." << std::endl;
         return 1;
     }
     std::cout << "Successfully bound socket." << std::endl;
-
     // listen for a connection
     if (listen(listenfd, MAX_CLIENTS) == -1)
     {
