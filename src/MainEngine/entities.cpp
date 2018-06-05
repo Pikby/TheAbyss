@@ -1,5 +1,14 @@
-#include "../headers/all.h"
-
+#include <math.h>
+#include <GL/glew.h>
+// GLFW
+#include <GLFW/glfw3.h>
+#include <iostream>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <map>
+#include "../headers/shaders.h"
+#include "../headers/mainchar.h"
+#include "../headers/entities.h"
 
 Player::Player(glm::vec3 newPos)
 {
@@ -57,7 +66,7 @@ float cube[] = {
 void Player::render()
 {
 
-  entShader = Shader("../src/Shader/shaders/shaderEntity.vs","../src/Shader/shaders/shaderEntity.fs");
+  entShader = Shader("../src/Shaders/shaderEntity.vs","../src/Shaders/shaderEntity.fs");
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
   glBindVertexArray(VAO);

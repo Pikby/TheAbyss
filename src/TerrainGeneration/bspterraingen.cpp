@@ -1,7 +1,17 @@
-#include "../headers/all.h"
+#include "../headers/bsp.h"
+#include "../headers/FastNoise.h"
+int seed=1737;
+//Perlin noise object
+FastNoise perlin;
+
 
 void BSP::generateTerrain()
 {
+  perlin.SetSeed(seed);
+  perlin.SetFractalOctaves(8);
+  perlin.SetFrequency(0.01);
+  perlin.SetFractalLacunarity(8);
+  perlin.SetFractalGain(5);
   double freq = 128;
   int oct = 8;
   for(int x=0;x<CHUNKSIZE;x++)

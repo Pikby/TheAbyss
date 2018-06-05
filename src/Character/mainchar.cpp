@@ -1,6 +1,14 @@
 
-#include "../headers/all.h"
-
+#include <math.h>
+#include <GL/glew.h>
+// GLFW
+#include <GLFW/glfw3.h>
+#include <iostream>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <map>
+#include "../headers/shaders.h"
+#include "../headers/mainchar.h"
 #define PI 3.14159265
 
 template <typename T> int sign(T val)
@@ -64,7 +72,7 @@ unsigned int oVAO, oVBO;
 
 MainChar::MainChar(float x, float y, float z, World* world )
 {
-  mainCharShader = Shader("../src/Shader/shaders/shaderEntity.vs","../src/Shader/shaders/shaderEntity.fs");
+  mainCharShader = Shader("../src/Shaders/shaderBSP.vs","../src/Shaders/shaderBSP.fs");
   xpos = x;
   ypos = y;
   zpos = z;
@@ -75,8 +83,10 @@ MainChar::MainChar(float x, float y, float z, World* world )
   curWorld = world;
   mainCam = Camera(glm::vec3(xpos,ypos,zpos));
   calculateHud();
+  screenWidth = world->screenWidth;
+  screenHeight = world->screenHeight;
   gui = GUIRenderer(screenWidth,screenHeight);
-  std::cout << screenWidth << "\n" << screenHeight <<"\n";
+  //std::cout << screenWidth << "\n" << screenHeight <<"\n";
 
   glGenVertexArrays(1, &oVAO);
   glGenBuffers(1, &oVBO);
@@ -175,7 +185,7 @@ void MainChar::jump()
 //Destroys the block ur looking at
 void MainChar::destroyBlock()
 {
-  glm::vec4 block = rayCast(mainCam.position,mainCam.front,reach);
+  glm::vec4 block = curWorld->rayCast(mainCam.position,mainCam.front,reach);
 
   if(block.w == NOTHING) return;
   curWorld->createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
@@ -183,7 +193,7 @@ void MainChar::destroyBlock()
 }
 void MainChar::addBlock(int id)
 {
-    glm::vec4 block = rayCast(mainCam.position,mainCam.front,reach);
+    glm::vec4 block = curWorld->rayCast(mainCam.position,mainCam.front,reach);
     if(block.w == NOTHING) return;
 
     glm::vec3 p1 = glm::vec3(block);

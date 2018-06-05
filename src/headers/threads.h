@@ -4,11 +4,11 @@ GLFWwindow* createWindow(int width, int height);
 
 
 void draw();
-void* render(void *);
-void* del(void *);
-void* mainBuild(void* );
-void* send(void*);
-void* receive(void*);
-void* build(void *i);
+void render();
+void del();
+void mainBuild();
+void send();
+void receive();
+void build(int i);
 void initWorld(int numbBuildThreads,int width, int height);
 void closeGame();

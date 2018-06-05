@@ -1,9 +1,15 @@
 
-#include "../headers/all.h"
 
+
+
+#include <sstream>
+#include <string>
+#include <fstream>
+
+#include "../headers/bsp.h"
 int totalChunks;
 
-
+/*
 BSPNode::BSPNode(int x,int y,int z)
 {
   //std::cout << totalChunks << "\n";
@@ -25,9 +31,10 @@ BSPNode::~BSPNode()
   totalChunks--;
 }
 
-BSPNode::BSPNode(int x,int y, int z,std::string val)
+BSPNode::BSPNode(int x,int y, int z,std::string val, World* world)
 {
   //std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
+  parent = world;
   BSPMutex.lock();
   curBSP = BSP(x,y,z,val);
   isGenerated = false;
@@ -87,12 +94,13 @@ void BSPNode::saveChunk()
   curBSP.saveChunk();
 }
 
-void BSPNode::del()
+*/
+void BSP::del()
 {
   BSPMutex.lock();
   if(nextNode != NULL) nextNode->prevNode = prevNode;
   if(prevNode != NULL) prevNode->nextNode = nextNode;
-  curBSP.freeGL();
+  freeGL();
   nextNode = NULL;
   prevNode = NULL;
 
@@ -100,7 +108,8 @@ void BSPNode::del()
   BSPMutex.unlock();
 }
 
-void BSPNode::disconnect()
+
+void BSP::disconnect()
 {
   BSPMutex.lock();
   toDelete = true;
@@ -113,6 +122,7 @@ void BSPNode::disconnect()
   BSPMutex.unlock();
 }
 
+/*
 bool BSPNode::blockExists(int x, int y, int z)
 {
   return curBSP.blockExists(x, y, z);
@@ -133,23 +143,32 @@ int BSPNode::blockVisibleType(int x, int y, int z)
   return curBSP.blockVisibleType(x, y, z);
 }
 
+*/
 
-
-BSP::BSP(int x, int y, int z,std::string val)
+BSP::BSP(int x, int y, int z,std::string newWorldName,std::string val)
 {
+  std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
+
+  worldName = newWorldName;
+
+  BSPMutex.lock();
+  isGenerated = false;
+  nextNode = NULL;
+  prevNode = NULL;
+  inUse = false;
+  toRender = false;
+  toBuild = false;
+  toDelete = false;
+  totalChunks++;
+  BSPMutex.unlock();
+
   xCoord = x;
   yCoord = y;
   zCoord = z;
   for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
   using namespace std;
-  //The directoy to the chunk to be saved
-  string directory = "saves/" + worldName + "/chunks/";
-  string chunkName = to_string(x) + '_' + to_string(y) + '_' + to_string(z) + ".dat";
-  string chunkPath = directory+chunkName;
-  ofstream ochunk(chunkPath,ios::binary);
-  ochunk << val;
-  ochunk.close();
-  ifstream ichunk(chunkPath,ios::binary);
+  stringstream chunkData;
+  chunkData << val;
 
   const int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
   int i = 0;
@@ -158,8 +177,8 @@ BSP::BSP(int x, int y, int z,std::string val)
   while(i<numbOfBlocks)
   {
 
-    ichunk.read((char*) &curId,sizeof(curId));
-    ichunk.read((char*) &curLength,sizeof(curLength));
+    chunkData.read((char*) &curId,sizeof(curId));
+    chunkData.read((char*) &curLength,sizeof(curLength));
 
     for(int j = 0; j<curLength; j++)
     {
@@ -167,8 +186,6 @@ BSP::BSP(int x, int y, int z,std::string val)
     }
     i+= curLength;
   }
-  ichunk.close();
-
 
 
   oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
@@ -182,70 +199,72 @@ BSP::BSP(int x, int y, int z,std::string val)
   tIndices = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
 }
 
-BSP::BSP(int x, int y, int z)
+BSP::BSP(int x, int y, int z, std::string newWorldName)
 {
-    xCoord = x;
-    yCoord = y;
-    zCoord = z;
-    for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
-    //Intialize Buffers
+  worldName = newWorldName;
+  xCoord = x;
+  yCoord = y;
+  zCoord = z;
+  for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
+  //Intialize Buffers
 
-    using namespace std;
-    //The directoy to the chunk to be saved
-    string directory = "saves/" + worldName + "/chunks/";
-    string chunkName = to_string(x) + '_' + to_string(y) + '_' + to_string(z) + ".dat";
-    string chunkPath = directory+chunkName;
+  using namespace std;
+  //The directoy to the chunk to be saved
+  string directory = "saves/" + worldName + "/chunks/";
+  string chunkName = to_string(x) + '_' + to_string(y) + '_' + to_string(z) + ".dat";
+  string chunkPath = directory+chunkName;
 
-    //Max size of a chunk
-    int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
-    ifstream ichunk(chunkPath,ios::binary);
+  //Max size of a chunk
+  int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
+  ifstream ichunk(chunkPath,ios::binary);
 
-    //Checks if the file exists
-    if(!ichunk.is_open())
+  //Checks if the file exists
+  if(!ichunk.is_open())
+  {
+    /*
+    generateTerrain();
+    ichunk.close();
+    ofstream ochunk(chunkPath,ios::binary);
+
+    string compressed = compressChunk();
+    ochunk << compressed;
+    ochunk.close();
+    */
+  }
+  else
+  {
+    int i = 0;
+    char curId=0;
+    unsigned int curLength=0;
+    while(i<numbOfBlocks)
     {
-      /*
-      generateTerrain();
-      ichunk.close();
-      ofstream ochunk(chunkPath,ios::binary);
 
-      string compressed = compressChunk();
-      ochunk << compressed;
-      ochunk.close();
-      */
-    }
-    else
-    {
-      int i = 0;
-      char curId=0;
-      unsigned int curLength=0;
-      while(i<numbOfBlocks)
+      ichunk.read((char*) &curId,sizeof(curId));
+      ichunk.read((char*) &curLength,sizeof(curLength));
+
+      for(int j = 0; j<curLength; j++)
       {
-
-        ichunk.read((char*) &curId,sizeof(curId));
-        ichunk.read((char*) &curLength,sizeof(curLength));
-
-        for(int j = 0; j<curLength; j++)
-        {
-          worldMap[i+j] = curId;
-        }
-        i+= curLength;
+        worldMap[i+j] = curId;
       }
-      ichunk.close();
+      i+= curLength;
     }
-    oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-    oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
-    tVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-    tIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+    ichunk.close();
+  }
+  oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+  tVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  tIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
 
-    oVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-    oIndices  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
-    tVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-    tIndices = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+  oVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  oIndices  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+  tVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  tIndices = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
 }
 
 BSP::~BSP()
 {
   saveChunk();
+  totalChunks--;
 }
 
 inline std::string BSP::compressChunk()
@@ -395,7 +414,7 @@ inline void BSP::addIndices(int renderType,int index1, int index2, int index3, i
 }
 
 
-inline bool BSP::blockExists(int x, int y, int z)
+bool BSP::blockExists(int x, int y, int z)
 {
   int id = worldMap[(int)x+CHUNKSIZE*(int)y+(int)z*CHUNKSIZE*CHUNKSIZE];
   if(id == 0 ) return false;
@@ -412,7 +431,7 @@ void BSP::addBlock(int x, int y, int z, char id)
   worldMap[x+y*CHUNKSIZE+z*CHUNKSIZE*CHUNKSIZE] = id;
 }
 
-inline void BSP::delBlock(int x, int y, int z)
+void BSP::delBlock(int x, int y, int z)
 {
   worldMap[x + y*CHUNKSIZE + z*CHUNKSIZE*CHUNKSIZE] = 0;
 
@@ -436,9 +455,10 @@ inline glm::vec3 BSP::offset(float x, float y, float z)
 
 }
 
-void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
-                       std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk)
+void BSP::build()
 {
+  BSPMutex.lock();
+  inUse = true;
   oVerticesBuffer->clear();
   oIndicesBuffer->clear();
   tVerticesBuffer->clear();
@@ -467,9 +487,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(x+1 >= CHUNKSIZE)
          {
-           if(curRightChunk != NULL)
+           if(rightChunk != NULL)
            {
-              if(renderType == curRightChunk->blockVisibleType(0,y,z)) rightNeigh = true;
+              if(renderType == rightChunk->blockVisibleType(0,y,z)) rightNeigh = true;
            }
            else if(defaultNull) rightNeigh = true;
          }
@@ -477,9 +497,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(x-1 < 0)
          {
-           if(curLeftChunk != NULL)
+           if(leftChunk != NULL)
            {
-            if(renderType == curLeftChunk->blockVisibleType(CHUNKSIZE-1,y,z)) leftNeigh = true;
+            if(renderType == leftChunk->blockVisibleType(CHUNKSIZE-1,y,z)) leftNeigh = true;
            }
            else if(defaultNull) leftNeigh = true;
          }
@@ -487,9 +507,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(y+1 >= CHUNKSIZE)
          {
-           if(curTopChunk != NULL)
+           if(topChunk != NULL)
            {
-              if(renderType == curTopChunk->blockVisibleType(x,0,z)) topNeigh = true;
+              if(renderType == topChunk->blockVisibleType(x,0,z)) topNeigh = true;
            }
            else if(defaultNull) topNeigh = true;
          }
@@ -497,9 +517,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(y-1 < 0)
          {
-          if(curBottomChunk != NULL)
+          if(bottomChunk != NULL)
           {
-            if(renderType == curBottomChunk->blockVisibleType(x,CHUNKSIZE-1,z)) bottomNeigh = true;
+            if(renderType == bottomChunk->blockVisibleType(x,CHUNKSIZE-1,z)) bottomNeigh = true;
           }
           else if(defaultNull) bottomNeigh = true;
          }
@@ -507,9 +527,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(z+1 >= CHUNKSIZE)
          {
-           if(curBackChunk != NULL)
+           if(backChunk != NULL)
            {
-             if(renderType == curBackChunk->blockVisibleType(x,y,0)) backNeigh = true;
+             if(renderType == backChunk->blockVisibleType(x,y,0)) backNeigh = true;
            }
            else if(defaultNull) backNeigh = true;
          }
@@ -517,9 +537,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(z-1 < 0)
          {
-           if(curFrontChunk != NULL)
+           if(frontChunk != NULL)
            {
-             if(renderType == curFrontChunk->blockVisibleType(x,y,CHUNKSIZE-1)) frontNeigh = true;
+             if(renderType == frontChunk->blockVisibleType(x,y,CHUNKSIZE-1)) frontNeigh = true;
            }
            else if(defaultNull) frontNeigh = true;
          }
@@ -642,6 +662,10 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
   tVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
   tIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
 
+  toRender = true;
+  toBuild = false;
+  inUse = false;
+  BSPMutex.unlock();
 }
 
 inline void BSP::render()
@@ -706,13 +730,20 @@ inline void BSP::render()
 
 void BSP::drawOpaque()
 {
+  BSPMutex.lock();
+  if(toRender == true)
+  {
+     render();
+     toRender = false;
+  }
   if(oIndices->size() != 0)
   {
-    drawnChunks++;
+    //drawnChunks++;
     glBindVertexArray(oVAO);
     glDrawElements(GL_TRIANGLES, oIndices->size(), GL_UNSIGNED_INT,0);
     glBindVertexArray(0);
   }
+  BSPMutex.unlock();
 }
 
 void BSP::drawTranslucent()

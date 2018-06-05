@@ -1,5 +1,8 @@
-#include "../headers/all.h"
-
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <thread>
+#include <iostream>
+#include "../headers/threads.h"
 
 int main()
 {
@@ -7,16 +10,11 @@ int main()
 
   const int numbBuildThreads = 1;
 
-
-
   int winWidth = 1280;
   int winHeight = 720;
   GLFWwindow* newWindow = createWindow(winWidth,winHeight);
   glfwMakeContextCurrent(newWindow);
-  glfwSetKeyCallback(newWindow, key_callback);
-  glfwSetCursorPosCallback(newWindow, mouse_callback);
-  glfwSetScrollCallback(newWindow, scroll_callback);
-  glfwSetMouseButtonCallback(newWindow, mousekey_callback);
+
 
   glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSwapInterval(0);//FPS Capping
@@ -46,11 +44,17 @@ int main()
   initWorld(numbBuildThreads,winWidth,winHeight);
   std::cout << "staring main\n";
   pthread_t mainThreads[5];
-  pthread_create(&mainThreads[1],NULL,render,NULL);
-  pthread_create(&mainThreads[2],NULL,del,NULL);
-  pthread_create(&mainThreads[3],NULL,send,NULL);
-  pthread_create(&mainThreads[4],NULL,receive,NULL);
+  std::thread renderThread(render);
+  std::thread delThread(del);
+  std::thread sendThread(send);
+  std::thread receiveThread(receive);
+
+  renderThread.detach();
+  delThread.detach();
+  sendThread.detach();
+  receiveThread.detach();
   std::cout << "Render threads created \n";
+  /*
   pthread_t buildThreads[numbBuildThreads];
   for(int i = 0;i<numbBuildThreads;i++)
   {
@@ -58,10 +62,13 @@ int main()
     *x = i;
     pthread_create(&buildThreads[i],NULL,build,(void*)x );
   }
+  */
+  std::thread buildThread(build,0);
+  buildThread.detach();
 
   std::cout << "World initalized begin drawing\n";
   draw();
-  pthread_exit(NULL);
+
 
   glfwTerminate();
 }

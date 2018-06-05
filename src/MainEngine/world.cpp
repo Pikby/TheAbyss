@@ -1,36 +1,51 @@
 
-#include "../headers/all.h"
+#ifdef _WIN32
+  /* See http://stackoverflow.com/questions/12765743/getaddrinfo-on-win32 */
+  #ifndef _WIN32_WINNT
+    #define _WIN32_WINNT 0x0501  /* Windows XP. */
+  #endif
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+#else
+  /* Assume that any non-Windows platform uses POSIX-style sockets instead. */
+  #include <sys/socket.h>
+  #include <arpa/inet.h>
+  #include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
+  #include <unistd.h> /* Needed for close() */
+#endif
 
-int WorldWrap::screenWidth;
-int WorldWrap::screenHeight;
-int WorldWrap::numbOfThreads;
-int WorldWrap::seed;
-int WorldWrap::horzRenderDistance;
-int WorldWrap::vertRenderDistance;
-int WorldWrap::renderBuffer;
-unsigned int WorldWrap::totalChunks;
-FastNoise WorldWrap::perlin;
-std::string WorldWrap::worldName;
-Map3D<std::shared_ptr<BSPNode>> WorldWrap::BSPmap;
-Map3D<bool> WorldWrap::requestMap;
-int WorldWrap::drawnChunks;
+#define PORT 3030
+#define ADDRESS "127.0.0.1"
 
+#include "../headers/world.h"
+#include "../headers/SOIL.h"
+
+/*
+int World::screenWidth;
+int World::screenHeight;
+int World::numbOfThreads;
+int World::seed;
+int World::horzRenderDistance;
+int World::vertRenderDistance;
+int World::renderBuffer;
+unsigned int World::totalChunks;
+FastNoise World::perlin;
+std::string World::worldName;
+Map3D<std::shared_ptr<BSP>> World::BSPmap;
+Map3D<bool> World::requestMap;
+int World::drawnChunks;
+*/
 
 World::World(int numbBuildThreads,int width,int height)
 {
-  typedef std::queue<std::shared_ptr<BSPNode>> buildType;
+  typedef std::queue<std::shared_ptr<BSP>> buildType;
   buildQueue = new buildType[numbBuildThreads];
   numbOfThreads = numbBuildThreads;
 
-  seed = 1737;
   screenWidth = width;
   screenHeight = height;
 
-  perlin.SetSeed(seed);
-  perlin.SetFractalOctaves(8);
-  perlin.SetFrequency(0.01);
-  perlin.SetFractalLacunarity(8);
-  perlin.SetFractalGain(5);
+
   worldName = "default";
 
   const char* texture = "../assets/textures/atlas.png";
@@ -41,7 +56,7 @@ World::World(int numbBuildThreads,int width,int height)
   boost::filesystem::create_directory("saves/"+worldName);
   boost::filesystem::create_directory("saves/"+worldName+"/chunks");
 
-  drawnChunks = 0;
+  //drawnChunks = 0;
   frontNode = NULL;
   horzRenderDistance = 4;
   vertRenderDistance = 4;
@@ -326,8 +341,8 @@ void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, glTexture);
 
-  std::shared_ptr<BSPNode>  curNode = frontNode;
-  std::shared_ptr<BSPNode>  nextNode;
+  std::shared_ptr<BSP>  curNode = frontNode;
+  std::shared_ptr<BSP>  nextNode;
 
   glm::mat4 mat = projMat*viewMat;
   while(curNode != NULL)
@@ -342,9 +357,9 @@ void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
     {
       if(useHSR)
       {
-        int x = curNode->curBSP.xCoord*CHUNKSIZE+CHUNKSIZE/2;
-        int y = curNode->curBSP.yCoord*CHUNKSIZE+CHUNKSIZE/2;
-        int z = curNode->curBSP.zCoord*CHUNKSIZE+CHUNKSIZE/2;
+        int x = curNode->xCoord*CHUNKSIZE+CHUNKSIZE/2;
+        int y = curNode->yCoord*CHUNKSIZE+CHUNKSIZE/2;
+        int z = curNode->zCoord*CHUNKSIZE+CHUNKSIZE/2;
 
 
         glm::vec4 p1 = glm::vec4(x,y,z,1);
@@ -370,7 +385,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,std::stri
     std::cout << "Replacing CHunk \n";
     delChunk(chunkx,chunky,chunkz);
   }
-  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,value));
+  std::shared_ptr<BSP>  tempChunk(new BSP(chunkx,chunky,chunkz,worldName,value));
   BSPmap.add(chunkx,chunky,chunkz,tempChunk);
 
   if(frontNode == NULL)
@@ -389,7 +404,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,std::stri
     At this point the chunk is in both the linked list as well as the unorderedmap
     now it will attempt to find any nearby chunks and store a refrence to it
   */
-  std::shared_ptr<BSPNode>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
+  std::shared_ptr<BSP>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
   if(otherChunk  != NULL )
   {
     tempChunk->frontChunk = otherChunk;
@@ -462,7 +477,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,std::stri
 }
 
 
-void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
+void World::addToBuildQueue(std::shared_ptr<BSP> curNode)
 {
   static int currentThread = 0;
   buildQueue[currentThread].push(curNode);
@@ -477,7 +492,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
 {
   if(chunkExists(chunkx,chunky,chunkz)) return;
   requestChunk(chunkx,chunky,chunkz);
-  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz));
+  std::shared_ptr<BSP>  tempChunk(new BSP(chunkx,chunky,chunkz,worldName));
   BSPmap.add(chunkx,chunky,chunkz,tempChunk);
   if(frontNode == NULL)
   {
@@ -495,7 +510,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
     At this point the chunk is in both the linked list as well as the unorderedmap
     now it will attempt to find any nearby chunks and store a refrence to it
   */
-  std::shared_ptr<BSPNode>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
+  std::shared_ptr<BSP>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
   if(otherChunk  != NULL )
   {
     tempChunk->frontChunk = otherChunk;
@@ -625,13 +640,13 @@ void World::buildWorld(int threadNumb)
   //TODO Break up queue into smaller pieces and use seperate threads to build them
   while(!buildQueue[threadNumb].empty())
   {
-    std::shared_ptr<BSPNode> chunk = buildQueue[threadNumb].front();
+    std::shared_ptr<BSP> chunk = buildQueue[threadNumb].front();
     chunk->build();
     buildQueue[threadNumb].pop();
   }
 }
 
-std::shared_ptr<BSPNode>  WorldWrap::getChunk(int x, int y, int z)
+std::shared_ptr<BSP>  World::getChunk(int x, int y, int z)
 {
   return BSPmap.get(x,y,z);
 }
@@ -640,7 +655,7 @@ std::shared_ptr<BSPNode>  WorldWrap::getChunk(int x, int y, int z)
 
 void World::delChunk(int x, int y, int z)
 {
-  std::shared_ptr<BSPNode>  tempChunk = getChunk(x,y,z);
+  std::shared_ptr<BSP>  tempChunk = getChunk(x,y,z);
   if(tempChunk != NULL)
   {
     BSPmap.del(x,y,z);
@@ -665,7 +680,7 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
     however this time referencing the current position of the player
     and raises the destroy flag if its out of a certain range
   */
-  std::shared_ptr<BSPNode>  curNode = frontNode;
+  std::shared_ptr<BSP>  curNode = frontNode;
   while(curNode != NULL)
   {
     int x = round(*mainx);
@@ -676,9 +691,9 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
     y/= CHUNKSIZE;
     z/= CHUNKSIZE;
 
-    int chunkx = curNode->curBSP.xCoord;
-    int chunky = curNode->curBSP.yCoord;
-    int chunkz = curNode->curBSP.zCoord;
+    int chunkx = curNode->xCoord;
+    int chunky = curNode->yCoord;
+    int chunkz = curNode->zCoord;
 
     curNode = curNode->nextNode;
     if(abs(chunkx-x) > horzRenderDistance + renderBuffer
@@ -692,7 +707,7 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
 
 void World::saveWorld()
 {
-    std::shared_ptr<BSPNode>  curNode = frontNode;
+    std::shared_ptr<BSP>  curNode = frontNode;
     while(curNode != NULL)
     {
       curNode->saveChunk();
@@ -708,7 +723,7 @@ bool World::chunkExists(int x ,int y, int z)
 //If there is an entity, returns it id and position,
 //If there is a block, return its position and an id of 0
 //If there is nothing return a 0 vector  with -1 id
-glm::vec4 WorldWrap::rayCast(glm::vec3 pos, glm::vec3 front, int max)
+glm::vec4 World::rayCast(glm::vec3 pos, glm::vec3 front, int max)
 {
   float parts = 10;
   for(float i = 0; i<max;i += 1/parts)
@@ -730,7 +745,7 @@ glm::vec4 WorldWrap::rayCast(glm::vec3 pos, glm::vec3 front, int max)
   return glm::vec4(0,0,0,-1);
 }
 
-bool WorldWrap::blockExists(int x, int y, int z)
+bool World::blockExists(int x, int y, int z)
 {
   /*
   Finds which ever chunk holds the block and then calls the blockExists
@@ -750,7 +765,7 @@ bool WorldWrap::blockExists(int x, int y, int z)
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
 
-  std::shared_ptr<BSPNode>  tempChunk;
+  std::shared_ptr<BSP>  tempChunk;
   if(tempChunk = getChunk(xchunk,ychunk,zchunk))
   {
 
@@ -775,7 +790,7 @@ void World::addBlock(int x, int y, int z, int id)
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
 
-  std::shared_ptr<BSPNode>  tempChunk;
+  std::shared_ptr<BSP>  tempChunk;
   if(tempChunk = getChunk(xchunk,ychunk,zchunk))
   {
     tempChunk->addBlock(xlocal,ylocal,zlocal,id);
@@ -827,7 +842,7 @@ void World::delBlock(int x, int y, int z)
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
 
-  std::shared_ptr<BSPNode>  tempChunk;
+  std::shared_ptr<BSP>  tempChunk;
   if(tempChunk = getChunk(xchunk,ychunk,zchunk))
   {
     tempChunk->delBlock(xlocal,ylocal,zlocal);
@@ -880,7 +895,7 @@ void World::requestBlockPlace(int x, int y, int z)
 
 
 
-  std::shared_ptr<BSPNode>  tempChunk;
+  std::shared_ptr<BSP>  tempChunk;
   if(tempChunk = getChunk(xchunk,ychunk,zchunk))
   {
     tempChunk->delBlock(xlocal,ylocal,zlocal);
@@ -930,7 +945,7 @@ void World::updateBlock(int x, int y, int z)
   int xchunk = floor((float)x/(float)CHUNKSIZE);
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
-  std::shared_ptr<BSPNode>  tempChunk = getChunk(xchunk,ychunk,zchunk);
+  std::shared_ptr<BSP>  tempChunk = getChunk(xchunk,ychunk,zchunk);
   if(!tempChunk->toBuild)
   {
     addToBuildQueue(tempChunk);
@@ -939,7 +954,7 @@ void World::updateBlock(int x, int y, int z)
 }
 
 
-int WorldWrap::anyExists(glm::vec3 pos)
+int World::anyExists(glm::vec3 pos)
 {
   if(entityExists(pos.x,pos.y,pos.z))
     return 2;
@@ -949,12 +964,12 @@ int WorldWrap::anyExists(glm::vec3 pos)
 
 }
 
-bool WorldWrap::entityExists(glm::vec3 pos)
+bool World::entityExists(glm::vec3 pos)
 {
   //TODO
   return false;
 }
-bool WorldWrap::entityExists(float x, float y, float z)
+bool World::entityExists(float x, float y, float z)
 {
   //TODO
   return false;

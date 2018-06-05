@@ -1,8 +1,11 @@
 //OpenGL libraries
-
-#include "../headers/all.h"
-
-
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <string>
+#include "../headers/world.h"
+#include "../headers/shaders.h"
+#include "../headers/mainchar.h"
+#include "../headers/inputhandling.h"
 
 //Global maincharacter reference which encapsulates the camera
 static World* newWorld;
@@ -22,6 +25,11 @@ GLFWwindow* createWindow(int width, int height)
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   //Create the window
   window = glfwCreateWindow(width, height, "Prototype 1.000", nullptr, nullptr);
+
+  glfwSetKeyCallback(window, key_callback);
+  glfwSetCursorPosCallback(window, mouse_callback);
+  glfwSetScrollCallback(window, scroll_callback);
+  glfwSetMouseButtonCallback(window, mousekey_callback);
 
   return window;
 }
@@ -51,7 +59,7 @@ void draw()
 
   glfwMakeContextCurrent(window);
 
-  std::string path = "../src/Shader/shaders/";
+  std::string path = "../src/Shaders/";
   //Create the shaders
   Shader blockShader( path + "shaderBSP.vs",path + "shaderBSP.fs");
   Shader depthShader( path + "depthShader.vs",path + "depthShader.fs");
@@ -191,7 +199,7 @@ void draw()
   std::cout << "exiting draw thread \n";
 }
 
-void* render(void* )
+void render()
 {
   int renderLoop = 0;
   while(!glfwWindowShouldClose(window))
@@ -202,10 +210,9 @@ void* render(void* )
   }
   newWorld->saveWorld();
   std::cout << "exiting render thread \n";
-  return NULL;
 }
 
-void* del(void* )
+void del()
 {
   while(!glfwWindowShouldClose(window))
   {
@@ -213,19 +220,20 @@ void* del(void* )
     newWorld->delScan(&mainCharacter->xpos,&mainCharacter->ypos,&mainCharacter->zpos);
   }
   std::cout << "exiting delete thread \n";
-  return NULL;
 }
 
-void* send(void*)
+void send()
 {
   while(!glfwWindowShouldClose(window))
   {
     if(newWorld->messageQueue.empty()) continue;
+
     newWorld->msgQueueMutex.lock();
     Message msg = newWorld->messageQueue.front();
     newWorld->messageQueue.pop();
     newWorld->msgQueueMutex.unlock();
     uchar opcode = msg.opcode;
+        std::cout << "Sending message from stack\n" << msg.opcode << ":" << msg.x << ":" << msg.y << ":"<< msg.z;
     switch(opcode)
     {
       case(0):
@@ -249,12 +257,13 @@ void* send(void*)
   std::cout << "exiting server send thread\n";
 }
 
-void* receive(void*)
+void receive()
 {
   while(!glfwWindowShouldClose(window))
   {
     Message msg = newWorld->receiveAndDecodeMessage();
-  //  std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
+    std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << msg.x << msg.y<<msg.z<<"\n";
+
 
     switch(msg.opcode)
     {
@@ -293,14 +302,12 @@ void* receive(void*)
   std::cout << "Exiting receive thread \n";
 }
 
-void* build(void*i)
+void build(int i)
 {
-  int threadNumb = *(int*) i;
-  delete (int*)i;
+  int threadNumb = i;
   while(!glfwWindowShouldClose(window))
   {
     newWorld->buildWorld(threadNumb);
   }
   std::cout << "exiting build thread #" << threadNumb << "\n";
-  return NULL;
 }

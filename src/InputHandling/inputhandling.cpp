@@ -1,5 +1,12 @@
-#include "../headers/all.h"
+#include <GL/glew.h>
+// GLFW
+#include <GLFW/glfw3.h>
 
+#include <map>
+#include <glm/glm.hpp>
+#include "../headers/mainchar.h"
+
+#include "../headers/threads.h"
 // timing
 static float deltaTime = 0.0f;	// time between current frame and last frame
 static float lastFrame = 0.0f;

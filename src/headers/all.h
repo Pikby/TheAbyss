@@ -66,10 +66,10 @@ typedef unsigned char uchar;
 #include "shaders.h"
 #include "camera.h"
 
-#include "entity.h"
+#include "entities.h"
 
 #include "bsp.h"
-#include "openGL.h"
+#include "threads.h"
 #include "gui.h"
 #include "mainchar.h"
 #include "inputhandling.h"

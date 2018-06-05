@@ -1,7 +1,12 @@
 #pragma once
+#include "../headers/shaders.h"
+#include "../headers/gui.h"
+#include "../headers/camera.h"
+#include "../headers/world.h"
 
+#define PI 3.14159265
 class Item;
-class MainChar : public WorldWrap
+class MainChar
 {
   struct ActionBar
   {
@@ -10,6 +15,7 @@ class MainChar : public WorldWrap
     unsigned int selected;
   };
 private:
+  int screenWidth,screenHeight;
   //References
   ActionBar actionMain;
   World* curWorld;

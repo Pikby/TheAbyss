@@ -23,7 +23,7 @@
 
 GUIRenderer::GUIRenderer(int width, int height)
 {
-  guiShader = Shader("../src/Shader/shaders/shaderText.vs","../src/Shader/shaders/shaderText.fs");
+  guiShader = Shader("../src/Shaders/shaderText.vs","../src/Shaders/shaderText.fs");
   glm::mat4 projection = glm::ortho(0.0f, (float)width, 0.0f, (float)height);
   guiShader.use();
   guiShader.setMat4("projection",projection);

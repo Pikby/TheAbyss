@@ -1,6 +1,12 @@
+#pragma once
+#include <string>
+#include <glm/glm.hpp>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 enum Type {NONE,MELEEWEAPON,RANGEDWEAPON};
 
-class Item : public WorldWrap
+class Item
 {
   std::string name;
   int type;
@@ -9,15 +15,6 @@ class Item : public WorldWrap
 
   int mouse1(glm::vec3 pos, glm::vec3 front);
   int rightClick();
-};
-
-class ItemDatabase
-{
-public:
-  static Block* blockDictionary;
-  static Item* itemDictionary;
-  static bool loadBlockDictionary(const char* file);
-  static bool loadItemDictionary(const char* file);
 };
 
 #define BLOCKRES 128
@@ -120,4 +117,12 @@ public:
     return false;
   };
 
+};
+class ItemDatabase
+{
+public:
+  static Block* blockDictionary;
+  static Item* itemDictionary;
+  static bool loadBlockDictionary(const char* file);
+  static bool loadItemDictionary(const char* file);
 };

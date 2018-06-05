@@ -1,15 +1,23 @@
+#pragma once
 #include <list>
 #include <memory>
-#include "perlinnoise.h"
-#include "world.h"
-#include "items.h"
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <iostream>
+#include <mutex>
+#include "../headers/perlinnoise.h"
+#include "../headers/items.h"
 
+#define CHUNKSIZE 32
 
 //Class which holds the data for each individual chunk
-class BSP : public WorldWrap
+class World;
+class BSP
 {
 private:
-
+  std::string worldName;
+  std::mutex BSPMutex;
   //Opaque objects
   std::shared_ptr<std::vector<GLfloat>> oVertices;
   std::shared_ptr<std::vector<GLuint>> oIndices;
@@ -31,12 +39,15 @@ private:
   unsigned char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
 
 public:
-  int xCoord;
-  int yCoord;
-  int zCoord;
+  int xCoord,yCoord,zCoord;
+  bool toRender,toBuild,toDelete,isGenerated,inUse;
 
-  BSP(int x,int y,int z);
-  BSP(int x,int y,int z, std::string val);
+  std::shared_ptr<BSP>  nextNode,prevNode;
+  std::shared_ptr<BSP>  leftChunk,rightChunk,frontChunk;
+  std::shared_ptr<BSP>  backChunk,topChunk,bottomChunk;
+
+  BSP(int x,int y,int z, std::string worldName);
+  BSP(int x,int y,int z, std::string val, std::string worldName);
   BSP();
   ~BSP();
   void generateTerrain();
@@ -50,17 +61,20 @@ public:
   void saveChunk();
   std::string compressChunk();
   glm::vec3 offset(float x, float y,float z);
-  void build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
-                       std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
+  void build();
   void drawOpaque();
   void drawTranslucent();
 
+  void del();
+  void disconnect();
+
 };
 
+/*
 class BSPNode
 {
   private:
-  std::mutex BSPMutex;
+
   public:
   BSP curBSP;
   BSPNode(int x,int y,int z);
@@ -79,8 +93,7 @@ class BSPNode
   void del();
   void disconnect();
   //next and prev node for the linked list of all nodes
-  std::shared_ptr<BSPNode>  nextNode;
-  std::shared_ptr<BSPNode>  prevNode;
+
 
   //references to the 6 cardinal neighbours of the chunk
   std::shared_ptr<BSPNode>  leftChunk;
@@ -91,9 +104,6 @@ class BSPNode
   std::shared_ptr<BSPNode>  bottomChunk;
 
   //Flags for use inbetween pointers
-  bool toRender;
-  bool toBuild;
-  bool toDelete;
-  bool isGenerated;
-  bool inUse;
+
 };
+*/
