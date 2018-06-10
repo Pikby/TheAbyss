@@ -2,7 +2,7 @@ libs/
 *.dll
 .vs/
 *.user
-Build/saves/
+build/saves/
 win32/Debug/
 src/headers/SOIL.h
 src/headers/FastNoise.h

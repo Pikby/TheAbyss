@@ -1,4 +1,8 @@
+#include <iostream>
+#include <sstream>
+#include <fstream>
 #include "../headers/items.h"
+
 Block* ItemDatabase::blockDictionary;
 /*
 int Item::mouse1(glm::vec3 pos, glm::vec3 front)

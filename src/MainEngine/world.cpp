@@ -1,4 +1,3 @@
-
 #ifdef _WIN32
   /* See http://stackoverflow.com/questions/12765743/getaddrinfo-on-win32 */
   #ifndef _WIN32_WINNT
@@ -13,32 +12,27 @@
   #include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
   #include <unistd.h> /* Needed for close() */
 #endif
+#define GLEW_STATIC
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
+#include <boost/filesystem.hpp>
+#include "../headers/world.h"
+#include "../headers/bsp.h"
+#include "../headers/SOIL.h"
+#include "../headers/entities.h"
+
 
 #define PORT 3030
 #define ADDRESS "127.0.0.1"
-
-#include "../headers/world.h"
-#include "../headers/SOIL.h"
-
-/*
-int World::screenWidth;
-int World::screenHeight;
-int World::numbOfThreads;
-int World::seed;
-int World::horzRenderDistance;
-int World::vertRenderDistance;
-int World::renderBuffer;
-unsigned int World::totalChunks;
-FastNoise World::perlin;
-std::string World::worldName;
-Map3D<std::shared_ptr<BSP>> World::BSPmap;
-Map3D<bool> World::requestMap;
-int World::drawnChunks;
-*/
+//#define ADDRESS "154.5.254.242"
 
 World::World(int numbBuildThreads,int width,int height)
 {
-  typedef std::queue<std::shared_ptr<BSP>> buildType;
+  typedef std::queue<std::shared_ptr<BSPNode>> buildType;
   buildQueue = new buildType[numbBuildThreads];
   numbOfThreads = numbBuildThreads;
 
@@ -56,7 +50,7 @@ World::World(int numbBuildThreads,int width,int height)
   boost::filesystem::create_directory("saves/"+worldName);
   boost::filesystem::create_directory("saves/"+worldName+"/chunks");
 
-  //drawnChunks = 0;
+  drawnChunks = 0;
   frontNode = NULL;
   horzRenderDistance = 4;
   vertRenderDistance = 4;
@@ -341,8 +335,8 @@ void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, glTexture);
 
-  std::shared_ptr<BSP>  curNode = frontNode;
-  std::shared_ptr<BSP>  nextNode;
+  std::shared_ptr<BSPNode>  curNode = frontNode;
+  std::shared_ptr<BSPNode>  nextNode;
 
   glm::mat4 mat = projMat*viewMat;
   while(curNode != NULL)
@@ -357,9 +351,9 @@ void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
     {
       if(useHSR)
       {
-        int x = curNode->xCoord*CHUNKSIZE+CHUNKSIZE/2;
-        int y = curNode->yCoord*CHUNKSIZE+CHUNKSIZE/2;
-        int z = curNode->zCoord*CHUNKSIZE+CHUNKSIZE/2;
+        int x = curNode->curBSP.xCoord*CHUNKSIZE+CHUNKSIZE/2;
+        int y = curNode->curBSP.yCoord*CHUNKSIZE+CHUNKSIZE/2;
+        int z = curNode->curBSP.zCoord*CHUNKSIZE+CHUNKSIZE/2;
 
 
         glm::vec4 p1 = glm::vec4(x,y,z,1);
@@ -385,7 +379,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,std::stri
     std::cout << "Replacing CHunk \n";
     delChunk(chunkx,chunky,chunkz);
   }
-  std::shared_ptr<BSP>  tempChunk(new BSP(chunkx,chunky,chunkz,worldName,value));
+  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName,value));
   BSPmap.add(chunkx,chunky,chunkz,tempChunk);
 
   if(frontNode == NULL)
@@ -404,7 +398,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,std::stri
     At this point the chunk is in both the linked list as well as the unorderedmap
     now it will attempt to find any nearby chunks and store a refrence to it
   */
-  std::shared_ptr<BSP>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
+  std::shared_ptr<BSPNode>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
   if(otherChunk  != NULL )
   {
     tempChunk->frontChunk = otherChunk;
@@ -477,7 +471,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,std::stri
 }
 
 
-void World::addToBuildQueue(std::shared_ptr<BSP> curNode)
+void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
 {
   static int currentThread = 0;
   buildQueue[currentThread].push(curNode);
@@ -492,7 +486,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
 {
   if(chunkExists(chunkx,chunky,chunkz)) return;
   requestChunk(chunkx,chunky,chunkz);
-  std::shared_ptr<BSP>  tempChunk(new BSP(chunkx,chunky,chunkz,worldName));
+  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName));
   BSPmap.add(chunkx,chunky,chunkz,tempChunk);
   if(frontNode == NULL)
   {
@@ -510,7 +504,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
     At this point the chunk is in both the linked list as well as the unorderedmap
     now it will attempt to find any nearby chunks and store a refrence to it
   */
-  std::shared_ptr<BSP>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
+  std::shared_ptr<BSPNode>  otherChunk = getChunk(chunkx,chunky,chunkz-1);
   if(otherChunk  != NULL )
   {
     tempChunk->frontChunk = otherChunk;
@@ -640,13 +634,13 @@ void World::buildWorld(int threadNumb)
   //TODO Break up queue into smaller pieces and use seperate threads to build them
   while(!buildQueue[threadNumb].empty())
   {
-    std::shared_ptr<BSP> chunk = buildQueue[threadNumb].front();
+    std::shared_ptr<BSPNode> chunk = buildQueue[threadNumb].front();
     chunk->build();
     buildQueue[threadNumb].pop();
   }
 }
 
-std::shared_ptr<BSP>  World::getChunk(int x, int y, int z)
+std::shared_ptr<BSPNode>  World::getChunk(int x, int y, int z)
 {
   return BSPmap.get(x,y,z);
 }
@@ -655,7 +649,7 @@ std::shared_ptr<BSP>  World::getChunk(int x, int y, int z)
 
 void World::delChunk(int x, int y, int z)
 {
-  std::shared_ptr<BSP>  tempChunk = getChunk(x,y,z);
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(x,y,z);
   if(tempChunk != NULL)
   {
     BSPmap.del(x,y,z);
@@ -680,7 +674,7 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
     however this time referencing the current position of the player
     and raises the destroy flag if its out of a certain range
   */
-  std::shared_ptr<BSP>  curNode = frontNode;
+  std::shared_ptr<BSPNode>  curNode = frontNode;
   while(curNode != NULL)
   {
     int x = round(*mainx);
@@ -691,9 +685,9 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
     y/= CHUNKSIZE;
     z/= CHUNKSIZE;
 
-    int chunkx = curNode->xCoord;
-    int chunky = curNode->yCoord;
-    int chunkz = curNode->zCoord;
+    int chunkx = curNode->curBSP.xCoord;
+    int chunky = curNode->curBSP.yCoord;
+    int chunkz = curNode->curBSP.zCoord;
 
     curNode = curNode->nextNode;
     if(abs(chunkx-x) > horzRenderDistance + renderBuffer
@@ -707,7 +701,7 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
 
 void World::saveWorld()
 {
-    std::shared_ptr<BSP>  curNode = frontNode;
+    std::shared_ptr<BSPNode>  curNode = frontNode;
     while(curNode != NULL)
     {
       curNode->saveChunk();
@@ -765,7 +759,7 @@ bool World::blockExists(int x, int y, int z)
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
 
-  std::shared_ptr<BSP>  tempChunk;
+  std::shared_ptr<BSPNode>  tempChunk;
   if(tempChunk = getChunk(xchunk,ychunk,zchunk))
   {
 
@@ -790,40 +784,41 @@ void World::addBlock(int x, int y, int z, int id)
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
 
-  std::shared_ptr<BSP>  tempChunk;
-  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
+  std::shared_ptr<BSPNode> tempChunk = getChunk(xchunk,ychunk,zchunk);
+  if(tempChunk != NULL)
   {
     tempChunk->addBlock(xlocal,ylocal,zlocal,id);
-  }
-  tempChunk->build();
+    tempChunk->build();
 
-  if(xlocal+1>=CHUNKSIZE)
-  {
-    getChunk(xchunk+1,ychunk,zchunk)->build();
-  }
-  else if(xlocal-1 < 0)
-  {
-    getChunk(xchunk-1,ychunk,zchunk)->build();
-  }
 
-  if(ylocal+1>=CHUNKSIZE)
-  {
-    getChunk(xchunk,ychunk+1,zchunk)->build();
-  }
-  else if(ylocal-1 < 0)
-  {
-    getChunk(xchunk,ychunk-1,zchunk)->build();
-  }
 
-  if(zlocal+1>=CHUNKSIZE)
-  {
-    getChunk(xchunk,ychunk,zchunk+1)->build();
-  }
-  else if(zlocal-1 < 0)
-  {
-    getChunk(xchunk,ychunk,zchunk-1)->build();
-  }
+    if(xlocal+1>=CHUNKSIZE)
+    {
+      if(tempChunk->rightChunk != NULL) tempChunk->rightChunk->build();
+    }
+    else if(xlocal-1 < 0)
+    {
+      if(tempChunk->leftChunk != NULL) tempChunk->leftChunk->build();
+    }
 
+    if(ylocal+1>=CHUNKSIZE)
+    {
+      if(tempChunk->topChunk != NULL) tempChunk->topChunk->build();
+    }
+    else if(ylocal-1 < 0)
+    {
+      if(tempChunk->bottomChunk != NULL) tempChunk->bottomChunk->build();
+    }
+
+    if(zlocal+1>=CHUNKSIZE)
+    {
+      if(tempChunk->backChunk != NULL) tempChunk->backChunk->build();
+    }
+    else if(zlocal-1 < 0)
+    {
+      if(tempChunk->frontChunk != NULL) tempChunk->frontChunk->build();
+    }
+  }
 
 }
 
@@ -842,38 +837,40 @@ void World::delBlock(int x, int y, int z)
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
 
-  std::shared_ptr<BSP>  tempChunk;
-  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(xchunk,ychunk,zchunk);
+  if(tempChunk != NULL)
   {
     tempChunk->delBlock(xlocal,ylocal,zlocal);
-  }
-  tempChunk->build();
+    tempChunk->build();
 
-  if(xlocal+1>=CHUNKSIZE)
-  {
-    getChunk(xchunk+1,ychunk,zchunk)->build();
-  }
-  else if(xlocal-1 < 0)
-  {
-    getChunk(xchunk-1,ychunk,zchunk)->build();
-  }
 
-  if(ylocal+1>=CHUNKSIZE)
-  {
-    getChunk(xchunk,ychunk+1,zchunk)->build();
-  }
-  else if(ylocal-1 < 0)
-  {
-    getChunk(xchunk,ychunk-1,zchunk)->build();
-  }
 
-  if(zlocal+1>=CHUNKSIZE)
-  {
-    getChunk(xchunk,ychunk,zchunk+1)->build();
-  }
-  else if(zlocal-1 < 0)
-  {
-    getChunk(xchunk,ychunk,zchunk-1)->build();
+    if(xlocal+1>=CHUNKSIZE)
+    {
+      if(tempChunk->rightChunk != NULL) tempChunk->rightChunk->build();
+    }
+    else if(xlocal-1 < 0)
+    {
+      if(tempChunk->leftChunk != NULL) tempChunk->leftChunk->build();
+    }
+
+    if(ylocal+1>=CHUNKSIZE)
+    {
+      if(tempChunk->topChunk != NULL) tempChunk->topChunk->build();
+    }
+    else if(ylocal-1 < 0)
+    {
+      if(tempChunk->bottomChunk != NULL) tempChunk->bottomChunk->build();
+    }
+
+    if(zlocal+1>=CHUNKSIZE)
+    {
+      if(tempChunk->backChunk != NULL) tempChunk->backChunk->build();
+    }
+    else if(zlocal-1 < 0)
+    {
+      if(tempChunk->frontChunk != NULL) tempChunk->frontChunk->build();
+    }
   }
 }
 
@@ -895,7 +892,7 @@ void World::requestBlockPlace(int x, int y, int z)
 
 
 
-  std::shared_ptr<BSP>  tempChunk;
+  std::shared_ptr<BSPNode>  tempChunk;
   if(tempChunk = getChunk(xchunk,ychunk,zchunk))
   {
     tempChunk->delBlock(xlocal,ylocal,zlocal);
@@ -945,7 +942,7 @@ void World::updateBlock(int x, int y, int z)
   int xchunk = floor((float)x/(float)CHUNKSIZE);
   int ychunk = floor((float)y/(float)CHUNKSIZE);
   int zchunk = floor((float)z/(float)CHUNKSIZE);
-  std::shared_ptr<BSP>  tempChunk = getChunk(xchunk,ychunk,zchunk);
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(xchunk,ychunk,zchunk);
   if(!tempChunk->toBuild)
   {
     addToBuildQueue(tempChunk);

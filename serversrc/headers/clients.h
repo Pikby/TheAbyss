@@ -53,6 +53,7 @@ class Client : public WorldWrap
     void sendInitAll();
     void sendPositionAll(float x, float y, float z);
     void sendExit();
+    void disconnect();
 
 };
 

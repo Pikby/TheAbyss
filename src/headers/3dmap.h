@@ -1,3 +1,6 @@
+#pragma once
+#include <unordered_map>
+#include <mutex>
 
 using namespace std;
 template <class T>

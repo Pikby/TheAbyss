@@ -1,10 +1,9 @@
 #include "../headers/bsp.h"
 #include "../headers/FastNoise.h"
-int seed=1737;
+
+int seed;
 //Perlin noise object
 FastNoise perlin;
-
-
 void BSP::generateTerrain()
 {
   perlin.SetSeed(seed);

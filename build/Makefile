@@ -23,12 +23,12 @@ CFLAGSWINDOWS =-I/usr/local/include/freetype2 -I/usr/include/libpng12  \
 
 
 FPATH = ../src/
-TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/openGL.cpp MainEngine/bsp.cpp MainEngine/entity.cpp \
+TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEngine/bsp.cpp MainEngine/entities.cpp \
 				 Character/camera.cpp Character/gui.cpp TerrainGeneration/FastNoise.cpp\
-				 Character/mainchar.cpp TerrainGeneration/bspterraingen.cpp Shader/shaders.cpp \
+				 Character/mainchar.cpp TerrainGeneration/bspterraingen.cpp  \
 				 InputHandling/inputhandling.cpp Inventory/items.cpp
 
-COBJECTLIST = cmain.o cworld.o centity.o cthreads.o cbsp.o ccamera.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o  cinputhandling.o citems.o
+COBJECTLIST = cmain.o cworld.o centity.o cthreads.o cbsp.o ccamera.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cinputhandling.o citems.o
 SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o
 
 OFLAGS = g++ -c $(CFLAGSLINUX) -O3
@@ -108,7 +108,7 @@ linux: $(COBJECTLIST)
 
 windows:
 	cd ../src && $(WCC) -o windows.exe $(TARGET) $(CFLAGSWINDOWS)
-	mv ../src/windows.exe ../Build
+	mv ../src/windows.exe ../build
 
 server: $(SOBJECTLIST)
 	$(CC) -o server $(SOBJECTLIST) $(CFLAGSLINUX) -O3

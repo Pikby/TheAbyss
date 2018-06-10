@@ -1,13 +1,8 @@
-#include <math.h>
+#define GLEW_STATIC
 #include <GL/glew.h>
+
 // GLFW
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <map>
-#include "../headers/shaders.h"
-#include "../headers/mainchar.h"
 #include "../headers/entities.h"
 
 Player::Player(glm::vec3 newPos)

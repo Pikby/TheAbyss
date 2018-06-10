@@ -46,14 +46,16 @@ void Client::sendMessages()
 {
   while(open)
   {
+
     queueMutex.lock();
     if(msgQueue.empty())
     {
       queueMutex.unlock();
       continue;
     }
-
+    if(!open) return;
     std::shared_ptr<Message> m = msgQueue.front();
+    queueMutex.unlock();
     int arr[5];
     arr[0] = ((m->opcode << 24) | (m->ext1 << 16) | (m->ext2 << 8) | m->ext3);
     arr[1] = m->x;
@@ -62,29 +64,44 @@ void Client::sendMessages()
     arr[4] = m->data == NULL ? 0 : m->data->length();
 
 
-    if (send(fd, arr, 5*sizeof(int), 0) == -1)
+    std::cout << "Sending Message: " << arr[0] << arr[1] << arr[2] << arr[3] <<arr[4] << "\n";
+    if (send(fd, arr, 5*sizeof(int), 0) <0)
     {
         std::cout << "ERROR: failed to send message" << std::endl;
+        disconnect();
+        return;
     }
 
     if(m->data != NULL)
     {
-      if (send(fd, (void *)(m->data->data()), arr[4], 0) == -1)
+      if (send(fd, (void *)(m->data->data()), arr[4], 0)<0)
       {
           std::cout << "ERROR: failed to send chunk data." << std::endl;
+          disconnect();
+          return;
       }
     }
+    queueMutex.lock();
     msgQueue.front() = NULL;
     msgQueue.pop();
     queueMutex.unlock();
+
   }
 
   int arr[5];
   arr[0] = 0xFFFFFFFF;
+  std::cout << "Sending dc msg\n";
   if (send(fd, arr, 5*sizeof(int), 0) == -1)
   {
       std::cout << "ERROR: failed to send exit message." << std::endl;
+      return;
   }
+}
+void Client::disconnect()
+{
+  open = false;
+  parent->remove(id);
+  std::cout << "Client disconnectting\n";
 }
 
 void Client::recvMessages()
@@ -92,9 +109,9 @@ void Client::recvMessages()
   while(open)
   {
     int buf[4];
-    if(recv(fd,buf,4*sizeof(int),0)<0)
+    if(recv(fd,buf,4*sizeof(int),0)<=0)
     {
-      std::cout << "Error receiving message \n";
+      disconnect();
       return;
     }
     uchar opcode = (buf[0] >> 24) & 0xFF;
@@ -104,7 +121,6 @@ void Client::recvMessages()
     int x = buf[1];
     int y = buf[2];
     int z = buf[3];
-    //std::cout << "Message is:" <<(int)opcode<<":"<<(int)ext1<<":"<<(int)ext2<<":"<<(int)ext3<<":"<<buf[1]<<":"<<buf[2]<<":"<<buf[3]<<":"<< "\n";
 
     switch(opcode)
     {
@@ -124,14 +140,12 @@ void Client::recvMessages()
         sendPositionAll(*(float*)&x,*(float*)&y,*(float*)&z);
         break;
       case (0xFF):
-        open = false;
+        disconnect();
         break;
       default:
         std::cout << "Unknown opcode: " << (int)opcode << "\n";
     }
   }
-  std::cout << "Client Disconnecting \n";
-  parent->remove(id);
 }
 
 

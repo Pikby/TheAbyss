@@ -1,4 +1,7 @@
 #pragma once
+#include <atomic>
+#include <string>
+#include "../headers/shaders.h"
 
 class Entity
 {

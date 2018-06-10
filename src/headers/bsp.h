@@ -1,37 +1,33 @@
 #pragma once
 #include <list>
 #include <memory>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
-#include <mutex>
-#include "../headers/perlinnoise.h"
-#include "../headers/items.h"
+#include "world.h"
+#include "items.h"
 
-#define CHUNKSIZE 32
 
 //Class which holds the data for each individual chunk
-class World;
 class BSP
 {
 private:
-  std::string worldName;
-  std::mutex BSPMutex;
+
   //Opaque objects
-  std::shared_ptr<std::vector<GLfloat>> oVertices;
-  std::shared_ptr<std::vector<GLuint>> oIndices;
-  GLuint oVBO, oEBO, oVAO;
+  std::shared_ptr<std::vector<float>> oVertices;
+  std::shared_ptr<std::vector<uint>> oIndices;
+  uint oVBO, oEBO, oVAO;
 
-  std::shared_ptr<std::vector<GLfloat>> oVerticesBuffer;
-  std::shared_ptr<std::vector<GLuint>> oIndicesBuffer;
+  std::shared_ptr<std::vector<float>> oVerticesBuffer;
+  std::shared_ptr<std::vector<uint>> oIndicesBuffer;
   //Translucent objects
-  std::shared_ptr<std::vector<GLfloat>> tVertices;
-  std::shared_ptr<std::vector<GLuint>> tIndices;
+  std::shared_ptr<std::vector<float>> tVertices;
+  std::shared_ptr<std::vector<uint>> tIndices;
 
-  std::shared_ptr<std::vector<GLfloat>> tVerticesBuffer;
-  std::shared_ptr<std::vector<GLuint>> tIndicesBuffer;
-  GLuint tVBO, tEBO, tVAO;
+  std::shared_ptr<std::vector<float>> tVerticesBuffer;
+  std::shared_ptr<std::vector<uint>> tIndicesBuffer;
+  uint tVBO, tEBO, tVAO;
+  std::string worldName;
 
   int addVertex(int renderType, float x, float y, float z,float xn, float yn, float zn, float texX, float texY);
   void addIndices(int renderType,int index1, int index2, int index3, int index4);
@@ -39,15 +35,12 @@ private:
   unsigned char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
 
 public:
-  int xCoord,yCoord,zCoord;
-  bool toRender,toBuild,toDelete,isGenerated,inUse;
+  int xCoord;
+  int yCoord;
+  int zCoord;
 
-  std::shared_ptr<BSP>  nextNode,prevNode;
-  std::shared_ptr<BSP>  leftChunk,rightChunk,frontChunk;
-  std::shared_ptr<BSP>  backChunk,topChunk,bottomChunk;
-
-  BSP(int x,int y,int z, std::string worldName);
-  BSP(int x,int y,int z, std::string val, std::string worldName);
+  BSP(int x,int y,int z,std::string wName);
+  BSP(int x,int y,int z,std::string wName, std::string val);
   BSP();
   ~BSP();
   void generateTerrain();
@@ -61,24 +54,21 @@ public:
   void saveChunk();
   std::string compressChunk();
   glm::vec3 offset(float x, float y,float z);
-  void build();
+  void build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
+                       std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
   void drawOpaque();
   void drawTranslucent();
 
-  void del();
-  void disconnect();
-
 };
 
-/*
 class BSPNode
 {
   private:
-
+  std::mutex BSPMutex;
   public:
   BSP curBSP;
-  BSPNode(int x,int y,int z);
-  BSPNode(int x,int y,int z,std::string val);
+  BSPNode(int x,int y,int z,std::string wName);
+  BSPNode(int x,int y,int z,std::string wName,std::string val);
   ~BSPNode();
   void saveChunk();
   bool blockExists(int x, int y, int z);
@@ -93,7 +83,8 @@ class BSPNode
   void del();
   void disconnect();
   //next and prev node for the linked list of all nodes
-
+  std::shared_ptr<BSPNode>  nextNode;
+  std::shared_ptr<BSPNode>  prevNode;
 
   //references to the 6 cardinal neighbours of the chunk
   std::shared_ptr<BSPNode>  leftChunk;
@@ -104,6 +95,9 @@ class BSPNode
   std::shared_ptr<BSPNode>  bottomChunk;
 
   //Flags for use inbetween pointers
-
+  bool toRender;
+  bool toBuild;
+  bool toDelete;
+  bool isGenerated;
+  bool inUse;
 };
-*/

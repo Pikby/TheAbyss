@@ -1,10 +1,8 @@
 #pragma once
-#include "../headers/shaders.h"
 #include "../headers/gui.h"
 #include "../headers/camera.h"
-#include "../headers/world.h"
+class World;
 
-#define PI 3.14159265
 class Item;
 class MainChar
 {
@@ -15,7 +13,6 @@ class MainChar
     unsigned int selected;
   };
 private:
-  int screenWidth,screenHeight;
   //References
   ActionBar actionMain;
   World* curWorld;
@@ -26,6 +23,7 @@ private:
   GLuint VBO, VAO, EBO;
   GLuint glTexture;
   Shader mainCharShader;
+  int screenWidth, screenHeight;
 
   //Character attributes
   float gravity;

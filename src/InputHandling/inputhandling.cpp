@@ -1,12 +1,14 @@
+#define GLEW_STATIC
 #include <GL/glew.h>
+#include <map>
 // GLFW
 #include <GLFW/glfw3.h>
-
-#include <map>
 #include <glm/glm.hpp>
-#include "../headers/mainchar.h"
+#include <math.h>
 
-#include "../headers/threads.h"
+#include "../headers/mainchar.h"
+#include "../headers/world.h"
+
 // timing
 static float deltaTime = 0.0f;	// time between current frame and last frame
 static float lastFrame = 0.0f;
@@ -18,6 +20,7 @@ static bool firstMouse = true;
 static MainChar* mainCharacter;
 std::map<int,int> keyMap;
 
+#include "../headers/threads.h"
 
 void initializeInputs(MainChar* mc)
 {

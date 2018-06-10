@@ -1,10 +1,20 @@
 //OpenGL libraries
+#define GLEW_STATIC
+#define PI 3.14159265
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <string>
-#include "../headers/world.h"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
+#include <thread>
+#include <chrono>
+
 #include "../headers/shaders.h"
+#include "../headers/world.h"
 #include "../headers/mainchar.h"
+#include "../headers/entities.h"
 #include "../headers/inputhandling.h"
 
 //Global maincharacter reference which encapsulates the camera
@@ -25,11 +35,6 @@ GLFWwindow* createWindow(int width, int height)
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   //Create the window
   window = glfwCreateWindow(width, height, "Prototype 1.000", nullptr, nullptr);
-
-  glfwSetKeyCallback(window, key_callback);
-  glfwSetCursorPosCallback(window, mouse_callback);
-  glfwSetScrollCallback(window, scroll_callback);
-  glfwSetMouseButtonCallback(window, mousekey_callback);
 
   return window;
 }
@@ -210,6 +215,7 @@ void render()
   }
   newWorld->saveWorld();
   std::cout << "exiting render thread \n";
+
 }
 
 void del()
@@ -222,18 +228,40 @@ void del()
   std::cout << "exiting delete thread \n";
 }
 
+void logic()
+{
+  double lastFrame = 0;
+  double currentFrame = 0;
+  double ticksPerSecond = 20;
+  double tickRate = 1.0f/ticksPerSecond;
+  while(!glfwWindowShouldClose(window))
+  {
+    lastFrame = currentFrame;
+    currentFrame = glfwGetTime();
+    std::cout << currentFrame << ':' << lastFrame << "\n";
+    double deltaFrame = currentFrame-lastFrame;
+
+    int waitTime = (tickRate-deltaFrame)*1000;
+    //std::cout << deltaFrame << ":" << waitTime ;
+    std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+    currentFrame = glfwGetTime();
+
+    //DO the game logic
+    newWorld->createMoveRequest(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
+    std::cout << "Tick\n";
+  }
+}
+
 void send()
 {
   while(!glfwWindowShouldClose(window))
   {
     if(newWorld->messageQueue.empty()) continue;
-
     newWorld->msgQueueMutex.lock();
     Message msg = newWorld->messageQueue.front();
     newWorld->messageQueue.pop();
     newWorld->msgQueueMutex.unlock();
     uchar opcode = msg.opcode;
-        std::cout << "Sending message from stack\n" << msg.opcode << ":" << msg.x << ":" << msg.y << ":"<< msg.z;
     switch(opcode)
     {
       case(0):
@@ -262,8 +290,7 @@ void receive()
   while(!glfwWindowShouldClose(window))
   {
     Message msg = newWorld->receiveAndDecodeMessage();
-    std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << msg.x << msg.y<<msg.z<<"\n";
-
+  //  std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
 
     switch(msg.opcode)
     {
@@ -302,9 +329,8 @@ void receive()
   std::cout << "Exiting receive thread \n";
 }
 
-void build(int i)
+void build(char threadNumb)
 {
-  int threadNumb = i;
   while(!glfwWindowShouldClose(window))
   {
     newWorld->buildWorld(threadNumb);

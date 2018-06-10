@@ -1,14 +1,15 @@
-
-#include <math.h>
+#define GLEW_STATIC
 #include <GL/glew.h>
+
 // GLFW
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <map>
+#include <string>
+#include <glm/glm.hpp>
+#include "../headers/world.h"
 #include "../headers/shaders.h"
 #include "../headers/mainchar.h"
+
 #define PI 3.14159265
 
 template <typename T> int sign(T val)
@@ -72,7 +73,7 @@ unsigned int oVAO, oVBO;
 
 MainChar::MainChar(float x, float y, float z, World* world )
 {
-  mainCharShader = Shader("../src/Shaders/shaderBSP.vs","../src/Shaders/shaderBSP.fs");
+  mainCharShader = Shader("../src/Shaders/shaderEntity.vs","../src/Shaders/shaderEntity.fs");
   xpos = x;
   ypos = y;
   zpos = z;
@@ -83,10 +84,10 @@ MainChar::MainChar(float x, float y, float z, World* world )
   curWorld = world;
   mainCam = Camera(glm::vec3(xpos,ypos,zpos));
   calculateHud();
-  screenWidth = world->screenWidth;
-  screenHeight = world->screenHeight;
+  screenWidth = curWorld->screenWidth;
+  screenHeight = curWorld->screenHeight;
   gui = GUIRenderer(screenWidth,screenHeight);
-  //std::cout << screenWidth << "\n" << screenHeight <<"\n";
+  std::cout << screenWidth << "\n" << screenHeight <<"\n";
 
   glGenVertexArrays(1, &oVAO);
   glGenBuffers(1, &oVBO);
@@ -132,7 +133,7 @@ void MainChar::update()
 
 
   mainCam.setPosition(xpos,ypos,zpos);
-  curWorld->createMoveRequest(xpos,ypos,zpos);
+
 
 }
 
