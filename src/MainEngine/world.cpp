@@ -149,31 +149,26 @@ World::World(int numbBuildThreads,int width,int height)
 Message World::receiveAndDecodeMessage()
 {
   int buf[5];
-  if (recv(fd, (char*)buf, 5*sizeof(int), 0) < 0)
-  {
-    std::cout << "ERROR: failed to recieve message from server." << std::endl;
-  }
+
+
+
+  receiveMessage(buf,sizeof(int)*5);
   uchar opcode = (buf[0] >> 24) & 0xFF;
   uchar ext1 = (buf[0] >> 16) & 0xFF;
   uchar ext2 = (buf[0] >> 8) & 0xFF;
   uchar ext3 = buf[0] & 0xFF;
-  //std::cout << "Message is:" <<(int)opcode<<":"<<(int)ext1<<":"<<(int)ext2<<":"<<(int)ext3<<":"<<buf[1]<<":"<<buf[2]<<":"<<buf[3]<<":"<<buf[4] << "\n";
   Message msg = {opcode,ext1,ext2,ext3,buf[1],buf[2],buf[3],buf[4]};
   return msg;
+
 }
 
 void World::receiveChunk(int x, int y, int z, int length)
 {
   //std::cout << "Receiving chunk" << x << ":" << y << ":" << z << "\n";
   char* buffer = new char[length];
-  if(recv(fd,buffer,length,0) < 0)
-  {
-    std::cout << "ERROR: receive chunk." << std::endl;
-    return;
-  }
 
-  std::string val(buffer,length);
-  generateChunkFromString(x,y,z,val);
+  receiveMessage(buffer,length);
+  generateChunkFromString(x,y,z,std::string(buffer,length));
   delete[] buffer;
 }
 
@@ -293,6 +288,23 @@ void World::addPlayer(float x, float y, float z, uchar id)
   std::shared_ptr<Player> temp(new Player(glm::vec3(x,y,z)));
   playerList[id] = temp;
 }
+
+
+void World::receiveMessage(void *buf,int length)
+{
+  int totalReceived = 0;
+  while(totalReceived<length)
+  {
+    int curReceived = recv(fd,buf+totalReceived,length,0);
+    if(curReceived < 0)
+    {
+      std::cout << "ERROR: receive chunk." << std::endl;
+    }
+    totalReceived += curReceived;
+
+  }
+}
+
 void World::removePlayer(uchar id)
 {
   std::cout << "Removing PLayer\n";

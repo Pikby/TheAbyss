@@ -46,6 +46,7 @@ void initWorld(int numbBuildThreads, int width,  int height)
   mainCharacter = new MainChar(10,50,10,newWorld);
   initializeInputs(mainCharacter);
 
+  //newWorld->requestChunk(0,0,0);
   /*
   for(int x =0;x<20;x++)
     for(int y =0;y<20;y++)
@@ -238,7 +239,7 @@ void logic()
   {
     lastFrame = currentFrame;
     currentFrame = glfwGetTime();
-    std::cout << currentFrame << ':' << lastFrame << "\n";
+    //std::cout << currentFrame << ':' << lastFrame << "\n";
     double deltaFrame = currentFrame-lastFrame;
 
     int waitTime = (tickRate-deltaFrame)*1000;
@@ -248,7 +249,6 @@ void logic()
 
     //DO the game logic
     newWorld->createMoveRequest(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
-    std::cout << "Tick\n";
   }
 }
 
@@ -290,7 +290,7 @@ void receive()
   while(!glfwWindowShouldClose(window))
   {
     Message msg = newWorld->receiveAndDecodeMessage();
-  //  std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
+  std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
 
     switch(msg.opcode)
     {

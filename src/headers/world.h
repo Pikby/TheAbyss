@@ -93,7 +93,7 @@ class World
     void createAddBlockRequest(int x, int y, int z, uchar id);
     void requestAddBlock(int x, int y, int z, uchar id);
     void receiveChunk(int x, int y, int z, int length);
-    inline void receiveMessage(int* buf,int length);
+    inline void receiveMessage(void* buf,int length);
     Message receiveAndDecodeMessage();
     void addPlayer(float x, float y, float z, uchar id);
     void removePlayer(uchar id);
