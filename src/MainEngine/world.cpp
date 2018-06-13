@@ -295,7 +295,7 @@ void World::receiveMessage(void *buf,int length)
   int totalReceived = 0;
   while(totalReceived<length)
   {
-    int curReceived = recv(fd,buf+totalReceived,length,0);
+    int curReceived = recv(fd,buf+totalReceived,length-totalReceived,0);
     if(curReceived < 0)
     {
       std::cout << "ERROR: receive chunk." << std::endl;
