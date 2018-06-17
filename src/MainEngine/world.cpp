@@ -836,7 +836,7 @@ bool World::blockExists(int x, int y, int z)
   if(tempChunk = getChunk(chunk.x,chunk.y,chunk.z))
   {
 
-    if(tempChunk->blockExists(local.x,local.z,local.z))
+    if(tempChunk->blockExists(local.x,local.y,local.z))
     {
       return true;
     }
