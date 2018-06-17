@@ -14,8 +14,8 @@
 #include "../headers/shaders.h"
 #include "../headers/world.h"
 #include "../headers/mainchar.h"
-#include "../headers/entities.h"
 #include "../headers/inputhandling.h"
+#include "../headers/objects.h"
 
 //Global maincharacter reference which encapsulates the camera
 static World* newWorld;
@@ -36,6 +36,13 @@ GLFWwindow* createWindow(int width, int height)
   //Create the window
   window = glfwCreateWindow(width, height, "Prototype 1.000", nullptr, nullptr);
 
+  int error = glGetError();
+  if(error != 0)
+  {
+    std::cout << "OPENGL ERRORa" << error << ":" << std::hex << error << "\n";
+    //glfwSetWindowShouldClose(window, true);
+    //return;
+  }
   return window;
 }
 
@@ -64,58 +71,19 @@ void draw()
 {
 
   glfwMakeContextCurrent(window);
-
-  std::string path = "../src/Shaders/";
-  //Create the shaders
-  Shader blockShader( path + "shaderBSP.vs",path + "shaderBSP.fs");
-  Shader depthShader( path + "depthShader.vs",path + "depthShader.fs");
-  Shader debugShader( path + "debugQuad.vs",path + "debugQuad.fs");
-
-  blockShader.use();
-  blockShader.setInt("curTexture", 0);
-  blockShader.setInt("shadowMap", 1);
-  /*
-  unsigned int HDRbuffer;
-  glBindTexture(GL_TEXTURE_2D, HDRbuffer);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,curWorld->VIEW_WIDTH,curWorld->)
-  */
-  glm::vec3 lightPos;
-
-  int shadowSize = 10024;
-  int SHADOW_WIDTH = shadowSize;
-  int SHADOW_HEIGHT = shadowSize;
-  int VIEW_WIDTH = 1280;
-  int VIEW_HEIGHT = 720;
-
-  unsigned int depthMapFBO, depthMap;
-  glGenFramebuffers(1,&depthMapFBO);
-
-  glGenTextures(1, &depthMap);
-  glBindTexture(GL_TEXTURE_2D, depthMap);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-               SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-
-
-  glDrawBuffer(GL_NONE);
-  glReadBuffer(GL_NONE);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  int vertRenderDistance = 7;
-  int horzRenderDistance = 7;
-  int renderBuffer = 1;
-  double sunAngle = 10;
-
   float deltaTime;
   float lastFrame;
-
-  Camera* camera = &(mainCharacter->mainCam);
+  newWorld->createDirectionalLight(glm::vec3(0,-1.0f,0));
+  SkyBox skyBox;
+  Camera* mainCam = &(mainCharacter->mainCam);
+  {
+  int error = glGetError();
+  if(error != 0)
+  {
+    std::cout << "OPENGL ERRORb" << error << ":" << std::hex << error << "\n";
+    //glfwSetWindowShouldClose(window, true);
+    //return;
+  }}
   while(!glfwWindowShouldClose(window))
   {
     updateInputs();
@@ -134,72 +102,31 @@ void draw()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     mainCharacter->update();
 
+    glm::mat4 view = mainCam->getViewMatrix();
+    newWorld->updateViewMatrix(view,mainCam->getHSRMatrix(),mainCam->getPosition());
 
+    glViewport(0,0,1920,1080);
 
-    sunAngle += 0.001;
+    //glClear(GL_COLOR_BUFFER_BIT);
+    glViewport(0,0,1920,1080);
+    newWorld->drawTerrain();
+    //newWorld->drawObjects();
 
-    //Calculate shadow matrices
-    int distToSun = (vertRenderDistance+renderBuffer+1)*CHUNKSIZE;
-    //Makes sure the light is always at the correct angle above the player
-    lightPos.x = cos(sunAngle*PI/180)*distToSun+camera->position.x;
-    lightPos.y = sin(sunAngle*PI/180)*distToSun+camera->position.y;
-    lightPos.z = camera->position.z;
-    float camNear = -1;
-    float camFar = distToSun*2;
-    glm::mat4 lightProjection,lightView, lightSpaceMatrix;
-    float orthoSize = (horzRenderDistance+renderBuffer)*CHUNKSIZE;
-    lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,camNear, camFar);
-    lightView  = glm::lookAt(lightPos,
-                                      camera->position,
-                                      glm::vec3(0.0f,1.0f,0.0f));
-
-    lightSpaceMatrix = lightProjection * lightView;
-    depthShader.use();
-    depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-    //Draw the world for the shadow
-    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glActiveTexture(GL_TEXTURE0);
-        newWorld->drawWorld(lightSpaceMatrix,lightProjection,false);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-    //Setup the shader to draw the world
-    blockShader.use();
-    glm::mat4 camProjection = glm::perspective(glm::radians(45.0f),
-                              (float)1920/ (float)1080, 0.1f,
-                              (float)horzRenderDistance*CHUNKSIZE*4);
-    glm::mat4 camView = camera->getViewMatrix();
-    blockShader.setMat4("projection",camProjection);
-    blockShader.setMat4("view", camView);
-    blockShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-    blockShader.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
-    blockShader.setVec3("lightPos",  lightPos);
-    blockShader.setVec3("viewPos", camera->position);
-    blockShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-
-    glm::mat4 hsrProjection = glm::perspective(glm::radians(50.0f),
-                              (float)1920/ (float)1080, 0.1f,
-                              (float)horzRenderDistance*CHUNKSIZE*4);
-    newWorld->drawWorld(camera->getHSRMatrix(), hsrProjection,true);
-
-
-    //mainCharacter->draw();
+    int error = glGetError();
+    if(error != 0)
+    {
+      std::cout << "OPENGL ERROR" << error << ":" << std::hex << error << "\n";
+      glfwSetWindowShouldClose(window, true);
+      return;
+    }
+    skyBox.draw(&view);
     mainCharacter->drawHud();
-    newWorld->drawPlayers(&camView);
-    //Player temp(camera->position);
-    //temp.draw(&camView);
-    //std::cout << glGetError() << "update loop\n";
+
 
     glfwSwapBuffers(window);
+
+
+
     //std::cout << newWorld->drawnChunks << "\n";
   }
   std::cout << "exiting draw thread \n";
@@ -290,7 +217,7 @@ void receive()
   while(!glfwWindowShouldClose(window))
   {
     Message msg = newWorld->receiveAndDecodeMessage();
-  std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
+  //std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
 
     switch(msg.opcode)
     {

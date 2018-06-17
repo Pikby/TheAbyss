@@ -8,7 +8,8 @@
 #include <string>
 #include <unistd.h>
 #include <bits/stdc++.h>
-#include "../headers/all.h"
+#include "../headers/clients.h"
+#include "../headers/world.h"
 
 
 #define PORT 3030

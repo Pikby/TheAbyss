@@ -22,29 +22,247 @@
 #include <boost/filesystem.hpp>
 #include "../headers/world.h"
 #include "../headers/bsp.h"
-#include "../headers/SOIL.h"
-#include "../headers/entities.h"
+#include "../headers/objects.h"
+#include "../headers/parser.h"
 
 
-#define PORT 3030
-#define ADDRESS "127.0.0.1"
+#include "../TextureLoading/textureloading.h"
+
+#include "worldMsg.h"
+
 //#define ADDRESS "154.5.254.242"
+
+
+void World::addCube(Cube newCube)
+{
+  objList.push_back(std::make_shared<Cube>(newCube));
+}
+
+void World::renderDirectionalDepthMap()
+{
+  float near_plane = 1.0f, far_plane = 40.0f;
+  glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+  glm::mat4 lightView = glm::lookAt(glm::vec3( 10.0f, 30.0f, 10.0f),
+                                    glm::vec3( 0.0f, 0.0f,  0.0f),
+                                    glm::vec3( 0.0f, 1.0f,  0.0f));
+  dirLight.lightSpaceMat = lightProjection * lightView;
+
+  const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+  glGenFramebuffers(1, &dirLight.depthMapFBO);
+  glGenTextures(1, &dirLight.depthMap);
+
+  glBindTexture(GL_TEXTURE_2D, dirLight.depthMap);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+               SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+
+  glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dirLight.depthMap, 0);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void World::renderPointDepthMap(int id)
+{
+  PointLight* light = &(lightList[id]);
+  glGenFramebuffers(1,&(light->depthMapFBO));
+  glGenTextures(1,&(light->depthCubemap));
+  glBindTexture(GL_TEXTURE_CUBE_MAP, light->depthCubemap);
+
+  const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+
+  for(int i =0;i<6;i++)
+  {
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0,GL_DEPTH_COMPONENT,
+                 SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  }
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, light->depthMapFBO);
+  glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light->depthCubemap,0);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+  glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+  glm::vec3 pos = light->position;
+  glm::mat4 proj= glm::perspective(glm::radians(90.0f),1.0f,1.0f,25.0f);
+  light->shadowTransform[0] = proj*glm::lookAt(pos, pos + glm::vec3(1.0,0.0,0.0),glm::vec3(0.0,-1.0,0.0));
+  light->shadowTransform[1] = proj*glm::lookAt(pos, pos + glm::vec3(-1.0,0.0,0.0),glm::vec3(0.0,-1.0,0.0));
+  light->shadowTransform[2] = proj*glm::lookAt(pos, pos + glm::vec3(0.0,1.0,0.0),glm::vec3(0.0,0.0,1.0));
+  light->shadowTransform[3] = proj*glm::lookAt(pos, pos + glm::vec3(0.0,-1.0,0.0),glm::vec3(0.0,0.0,-1.0));
+  light->shadowTransform[4] = proj*glm::lookAt(pos, pos + glm::vec3(0.0,0.0,1.0),glm::vec3(0.0,-1.0,0.0));
+  light->shadowTransform[5] = proj*glm::lookAt(pos, pos + glm::vec3(0.0,0.0,-1.0),glm::vec3(0.0,-1.0,0.0));
+
+}
+
+
+void World::setLights(Shader* shader)
+{
+
+  shader->setVec3("dirLight.direction", dirLight.direction);
+  shader->setVec3("dirLight.ambient", dirLight.ambient);
+  shader->setVec3("dirLight.diffuse", dirLight.diffuse);
+  shader->setVec3("dirLight.specular", dirLight.specular);
+
+
+  unsigned int numbOfLights = lightList.size();
+  shader->setInt("numbOfLights",numbOfLights);
+  for(uint i=0;i<numbOfLights;i++)
+  {
+    PointLight curLight = lightList[i];
+    shader->setVec3("pointLights[" + std::to_string(i) + "].position",curLight.position);
+    shader->setVec3("pointLights[" + std::to_string(i) + "].ambient",curLight.ambient);
+    shader->setVec3("pointLights[" + std::to_string(i) + "].specular",curLight.specular);
+    shader->setVec3("pointLights[" + std::to_string(i) + "].diffuse",curLight.diffuse);
+    shader->setFloat("pointLights[" + std::to_string(i) + "].constant",curLight.constant);
+    shader->setFloat("pointLights[" + std::to_string(i) + "].linear",curLight.linear);
+    shader->setFloat("pointLights[" + std::to_string(i) + "].quadratic",curLight.quadratic);
+  }
+}
+
+
+void World::renderDirectionalShadows()
+{
+  dirDepthShader.use();
+
+  dirDepthShader.setMat4("lightSpace",dirLight.lightSpaceMat);
+  glViewport(0,0,1024,1024);
+  glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    for(int i =0;i<objList.size();i++)
+    {
+      objList[i]->draw(&dirDepthShader);
+      drawTerrain(&dirDepthShader);
+    }
+  glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+}
+void World::bindDirectionalShadows(Shader* shader)
+{
+  glActiveTexture(GL_TEXTURE4);
+
+  shader->use();
+  glBindTexture(GL_TEXTURE_2D, dirLight.depthMap);
+  shader->setMat4("lightSpace",dirLight.lightSpaceMat);
+}
+
+void World::renderPointShadows()
+{
+  pointDepthShader.use();
+
+  for(int i=0;i<objList.size();i++)
+  {
+    PointLight* light = &(lightList[i]);
+    glViewport(0, 0, 1024, 1024);
+    glBindFramebuffer(GL_FRAMEBUFFER,light->depthMapFBO);
+      glClear(GL_DEPTH_BUFFER_BIT);
+      pointDepthShader.setVec3("lightPos",light->position);
+      pointDepthShader.setFloat("far_plane", 25.0f);
+
+      for(int i=0;i<6;i++)
+      {
+        pointDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", light->shadowTransform[i]);
+      }
+    glBindFramebuffer(GL_FRAMEBUFFER,0);
+  }
+}
+
+void World::bindPointShadows()
+{
+  objShader.use();
+  unsigned int numbOfLights = lightList.size();
+  for(uint i=0;i<numbOfLights;i++)
+  {
+    PointLight* curLight= &(lightList[i]);
+    glActiveTexture(GL_TEXTURE5+i);
+    glBindTexture(GL_TEXTURE_CUBE_MAP,curLight->depthCubemap);
+  }
+}
+
+void World::drawObjects()
+{
+  glViewport(0,0,1280,720);
+  objShader.use();
+
+  objShader.setMat4("view",viewMat);
+  objShader.setVec3("viewPos",viewPos);
+  for(int i=0;i<objList.size();i++)
+  {
+    objList[i]->draw(&objShader);
+  }
+}
+
+
 
 World::World(int numbBuildThreads,int width,int height)
 {
+
   typedef std::queue<std::shared_ptr<BSPNode>> buildType;
   buildQueue = new buildType[numbBuildThreads];
   numbOfThreads = numbBuildThreads;
-
+  glm::mat4 projectMat = glm::perspective(glm::radians(45.0f),
+                  (float)1920/ (float)1080, 0.1f, 100.0f);
   screenWidth = width;
   screenHeight = height;
 
+  objShader        = Shader("../src/Shaders/entShader.vs",
+                            "../src/Shaders/entShader.fs");
+  objShader.use();
+  objShader.setInt("curTexture",0);
+  objShader.setInt("dirLight.shadow",4);
+  objShader.setInt("pointLights[0].shadow",5);
+  objShader.setInt("pointLights[1].shadow",6);
+  objShader.setFloat("far_plane",25.0f);
 
-  worldName = "default";
+
+
+
+  blockShader = Shader("../src/Shaders/shaderBSP.vs","../src/Shaders/shaderBSP.fs");
+  blockShader.use();
+  blockShader.setInt("curTexture",0);
+  blockShader.setInt("dirLight.shadow",4);
+  blockShader.setInt("pointLights[0].shadow",5);
+  blockShader.setInt("pointLights[1].shadow",6);
+  blockShader.setMat4("projection",projectMat);
+  blockShader.setFloat("far_plane",25.0f);
+
+
+
+  dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
+                            "../src/Shaders/dirDepthShader.vs");
+
+  pointDepthShader = Shader("../src/Shaders/pointDepthShader.fs",
+                            "../src/Shaders/pointDepthShader.vs",
+                            "../src/Shaders/pointDepthShader.gs");
 
   const char* texture = "../assets/textures/atlas.png";
   ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
 
+  Parser settings("../assets/settings.ini");
+  settings.print();
+  try
+  {
+    horzRenderDistance = std::stoi(settings.get("horzRenderDistance"));
+    vertRenderDistance = std::stoi(settings.get("vertRenderDistance"));
+    renderBuffer = std::stoi(settings.get("renderBuffer"));
+  }
+  catch(...)
+  {
+    std::cout << "bad settings lul\n";
+  }
+  worldName = settings.get("worldName");
+  std::string ipAddress = settings.get("ipAddress");
 
   boost::filesystem::create_directory("saves");
   boost::filesystem::create_directory("saves/"+worldName);
@@ -52,9 +270,7 @@ World::World(int numbBuildThreads,int width,int height)
 
   drawnChunks = 0;
   frontNode = NULL;
-  horzRenderDistance = 4;
-  vertRenderDistance = 4;
-  renderBuffer = 1;
+
   totalChunks = 0;
 
   glGenTextures(1, &glTexture);
@@ -66,221 +282,30 @@ World::World(int numbBuildThreads,int width,int height)
 
 
   //Load and bind the texture from the class
-  int texWidth, texHeight;
-  unsigned char* image = SOIL_load_image(texture, &texWidth, &texHeight, 0 , SOIL_LOAD_RGBA);
+  int texWidth, texHeight, nrChannels;
+  unsigned char* image = loadTexture(texture, &texWidth,&texHeight,&nrChannels);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight,0,GL_RGBA, GL_UNSIGNED_BYTE, image);
   glGenerateMipmap(GL_TEXTURE_2D);
 
-  SOIL_free_image_data(image);
+  freeTexture(image);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-
-  fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (fd < 0) {
-      std::cout << "ERROR: failed to create socket." << std::endl;
-      return;
-  }
-  std::cout << "Successfully created socket." << std::endl;
-
-  sockaddr_in serveraddress;
-  serveraddress.sin_family = AF_INET;
-  serveraddress.sin_port = htons(PORT);
-
-  #ifdef _WIN32
-  WSADATA wsa_data;
-  WSAStartup(MAKEWORD(1,1), &wsa_data);
-
-  std::cout << "Doing windows shit\n";
-  // addrinfo contains a sockaddr struct
-  struct addrinfo *result = NULL, *ptr = NULL, hints;
-  // initialize the addrInfo structs
-  ZeroMemory(&hints, sizeof(hints));  // fills a block of memory with 0s
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_protocol = IPPROTO_TCP;
-
-  if (getaddrinfo(ADDRESS,"3030", &hints, &result) != 0)
-  {
-    std::cout << "getaddrinfo failed" << std::endl;
-    WSACleanup();
-    return;
-  }
-
-  // attempt to connect to the first address returned by the call to getaddrinfo
-  ptr = result;
-  // create a SOCKET for the connecting server
-  fd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-  // error check to make sure it is a valid socket
-  if (fd == INVALID_SOCKET)
-  {
-      std::cout << "Error at socket(): " << WSAGetLastError() << std::endl;
-      freeaddrinfo(result);
-      WSACleanup();
-      return;
-  }
-  if(connect(fd, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
-  {
-    closesocket(fd);
-    fd = INVALID_SOCKET;
-  }
-
-
-  #else
-  std::cout << "Doing linux shit\n";
-  inet_pton(AF_INET, ADDRESS, &(serveraddress.sin_addr));
-
-
-  // connect to the server
-  if (connect(fd, (sockaddr*) &serveraddress, sizeof(serveraddress)) < 0)
-  {
-      std::cout << "ERROR: failed to connect to server." << std::endl;
-      return;
-  }
-  #endif
-  std::cout << "Successfully connected to server" << std::endl;
-
-  if(recv(fd,&mainId,sizeof(mainId),0)<0)
-  {
-    std::cout << "Failed to retrieve id from server\n";
-  }
+  setupSockets(ipAddress);
 
 }
 
-Message World::receiveAndDecodeMessage()
-{
-  int buf[5];
-
-
-
-  receiveMessage(buf,sizeof(int)*5);
-  uchar opcode = (buf[0] >> 24) & 0xFF;
-  uchar ext1 = (buf[0] >> 16) & 0xFF;
-  uchar ext2 = (buf[0] >> 8) & 0xFF;
-  uchar ext3 = buf[0] & 0xFF;
-  Message msg = {opcode,ext1,ext2,ext3,buf[1],buf[2],buf[3],buf[4]};
-  return msg;
-
-}
-
-void World::receiveChunk(int x, int y, int z, int length)
-{
-  //std::cout << "Receiving chunk" << x << ":" << y << ":" << z << "\n";
-  char* buffer = new char[length];
-
-  receiveMessage(buffer,length);
-  generateChunkFromString(x,y,z,std::string(buffer,length));
-  delete[] buffer;
-}
-
-
-void World::requestChunk(int x, int y, int z)
-{
-  int request[4];
-  request[0] = 0;
-  request[1] = x;
-  request[2] = y;
-  request[3] = z;
-
-
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send message to server\n";
-    return;
-  }
-  //std::cout << "Requesting chunk" << x << ":" << y << ":" << z << "\n";
-}
-
-
-void World::createMoveRequest(float x, float y, float z)
-{
-  Message tmp = {91,0,0,0,*(int*)&x,*(int*)&y,*(int*)&z,0};
-  msgQueueMutex.lock();
-  messageQueue.push(tmp);
-  msgQueueMutex.unlock();
-}
-
-void World::createAddBlockRequest(int x, int y, int z, uchar id)
-{
-  Message tmp = {2,id,0,0,x,y,z,0};
-  msgQueueMutex.lock();
-  messageQueue.push(tmp);
-  msgQueueMutex.unlock();
-}
-
-void World::requestAddBlock(int x, int y, int z, uchar id)
-{
-  int request[4];
-  request[0] = ((2 << 24) | (id << 16) | (0 << 8) | 0);
-  request[1] = x;
-  request[2] = y;
-  request[3] = z;
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send message to server\n";
-    return;
-  }
-}
-
-void World::createDelBlockRequest(int x, int y, int z)
-{
-  Message tmp = {1,0,0,0,x,y,z,0};
-  msgQueueMutex.lock();
-  messageQueue.push(tmp);
-  msgQueueMutex.unlock();
-
-}
-void World::requestDelBlock(int x, int y, int z)
-{
-  int request[4];
-  request[0] = ((1 << 24) | (0 << 16) | (0 << 8) | 0);
-  request[1] = x;
-  request[2] = y;
-  request[3] = z;
-
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send message to server\n";
-    return;
-  }
-}
-
-void World::requestMove(float x, float y, float z)
-{
-
-  int request[4];
-  request[0] = ((91 << 24) | (0 << 16) | (0 << 8) | 0);
-  request[1] = *(int*)&x;
-  request[2] = *(int*)&y;
-  request[3] = *(int*)&z;
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send message to server\n";
-    return;
-  }
-}
 
 void World::movePlayer(float x, float y, float z, uchar id)
 {
   //std::cout << "Moving player" << x << y << z << '\n';
-  std::shared_ptr<Entity> tmp = playerList[id];
+  std::shared_ptr<Object> tmp = playerList[id];
   if(tmp != NULL)
   {
     //std::cout << "Moving player" << x << y << z << '\n';
-    playerList[id]->setPostion(x,y,z);
+    playerList[id]->setPosition(glm::vec3(x,y,z));
   }
 }
 
-void World::requestExit()
-{
-  int request[4];
-  request[0] = 0xFFFFFFFF;
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send exit message to server\n";
-    return;
-  }
-  std::cout << "exit message Sent\n";
-}
 
 void World::addPlayer(float x, float y, float z, uchar id)
 {
@@ -290,50 +315,24 @@ void World::addPlayer(float x, float y, float z, uchar id)
 }
 
 
-void World::receiveMessage(void *buf,int length)
-{
-  int totalReceived = 0;
-  while(totalReceived<length)
-  {
-    int curReceived = recv(fd,buf+totalReceived,length-totalReceived,0);
-    if(curReceived < 0)
-    {
-      std::cout << "ERROR: receive chunk." << std::endl;
-    }
-    totalReceived += curReceived;
-
-  }
-}
-
 void World::removePlayer(uchar id)
 {
   std::cout << "Removing PLayer\n";
   playerList.erase(id);
 }
 
-void World::createChunkRequest(int x, int y, int z)
-{
-  if(!requestMap.exists(x,y,z))
-  {
-    Message tmp = {0,0,0,0,x,y,z,0};
-    msgQueueMutex.lock();
-    messageQueue.push(tmp);
-    msgQueueMutex.unlock();
-    requestMap.add(x,y,z,true);
-  }
-}
 
 
-void World::drawPlayers(glm::mat4* view)
+void World::drawPlayers(Shader* shader)
 {
   //std::cout << "Map has: " << playerList.size() << "\n";
   for(auto it = playerList.begin(); it != playerList.end();it++)
   {
-    it->second->draw(view);
+    it->second->draw(shader);
   }
 }
 
-void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
+void World::drawTerrain(Shader* shader)
 {
   /*
   Iterates through all the chunks and draws them unless they're marked for destruciton
@@ -341,16 +340,34 @@ void World::drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR)
   removes all refrences to it
   At that point the chunk should be deleted by the smart pointers;
   */
+  if(shader == NULL) shader = &blockShader;
 
-
-
+  glm::mat4 hsrProj = glm::perspective(glm::radians(50.0f),
+                            (float)1920/ (float)1080, 0.1f,
+                            (float)horzRenderDistance*CHUNKSIZE*4);
+  bool useHSR = true;
+  shader->use();
+  setLights(shader);
+  viewProj = glm::perspective(glm::radians(45.0f),
+                            (float)1920/ (float)1080, 1.0f,
+                            (float)horzRenderDistance*CHUNKSIZE*4);
+  shader->setMat4("projection",viewProj);
+  shader->setMat4("view", viewMat);
+  shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+  shader->setVec3("lightColor",  1.0f, 1.0f, 1.0f);
+  shader->setVec3("lightPos",  glm::vec3(100,100,100));
+  shader->setVec3("viewPos", viewPos);
+  //blockShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+  glEnable(GL_DEPTH_TEST);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, glTexture);
+
+
 
   std::shared_ptr<BSPNode>  curNode = frontNode;
   std::shared_ptr<BSPNode>  nextNode;
 
-  glm::mat4 mat = projMat*viewMat;
+  glm::mat4 mat = hsrProj*hsrMat;
   while(curNode != NULL)
   {
     nextNode = curNode->nextNode;
@@ -751,85 +768,94 @@ glm::vec4 World::rayCast(glm::vec3 pos, glm::vec3 front, int max)
   return glm::vec4(0,0,0,-1);
 }
 
+
+
+glm::ivec3 inline toLocalCoords(glm::ivec3 in)
+{
+  glm::ivec3 out;
+  out.x = in.x >= 0 ? in.x % CHUNKSIZE : CHUNKSIZE + (in.x % CHUNKSIZE);
+  out.y = in.y >= 0 ? in.y % CHUNKSIZE : CHUNKSIZE + (in.y % CHUNKSIZE);
+  out.z = in.z >= 0 ? in.z % CHUNKSIZE : CHUNKSIZE + (in.z % CHUNKSIZE);
+  if(out.x == CHUNKSIZE) out.x = 0;
+  if(out.y == CHUNKSIZE) out.y = 0;
+  if(out.z == CHUNKSIZE) out.z = 0;
+
+  return out;
+}
+
+glm::ivec3 inline toChunkCoords(glm::ivec3 in)
+{
+  glm::ivec3 out;
+  out.x = floor((float)in.x/(float)CHUNKSIZE);
+  out.y = floor((float)in.y/(float)CHUNKSIZE);
+  out.z = floor((float)in.z/(float)CHUNKSIZE);
+  return out;
+}
+
+inline void checkForUpdates(glm::ivec3 local,std::shared_ptr<BSPNode> chunk)
+{
+  if(local.x+1>=CHUNKSIZE)
+  {
+    if(chunk->rightChunk != NULL) chunk->rightChunk->build();
+  }
+  else if(local.x-1 < 0)
+  {
+    if(chunk->leftChunk != NULL) chunk->leftChunk->build();
+  }
+
+  if(local.y+1>=CHUNKSIZE)
+  {
+    if(chunk->topChunk != NULL) chunk->topChunk->build();
+  }
+  else if(local.y-1 < 0)
+  {
+    if(chunk->bottomChunk != NULL) chunk->bottomChunk->build();
+  }
+
+  if(local.z+1>=CHUNKSIZE)
+  {
+    if(chunk->backChunk != NULL) chunk->backChunk->build();
+  }
+  else if(local.z-1 < 0)
+  {
+    if(chunk->frontChunk != NULL) chunk->frontChunk->build();
+  }
+}
+
 bool World::blockExists(int x, int y, int z)
 {
   /*
   Finds which ever chunk holds the block and then calls the blockExists
   function on that chunk with the localized coordinates
   */
-
-
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
-
-  if(xlocal == CHUNKSIZE)xlocal = 0;
-  if(ylocal == CHUNKSIZE)ylocal = 0;
-  if(zlocal == CHUNKSIZE)zlocal = 0;
-
-  int xchunk = floor((float)x/(float)CHUNKSIZE);
-  int ychunk = floor((float)y/(float)CHUNKSIZE);
-  int zchunk = floor((float)z/(float)CHUNKSIZE);
+  glm::ivec3 pos(x,y,z);
+  glm::ivec3 local = toLocalCoords(pos);
+  glm::ivec3 chunk = toChunkCoords(pos);
 
   std::shared_ptr<BSPNode>  tempChunk;
-  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
+  if(tempChunk = getChunk(chunk.x,chunk.y,chunk.z))
   {
 
-    if(tempChunk->blockExists(xlocal,ylocal, zlocal))
+    if(tempChunk->blockExists(local.x,local.z,local.z))
     {
       return true;
     }
   }
   return false;
 }
+
 void World::addBlock(int x, int y, int z, int id)
 {
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
+  glm::ivec3 pos(x,y,z);
+  glm::ivec3 local = toLocalCoords(pos);
+  glm::ivec3 chunk = toChunkCoords(pos);
 
-  if(xlocal == CHUNKSIZE) xlocal = 0;
-  if(ylocal == CHUNKSIZE) ylocal = 0;
-  if(zlocal == CHUNKSIZE) zlocal = 0;
-
-  int xchunk = floor((float)x/(float)CHUNKSIZE);
-  int ychunk = floor((float)y/(float)CHUNKSIZE);
-  int zchunk = floor((float)z/(float)CHUNKSIZE);
-
-  std::shared_ptr<BSPNode> tempChunk = getChunk(xchunk,ychunk,zchunk);
+  std::shared_ptr<BSPNode> tempChunk = getChunk(chunk.x,chunk.y,chunk.z);
   if(tempChunk != NULL)
   {
-    tempChunk->addBlock(xlocal,ylocal,zlocal,id);
+    tempChunk->addBlock(local.x,local.y,local.z,id);
     tempChunk->build();
-
-
-
-    if(xlocal+1>=CHUNKSIZE)
-    {
-      if(tempChunk->rightChunk != NULL) tempChunk->rightChunk->build();
-    }
-    else if(xlocal-1 < 0)
-    {
-      if(tempChunk->leftChunk != NULL) tempChunk->leftChunk->build();
-    }
-
-    if(ylocal+1>=CHUNKSIZE)
-    {
-      if(tempChunk->topChunk != NULL) tempChunk->topChunk->build();
-    }
-    else if(ylocal-1 < 0)
-    {
-      if(tempChunk->bottomChunk != NULL) tempChunk->bottomChunk->build();
-    }
-
-    if(zlocal+1>=CHUNKSIZE)
-    {
-      if(tempChunk->backChunk != NULL) tempChunk->backChunk->build();
-    }
-    else if(zlocal-1 < 0)
-    {
-      if(tempChunk->frontChunk != NULL) tempChunk->frontChunk->build();
-    }
+    checkForUpdates(local,tempChunk);
   }
 
 }
@@ -837,124 +863,25 @@ void World::addBlock(int x, int y, int z, int id)
 
 void World::delBlock(int x, int y, int z)
 {
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
+  glm::ivec3 pos(x,y,z);
+  glm::ivec3 local = toLocalCoords(pos);
+  glm::ivec3 chunk = toChunkCoords(pos);
 
-  if(xlocal == CHUNKSIZE) xlocal = 0;
-  if(ylocal == CHUNKSIZE) ylocal = 0;
-  if(zlocal == CHUNKSIZE) zlocal = 0;
-
-  int xchunk = floor((float)x/(float)CHUNKSIZE);
-  int ychunk = floor((float)y/(float)CHUNKSIZE);
-  int zchunk = floor((float)z/(float)CHUNKSIZE);
-
-  std::shared_ptr<BSPNode>  tempChunk = getChunk(xchunk,ychunk,zchunk);
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(chunk.x,chunk.y,chunk.z);
   if(tempChunk != NULL)
   {
-    tempChunk->delBlock(xlocal,ylocal,zlocal);
+    tempChunk->delBlock(local.x,local.y,local.z);
     tempChunk->build();
-
-
-
-    if(xlocal+1>=CHUNKSIZE)
-    {
-      if(tempChunk->rightChunk != NULL) tempChunk->rightChunk->build();
-    }
-    else if(xlocal-1 < 0)
-    {
-      if(tempChunk->leftChunk != NULL) tempChunk->leftChunk->build();
-    }
-
-    if(ylocal+1>=CHUNKSIZE)
-    {
-      if(tempChunk->topChunk != NULL) tempChunk->topChunk->build();
-    }
-    else if(ylocal-1 < 0)
-    {
-      if(tempChunk->bottomChunk != NULL) tempChunk->bottomChunk->build();
-    }
-
-    if(zlocal+1>=CHUNKSIZE)
-    {
-      if(tempChunk->backChunk != NULL) tempChunk->backChunk->build();
-    }
-    else if(zlocal-1 < 0)
-    {
-      if(tempChunk->frontChunk != NULL) tempChunk->frontChunk->build();
-    }
+    checkForUpdates(local,tempChunk);
   }
 }
 
-/*
-void World::requestBlockPlace(int x, int y, int z)
-{
-  /*
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
-
-  if(xlocal == CHUNKSIZE) xlocal = 0;
-  if(ylocal == CHUNKSIZE) ylocal = 0;
-  if(zlocal == CHUNKSIZE) zlocal = 0;
-
-  int xchunk = floor((float)x/(float)CHUNKSIZE);
-  int ychunk = floor((float)y/(float)CHUNKSIZE);
-  int zchunk = floor((float)z/(float)CHUNKSIZE);
-
-
-
-  std::shared_ptr<BSPNode>  tempChunk;
-  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
-  {
-    tempChunk->delBlock(xlocal,ylocal,zlocal);
-  }
-  tempChunk->build();
-
-  if(xlocal+1>=CHUNKSIZE)
-  {
-    getChunk(xchunk+1,ychunk,zchunk)->build();
-  }
-  else if(xlocal-1 < 0)
-  {
-    getChunk(xchunk-1,ychunk,zchunk)->build();
-  }
-
-  if(ylocal+1>=CHUNKSIZE)
-  {
-    getChunk(xchunk,ychunk+1,zchunk)->build();
-  }
-  else if(ylocal-1 < 0)
-  {
-    getChunk(xchunk,ychunk-1,zchunk)->build();
-  }
-
-  if(zlocal+1>=CHUNKSIZE)
-  {
-    getChunk(xchunk,ychunk,zchunk+1)->build();
-  }
-  else if(zlocal-1 < 0)
-  {
-    getChunk(xchunk,ychunk,zchunk-1)->build();
-  }
-
-}
-*/
 
 void World::updateBlock(int x, int y, int z)
 {
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
-
-  if(xlocal == CHUNKSIZE) xlocal = 0;
-  if(ylocal == CHUNKSIZE) ylocal = 0;
-  if(zlocal == CHUNKSIZE) zlocal = 0;
-
-  int xchunk = floor((float)x/(float)CHUNKSIZE);
-  int ychunk = floor((float)y/(float)CHUNKSIZE);
-  int zchunk = floor((float)z/(float)CHUNKSIZE);
-  std::shared_ptr<BSPNode>  tempChunk = getChunk(xchunk,ychunk,zchunk);
+  glm::ivec3 pos(x,y,z);
+  glm::ivec3 chunk = toChunkCoords(pos);
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(chunk.x,chunk.y,chunk.z);
   if(!tempChunk->toBuild)
   {
     addToBuildQueue(tempChunk);

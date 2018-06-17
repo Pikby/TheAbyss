@@ -6,16 +6,17 @@
 
 enum renderType {OPAQUE,TRANSLUCENT,TRANSPARENT};
 //Class which holds the data for each individual chunk
-class BSP : public WorldWrap
+class BSP
 {
 private:
   unsigned char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
+  std::string worldName;
 public:
   long int xCoord;
   long int yCoord;
   long int zCoord;
 
-  BSP(int x, int y, int z);
+  BSP(int x, int y, int z,std::string worldName);
   BSP();
   ~BSP();
   void generateTerrain();
@@ -35,7 +36,7 @@ class BSPNode
 {
   public:
   BSP curBSP;
-  BSPNode(int x, int y, int z);
+  BSPNode(int x, int y, int z,std::string worldName);
   ~BSPNode();
   void saveChunk();
   bool blockExists(int x, int y, int z);

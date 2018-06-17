@@ -1,12 +1,6 @@
 
-#include "../headers/all.h"
-
-int WorldWrap::seed;
-unsigned int WorldWrap::totalChunks;
-FastNoise WorldWrap::perlin;
-std::string WorldWrap::worldName;
-std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::shared_ptr<BSPNode>>>> WorldWrap::BSPmap;
-
+#include "../headers/world.h"
+#include "../headers/bsp.h"
 
 World::World()
 {
@@ -35,7 +29,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
 {
   if(chunkExists(chunkx,chunky,chunkz)) return;
 
-  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz));
+  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName));
   BSPmap[chunkx][chunky][chunkz] = tempChunk;
   if(frontNode == NULL)
   {
@@ -95,7 +89,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
 }
 
 
-std::shared_ptr<BSPNode>  WorldWrap::getChunk(int x, int y, int z)
+std::shared_ptr<BSPNode>  World::getChunk(int x, int y, int z)
 {
   if(BSPmap.count(x) == 1)
    {
@@ -172,7 +166,7 @@ bool World::chunkExists(int x ,int y, int z)
 //If there is an entity, returns it id and position,
 //If there is a block, return its position and an id of 0
 //If there is nothing return a 0 vector  with -1 id
-glm::vec4 WorldWrap::rayCast(glm::vec3 pos, glm::vec3 front, int max)
+glm::vec4 World::rayCast(glm::vec3 pos, glm::vec3 front, int max)
 {
   float parts = 10;
   for(float i = 0; i<max;i += 1/parts)
@@ -194,7 +188,7 @@ glm::vec4 WorldWrap::rayCast(glm::vec3 pos, glm::vec3 front, int max)
   return glm::vec4(0,0,0,-1);
 }
 
-bool WorldWrap::blockExists(int x, int y, int z)
+bool World::blockExists(int x, int y, int z)
 {
   /*
   Finds which ever chunk holds the block and then calls the blockExists
@@ -286,7 +280,7 @@ void World::updateBlock(int x, int y, int z)
 }
 
 
-int WorldWrap::anyExists(glm::vec3 pos)
+int World::anyExists(glm::vec3 pos)
 {
   if(entityExists(pos.x,pos.y,pos.z))
     return 2;
@@ -296,12 +290,12 @@ int WorldWrap::anyExists(glm::vec3 pos)
 
 }
 
-bool WorldWrap::entityExists(glm::vec3 pos)
+bool World::entityExists(glm::vec3 pos)
 {
   //TODO
   return false;
 }
-bool WorldWrap::entityExists(float x, float y, float z)
+bool World::entityExists(float x, float y, float z)
 {
   //TODO
   return false;

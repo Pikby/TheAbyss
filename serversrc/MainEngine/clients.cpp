@@ -1,5 +1,10 @@
-#include "../headers/all.h"
 
+#include "../headers/clients.h"
+#include "../headers/world.h"
+#include "../headers/bsp.h"
+#include <iostream>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 Client::Client(int Fd,uchar Id,World* world,ClientList* par)
 {
@@ -11,7 +16,7 @@ Client::Client(int Fd,uchar Id,World* world,ClientList* par)
   ypos = 50;
   zpos = 10;
   open = true;
-
+  fatalError = false;
   if (send(fd, &id, sizeof(id), 0) == -1)
   {
       std::cout << "ERROR: failed to send id message." << std::endl;
@@ -42,6 +47,24 @@ std::shared_ptr<Message> Client::getInfo()
   return tmp;
 }
 
+inline void Client::sendMessage(const void *buffer,int length)
+{
+  const char* buf = (char*)buffer;
+  int totalSent = 0;
+  while(totalSent <length)
+  {
+    if(fatalError || !open) return;
+    int curSent = send(fd,buf+totalSent,length-totalSent,0);
+    if(curSent < 0)
+    {
+      std::cout << "ERROR: sending message to Client:" << id << "\n";
+      errorDisconnect();
+    }
+    totalSent += curSent;
+
+  }
+}
+
 void Client::sendMessages()
 {
   while(open)
@@ -64,22 +87,12 @@ void Client::sendMessages()
     arr[4] = m->data == NULL ? 0 : m->data->length();
 
 
-    std::cout << "Sending Message: " << arr[0] << arr[1] << arr[2] << arr[3] <<arr[4] << "\n";
-    if (send(fd, arr, 5*sizeof(int), 0) <0)
-    {
-        std::cout << "ERROR: failed to send message" << std::endl;
-        disconnect();
-        return;
-    }
+    //std::cout << "Sending Message: " << arr[0] << arr[1] << arr[2] << arr[3] <<arr[4] << "\n";
+    sendMessage(arr,5*sizeof(int));
 
     if(m->data != NULL)
     {
-      if (send(fd, (void *)(m->data->data()), arr[4], 0)<0)
-      {
-          std::cout << "ERROR: failed to send chunk data." << std::endl;
-          disconnect();
-          return;
-      }
+      sendMessage(m->data->data(), arr[4]);
     }
     queueMutex.lock();
     msgQueue.front() = NULL;
@@ -88,20 +101,27 @@ void Client::sendMessages()
 
   }
 
+  if(fatalError) return;
+
   int arr[5];
   arr[0] = 0xFFFFFFFF;
   std::cout << "Sending dc msg\n";
-  if (send(fd, arr, 5*sizeof(int), 0) == -1)
-  {
-      std::cout << "ERROR: failed to send exit message." << std::endl;
-      return;
-  }
+  sendMessage(arr,5*sizeof(int));
 }
+
 void Client::disconnect()
 {
   open = false;
   parent->remove(id);
-  std::cout << "Client disconnectting\n";
+  std::cout << "Client disconnectting safely\n";
+}
+
+void Client::errorDisconnect()
+{
+  open = false;
+  fatalError = true;
+  parent->remove(id);
+  std::cout << "Client disconnectting due to error\n";
 }
 
 void Client::recvMessages()
@@ -109,10 +129,20 @@ void Client::recvMessages()
   while(open)
   {
     int buf[4];
-    if(recv(fd,buf,4*sizeof(int),0)<=0)
+
+    int totalReceived = 0;
+    int sizeOfMessage = 4*sizeof(int);
+    while(totalReceived < sizeOfMessage)
     {
-      disconnect();
-      return;
+      if(fatalError || !open) return;
+      int curReceived = recv(fd,((char*)buf)+totalReceived,sizeOfMessage-totalReceived,0);
+      if(curReceived == -1)
+      {
+        std::cout << "Error receiving Message\n";
+        errorDisconnect();
+        return;
+      }
+      totalReceived += curReceived;
     }
     uchar opcode = (buf[0] >> 24) & 0xFF;
     uchar ext1 = (buf[0] >> 16) & 0xFF;

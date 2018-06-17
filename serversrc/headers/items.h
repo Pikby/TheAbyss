@@ -1,6 +1,8 @@
 enum Type {NONE,MELEEWEAPON,RANGEDWEAPON};
-
-class Item : public WorldWrap
+#include <iostream>
+#include <glm/glm.hpp>
+class Block;
+class Item
 {
   std::string name;
   int type;

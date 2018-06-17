@@ -1,5 +1,14 @@
 #include <iostream>
 #include <atomic>
+#include <memory>
+#include <thread>
+#include <queue>
+#include <mutex>
+#include <string>
+#include <glm/glm.hpp>
+
+typedef unsigned char uchar;
+class World;
 struct Message
 {
   uchar opcode;
@@ -24,11 +33,12 @@ struct Message
 };
 
 class ClientList;
-class Client : public WorldWrap
+class Client
 {
   private:
     int fd;
     uchar id;
+    bool fatalError;
     std::atomic_bool open;
     std::atomic<float> xpos;
     std::atomic<float> ypos;
@@ -54,7 +64,8 @@ class Client : public WorldWrap
     void sendPositionAll(float x, float y, float z);
     void sendExit();
     void disconnect();
-
+    void errorDisconnect();
+    inline void sendMessage(const void *buffer,int length);
 };
 
 #define MAX_CLIENTS 4

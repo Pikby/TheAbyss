@@ -1,13 +1,15 @@
+#include <fstream>
+#include <sstream>
+#include "../headers/bsp.h"
 
-#include "../headers/all.h"
 
 int totalChunks;
 
 
-BSPNode::BSPNode(int x, int y, int z)
+BSPNode::BSPNode(int x, int y, int z, std::string wName)
 {
   //std::cout << totalChunks << "\n";
-  curBSP = BSP(x,y,z);
+  curBSP = BSP(x,y,z,wName);
 
   isGenerated = false;
   nextNode = NULL;
@@ -59,13 +61,15 @@ int BSPNode::blockVisibleType(int x, int y, int z)
 
 BSP::BSP(){}
 
-BSP::BSP(int x, int y,int z)
+BSP::BSP(int x, int y,int z,std::string wName)
 {
     xCoord = x;
     yCoord = y;
     zCoord = z;
     for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
     //Intialize Buffers
+
+    worldName = wName;
 
     using namespace std;
     //The directoy to the chunk to be saved

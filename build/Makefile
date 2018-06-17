@@ -24,11 +24,12 @@ CFLAGSWINDOWS =-I/usr/local/include/freetype2 -I/usr/include/libpng12  \
 
 FPATH = ../src/
 TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEngine/bsp.cpp MainEngine/entities.cpp \
-				 Character/camera.cpp Character/gui.cpp TerrainGeneration/FastNoise.cpp\
+				 Character/gui.cpp TerrainGeneration/FastNoise.cpp\
 				 Character/mainchar.cpp TerrainGeneration/bspterraingen.cpp  \
-				 InputHandling/inputhandling.cpp Inventory/items.cpp
+				 InputHandling/inputhandling.cpp Inventory/items.cpp \
 
-COBJECTLIST = cmain.o cworld.o centity.o cthreads.o cbsp.o ccamera.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cinputhandling.o citems.o
+
+COBJECTLIST = ctextureloading.o cmain.o cworld.o cobjects.o cthreads.o cbsp.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cinputhandling.o citems.o
 SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o
 
 OFLAGS = g++ -c $(CFLAGSLINUX) -O3
@@ -71,12 +72,8 @@ cthreads.o: $(ME)/threads.cpp
 cbsp.o: $(ME)/bsp.cpp
 	$(OFLAGS) $(ME)/bsp.cpp -o cbsp.o
 
-centity.o: $(ME)/entities.cpp
-	$(OFLAGS) $(ME)/entities.cpp -o centity.o
 # Character
 CH = ../src/Character
-ccamera.o: $(CH)/camera.cpp
-	$(OFLAGS) $(CH)/camera.cpp -o ccamera.o
 
 cgui.o: $(CH)/gui.cpp
 	$(OFLAGS) $(CH)/gui.cpp -o cgui.o
@@ -102,6 +99,15 @@ cinputhandling.o: $(IO)/inputhandling.cpp
 IT = ../src/Inventory
 citems.o: $(IT)/items.cpp
 	$(OFLAGS) $(IT)/items.cpp -o citems.o
+
+cobjects.o: $(IT)/objects.cpp
+	$(OFLAGS) $(IT)/objects.cpp -o cobjects.o
+
+#TextureObject
+
+ctextureloading.o: ../src/TextureLoading/textureLoading.cpp
+	$(OFLAGS) ../src/TextureLoading/textureLoading.cpp -o ctextureloading.o
+
 
 linux: $(COBJECTLIST)
 	$(CC) -o linux  $(COBJECTLIST) $(CFLAGSLINUX) -O3

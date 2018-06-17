@@ -73,7 +73,7 @@ unsigned int oVAO, oVBO;
 
 MainChar::MainChar(float x, float y, float z, World* world )
 {
-  mainCharShader = Shader("../src/Shaders/shaderEntity.vs","../src/Shaders/shaderEntity.fs");
+  mainCharShader = Shader("../src/Shaders/entShader.vs","../src/Shaders/entShader.fs");
   xpos = x;
   ypos = y;
   zpos = z;
@@ -163,7 +163,8 @@ void MainChar::moveBackward()
 
 void MainChar::setPosition(float x, float y, float z)
 {
-  if(sqrt(pow(x-xpos,2)+pow(y-ypos,2)+pow(z-zpos,2) <4)) return;
+  return;
+  if(sqrt(pow(x-xpos,2)+pow(y-ypos,2)+pow(z-zpos,2) < 20)) return;
   xpos = x;
   ypos = y;
   zpos = z;
