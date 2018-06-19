@@ -50,7 +50,7 @@ void initWorld(int numbBuildThreads, int width,  int height)
 {
   //glfwMakeContextCurrent(window);
   newWorld = new World(numbBuildThreads,width,height);
-  mainCharacter = new MainChar(10,50,10,newWorld);
+  mainCharacter = new MainChar(10,70,10,newWorld);
   initializeInputs(mainCharacter);
 
   //newWorld->requestChunk(0,0,0);
@@ -73,17 +73,11 @@ void draw()
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
-  newWorld->createDirectionalLight(glm::vec3(0,-1.0f,0));
+  newWorld->createDirectionalLight(glm::vec3(1.0f,1.0f,0));
   SkyBox skyBox;
   Camera* mainCam = &(mainCharacter->mainCam);
-  {
-  int error = glGetError();
-  if(error != 0)
-  {
-    std::cout << "OPENGL ERRORb" << error << ":" << std::hex << error << "\n";
-    //glfwSetWindowShouldClose(window, true);
-    //return;
-  }}
+
+  //newWorld->addLight(glm::vec3(10,50,10));
   while(!glfwWindowShouldClose(window))
   {
     updateInputs();
@@ -98,15 +92,11 @@ void draw()
     //Create a time for every second and displays the FPS
 
     glfwPollEvents();
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     mainCharacter->update();
 
     glm::mat4 view = mainCam->getViewMatrix();
     newWorld->updateViewMatrix(view,mainCam->getHSRMatrix(),mainCam->getPosition());
-
-    glViewport(0,0,1920,1080);
-
     //glClear(GL_COLOR_BUFFER_BIT);
     glViewport(0,0,1920,1080);
     newWorld->drawTerrain();

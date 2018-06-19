@@ -109,7 +109,7 @@ class World
     }
 
     void createDirectionalLight(glm::vec3 dir = glm::vec3(-1.0f,-1.0f,-1.0f),
-                                glm::vec3 amb = glm::vec3(0.2f,0.2f,0.2f),
+                                glm::vec3 amb = glm::vec3(0.8f,0.8f,0.8f),
                                 glm::vec3 dif = glm::vec3(0.5f,0.5f,0.5f),
                                 glm::vec3 spec = glm::vec3(1.0f,1.0f,1.0f))
     {
@@ -192,7 +192,7 @@ class World
     void updateBlock(int x, int y, int z);
     void delScan(float* mainx, float* mainy, float* mainz);
     void generateChunk(int chunkx, int chunky, int chunkz);
-    void generateChunkFromString(int chunkx, int chunky, int chunkz, std::string val);
+    void generateChunkFromString(int chunkx, int chunky, int chunkz,const std::string &val);
     void saveWorld();
     void loadChunk(std::string);
 
