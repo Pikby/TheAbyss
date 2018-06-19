@@ -13,7 +13,7 @@
 int totalChunks;
 
 
-BSPNode::BSPNode(int x,int y,int z,std::string wName)
+BSPNode::BSPNode(int x,int y,int z,const std::string &wName)
 {
   //std::cout << totalChunks << "\n";
 
@@ -34,7 +34,7 @@ BSPNode::~BSPNode()
   totalChunks--;
 }
 
-BSPNode::BSPNode(int x,int y, int z,std::string wName,std::string val)
+BSPNode::BSPNode(int x,int y, int z,const std::string &wName,const std::string &val)
 {
   //std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
   BSPMutex.lock();
@@ -68,14 +68,12 @@ void BSPNode::build()
 
 void BSPNode::drawOpaque()
 {
-  BSPMutex.lock();
   if(toRender == true)
   {
      curBSP.render();
      toRender = false;
   }
   curBSP.drawOpaque();
-  BSPMutex.unlock();
 }
 
 void BSPNode::drawTranslucent()
@@ -144,7 +142,7 @@ int BSPNode::blockVisibleType(int x, int y, int z)
 
 
 
-BSP::BSP(int x, int y, int z,std::string wName,std::string val)
+BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
 {
   xCoord = x;
   yCoord = y;
@@ -152,32 +150,35 @@ BSP::BSP(int x, int y, int z,std::string wName,std::string val)
   for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
   using namespace std;
   worldName = wName;
-  //The directoy to the chunk to be saved
-  string directory = "saves/" + worldName + "/chunks/";
-  string chunkName = to_string(x) + '_' + to_string(y) + '_' + to_string(z) + ".dat";
-  string chunkPath = directory+chunkName;
-  ofstream ochunk(chunkPath,ios::binary);
-  ochunk << val;
-  ochunk.close();
-  ifstream ichunk(chunkPath,ios::binary);
 
   const int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
   int i = 0;
-  char curId=0;
-  unsigned int curLength=0;
+  char curId = 0;
+  unsigned short curLength = 0;
+  const char* data = val.c_str();
+  unsigned int index=0;
+
   while(i<numbOfBlocks)
   {
-
-    ichunk.read((char*) &curId,sizeof(curId));
-    ichunk.read((char*) &curLength,sizeof(curLength));
-
+    curId = data[index];
+    curLength = 0;
+    index++;
+    for(int j=0;j<sizeof(curLength);j++)
+    {
+      curLength += ((uchar) data[index] << (j*8));
+      index++;
+    }
     for(int j = 0; j<curLength; j++)
     {
+      if(i+j>numbOfBlocks)
+      {
+        std::cout << "ERROR CORRUPTED CHUNK AT " << x << ":" << y << ":" << z <<"\n";
+      }
       worldMap[i+j] = curId;
     }
     i+= curLength;
   }
-  ichunk.close();
+
 
 
 
@@ -192,7 +193,7 @@ BSP::BSP(int x, int y, int z,std::string wName,std::string val)
   tIndices = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
 }
 
-BSP::BSP(int x, int y, int z,std::string wName)
+BSP::BSP(int x, int y, int z,const std::string &wName)
 {
     xCoord = x;
     yCoord = y;
@@ -228,7 +229,7 @@ BSP::BSP(int x, int y, int z,std::string wName)
     {
       int i = 0;
       char curId=0;
-      unsigned int curLength=0;
+      unsigned short curLength=0;
       while(i<numbOfBlocks)
       {
 

@@ -96,7 +96,7 @@ BSP::BSP(int x, int y,int z,std::string wName)
     {
       int i = 0;
       char curId=0;
-      unsigned int curLength=0;
+      unsigned short curLength=0;
       while(i<numbOfBlocks)
       {
 
@@ -118,11 +118,12 @@ BSP::~BSP()
   saveChunk();
 }
 
+
 inline std::shared_ptr<std::string> BSP::compressChunk()
 {
     using namespace std;
     ostringstream chunk(ios::binary);
-    unsigned int curTotal = 1;
+    unsigned short curTotal = 1;
     int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
     char lastId = worldMap[0];
     for(int i = 1; i<numbOfBlocks;i++)
@@ -157,7 +158,7 @@ inline void BSP::saveChunk()
   //Max size of a chunk
   int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
   ofstream ochunk(chunkPath,ios::binary);
-  unsigned int curTotal = 1;
+  unsigned short curTotal = 1;
   char lastId = worldMap[0];
 
   for(int i = 1; i<numbOfBlocks;i++)

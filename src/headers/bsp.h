@@ -39,8 +39,8 @@ public:
   int yCoord;
   int zCoord;
 
-  BSP(int x,int y,int z,std::string wName);
-  BSP(int x,int y,int z,std::string wName, std::string val);
+  BSP(int x,int y,int z,const std::string &wName);
+  BSP(int x,int y,int z,const std::string &wName, const std::string &val);
   BSP();
   ~BSP();
   void generateTerrain();
@@ -67,8 +67,8 @@ class BSPNode
   std::mutex BSPMutex;
   public:
   BSP curBSP;
-  BSPNode(int x,int y,int z,std::string wName);
-  BSPNode(int x,int y,int z,std::string wName,std::string val);
+  BSPNode(int x,int y,int z,const std::string &wName);
+  BSPNode(int x,int y,int z,const std::string &wName,const std::string &val);
   ~BSPNode();
   void saveChunk();
   bool blockExists(int x, int y, int z);
@@ -83,21 +83,11 @@ class BSPNode
   void del();
   void disconnect();
   //next and prev node for the linked list of all nodes
-  std::shared_ptr<BSPNode>  nextNode;
-  std::shared_ptr<BSPNode>  prevNode;
+  std::shared_ptr<BSPNode>  nextNode,prevNode;
 
   //references to the 6 cardinal neighbours of the chunk
-  std::shared_ptr<BSPNode>  leftChunk;
-  std::shared_ptr<BSPNode>  rightChunk;
-  std::shared_ptr<BSPNode>  frontChunk;
-  std::shared_ptr<BSPNode>  backChunk;
-  std::shared_ptr<BSPNode>  topChunk;
-  std::shared_ptr<BSPNode>  bottomChunk;
+  std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;
 
   //Flags for use inbetween pointers
-  bool toRender;
-  bool toBuild;
-  bool toDelete;
-  bool isGenerated;
-  bool inUse;
+  bool toRender,toBuild,toDelete,isGenerated,inUse;
 };

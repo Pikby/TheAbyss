@@ -25,9 +25,9 @@ Client::Client(int Fd,uchar Id,World* world,ClientList* par)
   parent->sendInitAll(this);
   parent->retClients(this);
   sendThread = std::thread(&Client::sendMessages,this);
-  recvThread = std::thread(&Client::recvMessages,this);
+  //recvThread = std::thread(&Client::recvMessages,this);
   sendThread.detach();
-  recvThread.detach();
+  //recvThread.detach();
 }
 
 int Client::getFD()
@@ -59,6 +59,7 @@ inline void Client::sendMessage(const void *buffer,int length)
     {
       std::cout << "ERROR: sending message to Client:" << id << "\n";
       errorDisconnect();
+      return;
     }
     totalSent += curSent;
 
@@ -69,7 +70,7 @@ void Client::sendMessages()
 {
   while(open)
   {
-
+    recvMessages();
     queueMutex.lock();
     if(msgQueue.empty())
     {
@@ -126,7 +127,7 @@ void Client::errorDisconnect()
 
 void Client::recvMessages()
 {
-  while(open)
+  //while(open)
   {
     int buf[4];
 
