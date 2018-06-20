@@ -29,7 +29,10 @@ TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEng
 				 InputHandling/inputhandling.cpp Inventory/items.cpp \
 
 
-COBJECTLIST = ctextureloading.o cmain.o cworld.o cobjects.o cthreads.o cbsp.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cinputhandling.o citems.o
+
+COBJECTLIST = csettings.o ctextureloading.o cmain.o cworld.o cmessenger.o cobjects.o cthreads.o \
+							cbsp.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cinputhandling.o \
+							citems.o
 SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o
 
 OFLAGS = g++ -c $(CFLAGSLINUX) -O3
@@ -57,6 +60,7 @@ sitems.o: ../serversrc/Inventory/items.cpp
 
 sclients.o: ../serversrc/MainEngine/clients.cpp
 	$(OFLAGS) ../serversrc/MainEngine/clients.cpp -o sclients.o
+
 # Client
 
 ME = ../src/MainEngine
@@ -72,6 +76,8 @@ cthreads.o: $(ME)/threads.cpp
 cbsp.o: $(ME)/bsp.cpp
 	$(OFLAGS) $(ME)/bsp.cpp -o cbsp.o
 
+cmessenger.o: $(ME)/messenger.cpp
+	$(OFLAGS) $(ME)/messenger.cpp -o cmessenger.o
 # Character
 CH = ../src/Character
 
@@ -108,6 +114,9 @@ cobjects.o: $(IT)/objects.cpp
 ctextureloading.o: ../src/TextureLoading/textureLoading.cpp
 	$(OFLAGS) ../src/TextureLoading/textureLoading.cpp -o ctextureloading.o
 
+#SettingsObject
+csettings.o: ../src/Settings/settings.cpp
+	$(OFLAGS) ../src/Settings/settings.cpp -o csettings.o
 
 linux: $(COBJECTLIST)
 	$(CC) -o linux  $(COBJECTLIST) $(CFLAGSLINUX) -O3

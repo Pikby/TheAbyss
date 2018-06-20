@@ -1,11 +1,15 @@
+#pragma once
 #include <map>
 #include <string>
 #include <fstream>
+#include <iostream>
+#include <algorithm>
 class Parser
 {
 private:
-  std::map<string, string> dictionary;
+  std::map<std::string, std::string> dictionary;
 public:
+  Parser(){};
   Parser(std::string filePath)
   {
     using namespace std;

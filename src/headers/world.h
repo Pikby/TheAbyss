@@ -10,7 +10,8 @@ typedef unsigned int uint;
 #include <queue>
 #include <glm/glm.hpp>
 #include "../headers/objects.h"
-
+#include "../MainEngine/messenger.h"
+#include "../headers/threadSafeQueue.h"
 struct PointLight
 {
   glm::vec3 position;
@@ -42,17 +43,7 @@ struct DirLight
 
 
 #include "../headers/3dmap.h"
-struct Message
-{
-  uchar opcode;
-  uchar ext1;
-  uchar ext2;
-  uchar ext3;
-  int x;
-  int y;
-  int z;
-  int length;
-};
+
 
 //Class which encapsulates all the chunks as well as the shaders and dicionary
 class BSPNode;
@@ -79,7 +70,11 @@ class World
     glm::vec3 viewPos;
 
     Shader objShader,dirDepthShader,pointDepthShader,blockShader;
+    Shader debugDepthQuad;
     public:
+    Messenger messenger;
+
+    void drawFinal();
     void renderDirectionalDepthMap();
     void renderPointDepthMap(int id);
     void startPointShadowDraw(Shader* shader, int id);
@@ -146,38 +141,25 @@ class World
     bool entityExists(float x, float y, float z);
 
     Map3D<std::shared_ptr<BSPNode>> BSPmap;
-    Map3D<bool> requestMap;
+
     std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
 
     glm::vec4 rayCast(glm::vec3 pos, glm::vec3 front, int max);
     std::mutex playerListMutex;
     std::map<uchar, std::shared_ptr<Player>> playerList;
-    unsigned int depthMapFBO,depthMap,depthMapEBO;
     unsigned int quadVAO = 0;
-    unsigned int quadVBGLuintO;
-    int fd;
+    unsigned int quadVBO;
+
     char mainId;
     void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
     World(int numbBuildThreads,int width,int height);
 
     void renderWorld(float* mainx, float* mainy, float* mainz);
     //void drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR);
-    void drawTerrain(Shader* shader = NULL);
+    void drawTerrain(Shader* shader = NULL, bool useHSR = false);
     void drawPlayers(Shader* shader);
     void buildWorld(int threadNumb);
     bool chunkExists(int x, int y, int z);
-    void createDelBlockRequest(int x, int y, int z);
-    void requestDelBlock(int x, int y, int z);
-    void requestChunk(int x, int y, int z);
-    void requestExit();
-    void requestMove(float x, float y, float z);
-    void createChunkRequest(int x, int y, int z);
-    void createMoveRequest(float x, float y,float z);
-    void createAddBlockRequest(int x, int y, int z, uchar id);
-    void requestAddBlock(int x, int y, int z, uchar id);
-    void receiveChunk(int x, int y, int z, int length);
-    inline void receiveMessage(void* buf,int length);
-    Message receiveAndDecodeMessage();
     void addPlayer(float x, float y, float z, uchar id);
     void removePlayer(uchar id);
     void movePlayer(float x,float y, float z, uchar id);
@@ -195,9 +177,6 @@ class World
     void generateChunkFromString(int chunkx, int chunky, int chunkz,const std::string &val);
     void saveWorld();
     void loadChunk(std::string);
-
-    std::mutex msgQueueMutex;
-    std::queue<Message> messageQueue;
     std::queue<std::shared_ptr<BSPNode>>* buildQueue;
 };
 

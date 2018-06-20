@@ -5,7 +5,7 @@
 #include <iostream>
 #include "../headers/threads.h"
 #include "../headers/inputhandling.h"
-
+#include "../Settings/settings.h"
 int main()
 {
   glfwInit();
@@ -14,8 +14,8 @@ int main()
 
 
 
-  int winWidth = 1920;
-  int winHeight = 1080;
+  int winWidth = std::stoi(Settings::get("windowWidth"));
+  int winHeight = std::stoi(Settings::get("windowHeight"));
   GLFWwindow* newWindow = createWindow(winWidth,winHeight);
   glfwMakeContextCurrent(newWindow);
   glfwSetKeyCallback(newWindow, key_callback);
@@ -24,7 +24,7 @@ int main()
   glfwSetMouseButtonCallback(newWindow, mousekey_callback);
   glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-
+ 
   glfwSwapInterval(0);//FPS Capping
   //Intialize glew and all related settings
 

@@ -190,7 +190,8 @@ void MainChar::destroyBlock()
   glm::vec4 block = curWorld->rayCast(mainCam.position,mainCam.front,reach);
 
   if(block.w == NOTHING) return;
-  curWorld->createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
+  std::cout << "Destroying blocks\n";
+  curWorld->messenger.createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
 
 }
 void MainChar::addBlock(int id)
@@ -207,15 +208,15 @@ void MainChar::addBlock(int id)
 
     if(x != 0)
     {
-      curWorld->createAddBlockRequest(floor(p1.x)-sign(x),floor(p1.y),floor(p1.z),id);
+      curWorld->messenger.createAddBlockRequest(floor(p1.x)-sign(x),floor(p1.y),floor(p1.z),id);
     }
     else if(y != 0)
     {
-      curWorld->createAddBlockRequest(floor(p1.x),floor(p1.y)-sign(y),floor(p1.z),id);
+      curWorld->messenger.createAddBlockRequest(floor(p1.x),floor(p1.y)-sign(y),floor(p1.z),id);
     }
     else if(z != 0)
     {
-      curWorld->createAddBlockRequest(floor(p1.x),floor(p2.y),floor(p1.z)-sign(z),id);
+      curWorld->messenger.createAddBlockRequest(floor(p1.x),floor(p2.y),floor(p1.z)-sign(z),id);
     }
 
 }
@@ -246,6 +247,7 @@ void MainChar::drawHud()
 void MainChar::draw()
 {
   mainCharShader.use();
+  glViewport(0,0,screenWidth,screenHeight);
   glm::mat4 camProjection = glm::perspective(glm::radians(45.0f),
                             (float)1920/ (float)1080, 0.1f,
                             (float)7*CHUNKSIZE*4);

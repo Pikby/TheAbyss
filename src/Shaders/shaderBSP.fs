@@ -6,7 +6,7 @@ struct DirLight
   vec3 ambient;
   vec3 diffuse;
   vec3 specular;
-  //sampler2D shadow;
+  sampler2D shadow;
 };
 
 struct PointLight
@@ -39,7 +39,7 @@ uniform PointLight pointLights[20];
 uniform int numbOfLights;
 vec3 viewDir = normalize(viewPos - FragPos);
 
-/*
+
 float calcDirShadows()
 {
   vec3 proj = FragPosLightSpace.xyz/FragPosLightSpace.w;
@@ -74,7 +74,7 @@ float calcDirShadows()
   }
   return shadow/9.0;
 }
-*/
+
 float calcPointShadows(PointLight light)
 {
   vec3 fragToLight = FragPos - light.position;
@@ -99,7 +99,8 @@ vec3 calcDirectionalLight(float shadow)
   vec3 ambient = dirLight.ambient;
   vec3 diffuse = dirLight.diffuse*diff;
   vec3 specular = dirLight.specular*spec;
-  return (ambient + diffuse + specular);
+
+  return shadow*(ambient + diffuse + specular);
 }
 
 vec3 calcPointLights(PointLight light, float shadow)
@@ -113,7 +114,7 @@ vec3 calcPointLights(PointLight light, float shadow)
   float dist = length(light.position - FragPos);
   float atten = 1.0/ (light.constant + light.linear*dist + light.quadratic*(dist*dist));
 
-  vec3 ambient = light.ambient*0.2;
+  vec3 ambient = light.ambient;
   vec3 diffuse = light.diffuse;
   vec3 specular = light.specular;
 
@@ -136,9 +137,10 @@ void main()
     */
     if(shadow>1) shadow = 1;
 
-    vec3 result = calcDirectionalLight(1.0f) * objectColor;
-
-    color *= calcDirectionalLight(1.0f);
+    //vec3 result = calcDirectionalLight(1.0f) * objectColor;
+    shadow = 1-calcDirShadows();
+    //shadow = 1.0f;
+    color *= calcDirectionalLight(shadow);
     /*
     for(int i=0;i<numbOfLights;i++)
     {

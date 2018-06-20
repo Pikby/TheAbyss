@@ -10,13 +10,13 @@ out vec4 FragPosLightSpace;
 
 uniform mat4 view;
 uniform mat4 projection;
-uniform mat4 lightSpaceMatrix;
+uniform mat4 lightSpace;
 
 void main()
 {
   TexCoord = texCoord;
   NormVec = normVec;
   FragPos = position;
-  FragPosLightSpace = lightSpaceMatrix*vec4(position,1.0f);
+  FragPosLightSpace = lightSpace*vec4(position,1.0f);
   gl_Position = projection*view*vec4(position, 1.0f);
 }

@@ -17,6 +17,7 @@
 #include "../headers/inputhandling.h"
 #include "../headers/objects.h"
 
+
 //Global maincharacter reference which encapsulates the camera
 static World* newWorld;
 static GLFWwindow* window;
@@ -50,7 +51,7 @@ void initWorld(int numbBuildThreads, int width,  int height)
 {
   //glfwMakeContextCurrent(window);
   newWorld = new World(numbBuildThreads,width,height);
-  mainCharacter = new MainChar(10,70,10,newWorld);
+  mainCharacter = new MainChar(0,50,0,newWorld);
   initializeInputs(mainCharacter);
 
   //newWorld->requestChunk(0,0,0);
@@ -73,7 +74,7 @@ void draw()
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
-  newWorld->createDirectionalLight(glm::vec3(1.0f,1.0f,0));
+  newWorld->createDirectionalLight(glm::vec3(1.0f,1.0f,0),glm::vec3(0.8f,0.8f,0.8f));
   SkyBox skyBox;
   Camera* mainCam = &(mainCharacter->mainCam);
 
@@ -83,41 +84,30 @@ void draw()
     updateInputs();
     //std::cout << newWorld->drawnChunks << "\n";
     newWorld->drawnChunks = 0;
-
-	   // update the delta time each frame
-	 float currentFrame = glfwGetTime();
-    deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
-
-    //Create a time for every second and displays the FPS
-
     glfwPollEvents();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     mainCharacter->update();
-
     glm::mat4 view = mainCam->getViewMatrix();
     newWorld->updateViewMatrix(view,mainCam->getHSRMatrix(),mainCam->getPosition());
-    //glClear(GL_COLOR_BUFFER_BIT);
-    glViewport(0,0,1920,1080);
-    newWorld->drawTerrain();
+
+    newWorld->renderDirectionalShadows();
+    newWorld->drawFinal();
+
     //newWorld->drawObjects();
 
     int error = glGetError();
     if(error != 0)
     {
       std::cout << "OPENGL ERROR" << error << ":" << std::hex << error << "\n";
-      glfwSetWindowShouldClose(window, true);
-      return;
+
     }
-    skyBox.draw(&view);
     mainCharacter->drawHud();
+    skyBox.draw(&view);
+
 
 
     glfwSwapBuffers(window);
 
-
-
-    //std::cout << newWorld->drawnChunks << "\n";
   }
   std::cout << "exiting draw thread \n";
 }
@@ -165,7 +155,7 @@ void logic()
     currentFrame = glfwGetTime();
 
     //DO the game logic
-    newWorld->createMoveRequest(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
+    newWorld->messenger.createMoveRequest(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
   }
 }
 
@@ -173,32 +163,32 @@ void send()
 {
   while(!glfwWindowShouldClose(window))
   {
-    if(newWorld->messageQueue.empty()) continue;
-    newWorld->msgQueueMutex.lock();
-    Message msg = newWorld->messageQueue.front();
-    newWorld->messageQueue.pop();
-    newWorld->msgQueueMutex.unlock();
+    //newWorld->messageQueue.waitForData();
+    if(newWorld->messenger.messageQueue.empty()) continue;
+    Message msg = newWorld->messenger.messageQueue.front();
+    newWorld->messenger.messageQueue.pop();
     uchar opcode = msg.opcode;
+    //std::cout << std::dec <<  "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
     switch(opcode)
     {
       case(0):
-        newWorld->requestChunk(msg.x,msg.y,msg.z);
+        newWorld->messenger.requestChunk(msg.x,msg.y,msg.z);
         break;
       case(1):
-        newWorld->requestDelBlock(msg.x,msg.y,msg.z);
+        newWorld->messenger.requestDelBlock(msg.x,msg.y,msg.z);
         break;
       case(2):
-        newWorld->requestAddBlock(msg.x,msg.y,msg.z,msg.ext1);
+        newWorld->messenger.requestAddBlock(msg.x,msg.y,msg.z,msg.ext1);
         break;
       case(91):
-        newWorld->requestMove(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z);
+        newWorld->messenger.requestMove(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z);
         break;
       default:
-        std::cout << "Sending unknown opcode" << (int)msg.opcode << "\n";
+        std::cout << "Sending unknown opcode" << std::dec << (int)msg.opcode << "\n";
 
     }
   }
-  newWorld->requestExit();
+  newWorld->messenger.requestExit();
   std::cout << "exiting server send thread\n";
 }
 
@@ -206,13 +196,18 @@ void receive()
 {
   while(!glfwWindowShouldClose(window))
   {
-    Message msg = newWorld->receiveAndDecodeMessage();
-  //std::cout << "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
+    Message msg = newWorld->messenger.receiveAndDecodeMessage();
+    //std::cout << std::dec <<  "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
 
     switch(msg.opcode)
     {
       case(0):
-        newWorld->receiveChunk(msg.x,msg.y,msg.z,msg.length);
+        {
+          char* buf = new char[msg.length];
+          newWorld->messenger.receiveMessage(buf,msg.length);
+          newWorld->generateChunkFromString(msg.x,msg.y,msg.z,std::string(buf,msg.length));
+          delete[] buf;
+        }
         break;
       case(1):
         newWorld->delBlock(msg.x,msg.y,msg.z);

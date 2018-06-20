@@ -1,13 +1,31 @@
+#ifdef _WIN32
+  /* See http://stackoverflow.com/questions/12765743/getaddrinfo-on-win32 */
+  #ifndef _WIN32_WINNT
+    #define _WIN32_WINNT 0x0501  /* Windows XP. */
+  #endif
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+#else
+  /* Assume that any non-Windows platform uses POSIX-style sockets instead. */
+  #include <sys/socket.h>
+  #include <arpa/inet.h>
+  #include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
+  #include <unistd.h> /* Needed for close() */
+#endif
+#include <string>
+#include <iostream>
+#include <fstream>
+#include "messenger.h"
 #define PORT 3030
 
-inline int pack4chars(char a,char b,char c,char d)
+inline int pack4chars(char a, char b, char c, char d)
 {
   return ((a << 24) | (b << 16) | (c << 8) | d);
 }
 
-void World::setupSockets(std::string ipAddress)
+void Messenger::setupSockets(std::string ipAddress)
 {
-  ofstream error("outputlog.txt");
+  std::ofstream error("outputlog.txt");
   #ifdef _WIN32
   error << "Doing windows shit\n";
   WSADATA wsa_data;
@@ -79,13 +97,10 @@ void World::setupSockets(std::string ipAddress)
   #endif
   error << "Successfully connected to server" << std::endl;
 
-  if(recv(fd,&mainId,sizeof(mainId),0)<0)
-  {
-    error << "Failed to retrieve id from server\n";
-  }
+
 }
 
-Message World::receiveAndDecodeMessage()
+Message Messenger::receiveAndDecodeMessage()
 {
   int buf[5];
   receiveMessage(buf,sizeof(int)*5);
@@ -98,18 +113,9 @@ Message World::receiveAndDecodeMessage()
 
 }
 
-void World::receiveChunk(int x, int y, int z, int length)
-{
-  //std::cout << "Receiving chunk" << x << ":" << y << ":" << z << "\n";
-  char* buffer = new char[length];
-
-  receiveMessage(buffer,length);
-  generateChunkFromString(x,y,z,std::string(buffer,length));
-  delete[] buffer;
-}
 
 
-void World::requestChunk(int x, int y, int z)
+void Messenger::requestChunk(int x, int y, int z)
 {
   int request[4];
   request[0] = 0;
@@ -127,23 +133,19 @@ void World::requestChunk(int x, int y, int z)
 }
 
 
-void World::createMoveRequest(float x, float y, float z)
+void Messenger::createMoveRequest(float x, float y, float z)
 {
   Message tmp = {91,0,0,0,*(int*)&x,*(int*)&y,*(int*)&z,0};
-  msgQueueMutex.lock();
   messageQueue.push(tmp);
-  msgQueueMutex.unlock();
 }
 
-void World::createAddBlockRequest(int x, int y, int z, uchar id)
+void Messenger::createAddBlockRequest(int x, int y, int z, uchar id)
 {
   Message tmp = {2,id,0,0,x,y,z,0};
-  msgQueueMutex.lock();
   messageQueue.push(tmp);
-  msgQueueMutex.unlock();
 }
 
-void World::requestAddBlock(int x, int y, int z, uchar id)
+void Messenger::requestAddBlock(int x, int y, int z, uchar id)
 {
   int request[4];
   request[0] = pack4chars(2,id,0,0);
@@ -157,15 +159,13 @@ void World::requestAddBlock(int x, int y, int z, uchar id)
   }
 }
 
-void World::createDelBlockRequest(int x, int y, int z)
+void Messenger::createDelBlockRequest(int x, int y, int z)
 {
   Message tmp = {1,0,0,0,x,y,z,0};
-  msgQueueMutex.lock();
   messageQueue.push(tmp);
-  msgQueueMutex.unlock();
 
 }
-void World::requestDelBlock(int x, int y, int z)
+void Messenger::requestDelBlock(int x, int y, int z)
 {
   int request[4];
   request[0] = pack4chars(1,0,0,0);
@@ -180,7 +180,7 @@ void World::requestDelBlock(int x, int y, int z)
   }
 }
 
-void World::requestMove(float x, float y, float z)
+void Messenger::requestMove(float x, float y, float z)
 {
 
   int request[4];
@@ -196,7 +196,7 @@ void World::requestMove(float x, float y, float z)
 }
 
 
-void World::requestExit()
+void Messenger::requestExit()
 {
   int request[4];
   request[0] = 0xFFFFFFFF;
@@ -209,7 +209,7 @@ void World::requestExit()
 }
 
 
-void World::receiveMessage(void *buffer,int length)
+void Messenger::receiveMessage(void *buffer,int length)
 {
   char* buf = (char*)buffer;
   int totalReceived = 0;
@@ -218,21 +218,19 @@ void World::receiveMessage(void *buffer,int length)
     int curReceived = recv(fd,buf+totalReceived,length-totalReceived,0);
     if(curReceived < 0)
     {
-      std::cout << "ERROR: receive chunk." << std::endl;
+      std::cout << "ERROR: receiving message." << std::endl;
     }
     totalReceived += curReceived;
 
   }
 }
 
-void World::createChunkRequest(int x, int y, int z)
+void Messenger::createChunkRequest(int x, int y, int z)
 {
   if(!requestMap.exists(x,y,z))
   {
     Message tmp = {0,0,0,0,x,y,z,0};
-    msgQueueMutex.lock();
     messageQueue.push(tmp);
-    msgQueueMutex.unlock();
     requestMap.add(x,y,z,true);
-  }
+}
 }

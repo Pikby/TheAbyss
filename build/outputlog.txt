@@ -1,0 +1,3 @@
+Doing linux shit
+Successfully created socket.
+Successfully connected to server
