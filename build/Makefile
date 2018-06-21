@@ -30,7 +30,7 @@ TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEng
 
 
 
-COBJECTLIST = csettings.o ctextureloading.o cmain.o cworld.o cmessenger.o cobjects.o cthreads.o \
+COBJECTLIST = csettings.o cdrawer.o ctextureloading.o cmain.o cworld.o cmessenger.o cobjects.o cthreads.o \
 							cbsp.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cinputhandling.o \
 							citems.o
 SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o
@@ -78,6 +78,9 @@ cbsp.o: $(ME)/bsp.cpp
 
 cmessenger.o: $(ME)/messenger.cpp
 	$(OFLAGS) $(ME)/messenger.cpp -o cmessenger.o
+
+cdrawer.o: $(ME)/drawer.cpp
+	$(OFLAGS) $(ME)/drawer.cpp -o cdrawer.o
 # Character
 CH = ../src/Character
 
@@ -102,7 +105,7 @@ cinputhandling.o: $(IO)/inputhandling.cpp
 	$(OFLAGS) $(IO)/inputhandling.cpp -o cinputhandling.o
 
 #Inventory
-IT = ../src/Inventory
+IT = ../src/Objects
 citems.o: $(IT)/items.cpp
 	$(OFLAGS) $(IT)/items.cpp -o citems.o
 

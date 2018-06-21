@@ -1,9 +1,86 @@
-void World::addCube(Cube newCube)
+#define GLEW_STATIC
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "include/drawer.h"
+#include "../TextureLoading/textureloading.h"
+
+void Drawer::setupShadersAndTextures(int width, int height)
+{
+  const char* texture = "../assets/textures/atlas.png";
+  glGenTextures(1, &glTexture);
+  glBindTexture(GL_TEXTURE_2D, glTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+  //Load and bind the texture from the class
+  int texWidth, texHeight, nrChannels;
+  unsigned char* image = loadTexture(texture, &texWidth,&texHeight,&nrChannels);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight,0,GL_RGBA, GL_UNSIGNED_BYTE, image);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  freeTexture(image);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+
+  glm::mat4 projectMat = glm::perspective(glm::radians(45.0f),
+                  (float)width/ (float)height, 0.1f, 100.0f);
+  screenWidth = width;
+  screenHeight = height;
+
+  objShader        = Shader("../src/Shaders/entShader.vs",
+                            "../src/Shaders/entShader.fs");
+  objShader.use();
+  objShader.setInt("curTexture",0);
+  objShader.setInt("dirLight.shadow",4);
+  objShader.setInt("pointLights[0].shadow",5);
+  objShader.setInt("pointLights[1].shadow",6);
+  objShader.setFloat("far_plane",25.0f);
+
+  blockShader = Shader("../src/Shaders/shaderBSP.vs","../src/Shaders/shaderBSP.fs");
+  blockShader.use();
+  blockShader.setInt("curTexture",0);
+  blockShader.setInt("dirLight.shadow",4);
+  blockShader.setInt("pointLights[0].shadow",5);
+  blockShader.setInt("pointLights[1].shadow",6);
+  blockShader.setMat4("projection",projectMat);
+  blockShader.setFloat("far_plane",25.0f);
+  debugDepthQuad = Shader("../src/Shaders/old/debugQuad.vs", "../src/Shaders/old/debugQuad.fs");
+  debugDepthQuad.use();
+  debugDepthQuad.setInt("depthMap", 0);
+  debugDepthQuad.use();
+  debugDepthQuad.setFloat("near_plane", -1.0f);
+  debugDepthQuad.setFloat("far_plane", (vertRenderDistance+renderBuffer+1)*CHUNKSIZE*2);
+
+  dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
+                            "../src/Shaders/dirDepthShader.vs");
+
+  glm::mat4 model;
+  model = glm::translate(model,glm::vec3(0.0,0.0,0.0));
+  dirDepthShader.setMat4("model",model);
+  pointDepthShader = Shader("../src/Shaders/pointDepthShader.fs",
+                            "../src/Shaders/pointDepthShader.vs",
+                            "../src/Shaders/pointDepthShader.gs");
+}
+
+void Drawer::setRenderDistances(int vert, int horz, int buffer)
+{
+  vertRenderDistance = vert;
+  horzRenderDistance = horz;
+  renderBuffer = buffer;
+}
+void Drawer::addCube(Cube newCube)
 {
   objList.push_back(std::make_shared<Cube>(newCube));
 }
 
-void World::renderDirectionalDepthMap()
+void Drawer::renderDirectionalDepthMap()
 {
 
   const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
@@ -29,7 +106,7 @@ void World::renderDirectionalDepthMap()
 
 }
 
-void World::renderPointDepthMap(int id)
+void Drawer::renderPointDepthMap(int id)
 {
   PointLight* light = &(lightList[id]);
   glGenFramebuffers(1,&(light->depthMapFBO));
@@ -67,7 +144,7 @@ void World::renderPointDepthMap(int id)
 }
 
 
-void World::setLights(Shader* shader)
+void Drawer::setLights(Shader* shader)
 {
 
   shader->setVec3("dirLight.direction", dirLight.direction);
@@ -120,7 +197,7 @@ void renderQuad()
     glBindVertexArray(0);
 }
 
-void World::renderDirectionalShadows()
+void Drawer::renderDirectionalShadows()
 {
   const int PI = 3.14159265;
   double sunAngle = 80;
@@ -156,7 +233,7 @@ void World::renderDirectionalShadows()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 }
-void World::bindDirectionalShadows(Shader* shader)
+void Drawer::bindDirectionalShadows(Shader* shader)
 {
   glActiveTexture(GL_TEXTURE4);
 
@@ -165,7 +242,7 @@ void World::bindDirectionalShadows(Shader* shader)
   shader->setMat4("lightSpace",dirLight.lightSpaceMat);
 }
 
-void World::renderPointShadows()
+void Drawer::renderPointShadows()
 {
   pointDepthShader.use();
 
@@ -186,7 +263,7 @@ void World::renderPointShadows()
   }
 }
 
-void World::bindPointShadows()
+void Drawer::bindPointShadows()
 {
   objShader.use();
   unsigned int numbOfLights = lightList.size();
@@ -198,7 +275,7 @@ void World::bindPointShadows()
   }
 }
 
-void World::drawObjects()
+void Drawer::drawObjects()
 {
   glViewport(0,0,1280,720);
   objShader.use();
@@ -211,8 +288,8 @@ void World::drawObjects()
   }
 }
 
-
-void World::drawPlayers(Shader* shader)
+/*
+void Drawer::drawPlayers(Shader* shader)
 {
   //std::cout << "Map has: " << playerList.size() << "\n";
   for(auto it = playerList.begin(); it != playerList.end();it++)
@@ -220,8 +297,8 @@ void World::drawPlayers(Shader* shader)
     it->second->draw(shader);
   }
 }
-
-void World::drawFinal()
+*/
+void Drawer::drawFinal()
 {
   debugDepthQuad.use();
   glViewport(0,0,200,200);
@@ -246,10 +323,10 @@ void World::drawFinal()
   shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
   shader->setVec3("viewPos", viewPos);
   drawTerrain(shader,true);
-
 }
 
-void World::drawTerrain(Shader* shader, bool useHSR)
+
+void Drawer::drawTerrain(Shader* shader, bool useHSR)
 {
   /*
   Iterates through all the chunks and draws them unless they're marked for destruciton

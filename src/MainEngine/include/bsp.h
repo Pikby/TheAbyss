@@ -4,11 +4,17 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
-#include "world.h"
-#include "items.h"
+#include <vector>
+#include <mutex>
+#include "../../headers/shaders.h"
 
+
+typedef unsigned char uchar;
+#define CHUNKSIZE 32
 
 //Class which holds the data for each individual chunk
+class BSPNode;
+
 class BSP
 {
 private:

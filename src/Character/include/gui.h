@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../headers/shaders.h"
+#include "../../headers/shaders.h"
 struct Character
 {
     GLuint textureID;

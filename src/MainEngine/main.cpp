@@ -3,8 +3,8 @@
 #include <GLFW/glfw3.h>
 #include <thread>
 #include <iostream>
-#include "../headers/threads.h"
-#include "../headers/inputhandling.h"
+#include "include/threads.h"
+#include "../InputHandling/include/inputhandling.h"
 #include "../Settings/settings.h"
 int main()
 {
@@ -24,7 +24,7 @@ int main()
   glfwSetMouseButtonCallback(newWindow, mousekey_callback);
   glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
- 
+
   glfwSwapInterval(0);//FPS Capping
   //Intialize glew and all related settings
 

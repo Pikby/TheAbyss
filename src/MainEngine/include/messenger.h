@@ -1,7 +1,7 @@
 #pragma once
 #define PORT 3030
-#include "../headers/threadSafeQueue.h"
-#include "../headers/3dmap.h"
+#include "../../headers/threadSafeQueue.h"
+#include "../../headers/3dmap.h"
 typedef unsigned char uchar;
 struct Message
 {

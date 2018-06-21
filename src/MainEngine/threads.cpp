@@ -12,10 +12,10 @@
 #include <chrono>
 
 #include "../headers/shaders.h"
-#include "../headers/world.h"
-#include "../headers/mainchar.h"
-#include "../headers/inputhandling.h"
-#include "../headers/objects.h"
+#include "include/world.h"
+#include "../Character/include/mainchar.h"
+#include "../InputHandling/include/inputhandling.h"
+#include "../Objects/include/objects.h"
 
 
 //Global maincharacter reference which encapsulates the camera
@@ -74,7 +74,7 @@ void draw()
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
-  newWorld->createDirectionalLight(glm::vec3(1.0f,1.0f,0),glm::vec3(0.8f,0.8f,0.8f));
+  newWorld->drawer.createDirectionalLight(glm::vec3(1.0f,1.0f,0),glm::vec3(0.8f,0.8f,0.8f));
   SkyBox skyBox;
   Camera* mainCam = &(mainCharacter->mainCam);
 
@@ -88,10 +88,10 @@ void draw()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     mainCharacter->update();
     glm::mat4 view = mainCam->getViewMatrix();
-    newWorld->updateViewMatrix(view,mainCam->getHSRMatrix(),mainCam->getPosition());
+    newWorld->drawer.updateViewMatrix(view,mainCam->getHSRMatrix(),mainCam->getPosition());
 
-    newWorld->renderDirectionalShadows();
-    newWorld->drawFinal();
+    newWorld->drawer.renderDirectionalShadows();
+    newWorld->drawer.drawFinal();
 
     //newWorld->drawObjects();
 
@@ -101,13 +101,11 @@ void draw()
       std::cout << "OPENGL ERROR" << error << ":" << std::hex << error << "\n";
 
     }
-    mainCharacter->drawHud();
     skyBox.draw(&view);
 
-
+    mainCharacter->drawHud();
 
     glfwSwapBuffers(window);
-
   }
   std::cout << "exiting draw thread \n";
 }

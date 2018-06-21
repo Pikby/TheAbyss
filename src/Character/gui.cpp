@@ -17,7 +17,7 @@
 
 #include "../headers/shaders.h"
 #include "../headers/camera.h"
-#include "../headers/gui.h"
+#include "include/gui.h"
 
 
 

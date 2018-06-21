@@ -8,7 +8,8 @@
 
 // GLFW
 #include <GLFW/glfw3.h>
-#include "../headers/bsp.h"
+#include "include/bsp.h"
+#include "../Objects/include/items.h"
 
 int totalChunks;
 

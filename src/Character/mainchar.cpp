@@ -6,9 +6,9 @@
 #include <map>
 #include <string>
 #include <glm/glm.hpp>
-#include "../headers/world.h"
+#include "../MainEngine/include/world.h"
 #include "../headers/shaders.h"
-#include "../headers/mainchar.h"
+#include "include/mainchar.h"
 
 #define PI 3.14159265
 
@@ -84,8 +84,8 @@ MainChar::MainChar(float x, float y, float z, World* world )
   curWorld = world;
   mainCam = Camera(glm::vec3(xpos,ypos,zpos));
   calculateHud();
-  screenWidth = curWorld->screenWidth;
-  screenHeight = curWorld->screenHeight;
+  screenWidth = curWorld->drawer.screenWidth;
+  screenHeight = curWorld->drawer.screenHeight;
   gui = GUIRenderer(screenWidth,screenHeight);
   std::cout << screenWidth << "\n" << screenHeight <<"\n";
 

@@ -6,9 +6,9 @@
 #include <glm/glm.hpp>
 #include <math.h>
 
-#include "../headers/mainchar.h"
-#include "../headers/world.h"
-
+#include "../Character/include/mainchar.h"
+#include "../MainEngine/include/world.h"
+#include "../MainEngine/include/threads.h"
 // timing
 static float deltaTime = 0.0f;	// time between current frame and last frame
 static float lastFrame = 0.0f;
@@ -20,7 +20,7 @@ static bool firstMouse = true;
 static MainChar* mainCharacter;
 std::map<int,int> keyMap;
 
-#include "../headers/threads.h"
+
 
 void initializeInputs(MainChar* mc)
 {

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include "../headers/items.h"
+#include "include/items.h"
 
 Block* ItemDatabase::blockDictionary;
 /*

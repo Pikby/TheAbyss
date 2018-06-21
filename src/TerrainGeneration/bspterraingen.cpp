@@ -1,5 +1,5 @@
-#include "../headers/bsp.h"
-#include "../headers/FastNoise.h"
+#include "../MainEngine/include/bsp.h"
+#include "include/FastNoise.h"
 
 int seed;
 //Perlin noise object

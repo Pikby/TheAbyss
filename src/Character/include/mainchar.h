@@ -1,6 +1,6 @@
 #pragma once
-#include "../headers/gui.h"
-#include "../headers/camera.h"
+#include "gui.h"
+#include "../../headers/camera.h"
 class World;
 
 class Item;

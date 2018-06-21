@@ -7,67 +7,27 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <boost/filesystem.hpp>
-#include "../headers/world.h"
-#include "../headers/bsp.h"
-#include "../headers/objects.h"
+#include "include/world.h"
+#include "include/bsp.h"
 #include "../Settings/settings.h"
 
 
 #include "../TextureLoading/textureloading.h"
 
-#include "messenger.h"
-#include "worldDrawingEngine.h"
+#include "include/messenger.h"
+#include "../Objects/include/items.h"
+//#include "worldDrawingEngine.h"
 
 
 World::World(int numbBuildThreads,int width,int height)
 {
-
+  drawer.frontNode = NULL;
   typedef std::queue<std::shared_ptr<BSPNode>> buildType;
   buildQueue = new buildType[numbBuildThreads];
   numbOfThreads = numbBuildThreads;
-  glm::mat4 projectMat = glm::perspective(glm::radians(45.0f),
-                  (float)width/ (float)height, 0.1f, 100.0f);
-  screenWidth = width;
-  screenHeight = height;
-
-  objShader        = Shader("../src/Shaders/entShader.vs",
-                            "../src/Shaders/entShader.fs");
-  objShader.use();
-  objShader.setInt("curTexture",0);
-  objShader.setInt("dirLight.shadow",4);
-  objShader.setInt("pointLights[0].shadow",5);
-  objShader.setInt("pointLights[1].shadow",6);
-  objShader.setFloat("far_plane",25.0f);
 
 
 
-
-  blockShader = Shader("../src/Shaders/shaderBSP.vs","../src/Shaders/shaderBSP.fs");
-  blockShader.use();
-  blockShader.setInt("curTexture",0);
-  blockShader.setInt("dirLight.shadow",4);
-  blockShader.setInt("pointLights[0].shadow",5);
-  blockShader.setInt("pointLights[1].shadow",6);
-  blockShader.setMat4("projection",projectMat);
-  blockShader.setFloat("far_plane",25.0f);
-  debugDepthQuad = Shader("../src/Shaders/old/debugQuad.vs", "../src/Shaders/old/debugQuad.fs");
-  debugDepthQuad.use();
-  debugDepthQuad.setInt("depthMap", 0);
-  debugDepthQuad.use();
-  debugDepthQuad.setFloat("near_plane", -1.0f);
-  debugDepthQuad.setFloat("far_plane", (vertRenderDistance+renderBuffer+1)*CHUNKSIZE*2);
-
-  dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
-                            "../src/Shaders/dirDepthShader.vs");
-
-  glm::mat4 model;
-  model = glm::translate(model,glm::vec3(0.0,0.0,0.0));
-  dirDepthShader.setMat4("model",model);
-  pointDepthShader = Shader("../src/Shaders/pointDepthShader.fs",
-                            "../src/Shaders/pointDepthShader.vs",
-                            "../src/Shaders/pointDepthShader.gs");
-
-  const char* texture = "../assets/textures/atlas.png";
   ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
 
   Settings::print();
@@ -89,30 +49,18 @@ World::World(int numbBuildThreads,int width,int height)
   boost::filesystem::create_directory("saves/"+worldName+"/chunks");
 
   drawnChunks = 0;
-  frontNode = NULL;
+
 
   totalChunks = 0;
 
-  glGenTextures(1, &glTexture);
-  glBindTexture(GL_TEXTURE_2D, glTexture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-
-  //Load and bind the texture from the class
-  int texWidth, texHeight, nrChannels;
-  unsigned char* image = loadTexture(texture, &texWidth,&texHeight,&nrChannels);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight,0,GL_RGBA, GL_UNSIGNED_BYTE, image);
-  glGenerateMipmap(GL_TEXTURE_2D);
-
-  freeTexture(image);
-  glBindTexture(GL_TEXTURE_2D, 0);
 
   messenger.setupSockets(ipAddress);
   messenger.receiveMessage(&mainId,sizeof(mainId));
+  drawer.setupShadersAndTextures(width,height);
+  drawer.setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
 }
+
 
 
 void World::movePlayer(float x, float y, float z, uchar id)
@@ -154,15 +102,15 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,const std
   std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName,value));
   BSPmap.add(chunkx,chunky,chunkz,tempChunk);
 
-  if(frontNode == NULL)
+  if(drawer.frontNode == NULL)
   {
-    frontNode = tempChunk;
+    drawer.frontNode = tempChunk;
   }
   else
   {
-    tempChunk->nextNode = frontNode;
-    frontNode->prevNode = tempChunk;
-    frontNode = tempChunk;
+    tempChunk->nextNode = drawer.frontNode;
+    drawer.frontNode->prevNode = tempChunk;
+    drawer.frontNode = tempChunk;
   }
 
 
@@ -260,15 +208,15 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   messenger.requestChunk(chunkx,chunky,chunkz);
   std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName));
   BSPmap.add(chunkx,chunky,chunkz,tempChunk);
-  if(frontNode == NULL)
+  if(drawer.frontNode == NULL)
   {
-    frontNode = tempChunk;
+    drawer.frontNode = tempChunk;
   }
   else
   {
-    tempChunk->nextNode = frontNode;
-    frontNode->prevNode = tempChunk;
-    frontNode = tempChunk;
+    tempChunk->nextNode = drawer.frontNode;
+    drawer.frontNode->prevNode = tempChunk;
+    drawer.frontNode = tempChunk;
   }
 
 
@@ -446,7 +394,8 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
     however this time referencing the current position of the player
     and raises the destroy flag if its out of a certain range
   */
-  std::shared_ptr<BSPNode>  curNode = frontNode;
+
+  std::shared_ptr<BSPNode>  curNode = drawer.frontNode;
   while(curNode != NULL)
   {
     int x = round(*mainx);
@@ -473,7 +422,7 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
 
 void World::saveWorld()
 {
-    std::shared_ptr<BSPNode>  curNode = frontNode;
+    std::shared_ptr<BSPNode>  curNode = drawer.frontNode;
     while(curNode != NULL)
     {
       curNode->saveChunk();

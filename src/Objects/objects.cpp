@@ -1,4 +1,4 @@
-#include "../headers/objects.h"
+#include "include/objects.h"
 #include "../headers/camera.h"
 #include "../TextureLoading/textureloading.h"
 #include <GL/glew.h>
