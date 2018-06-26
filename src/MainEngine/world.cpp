@@ -36,6 +36,7 @@ World::World(int numbBuildThreads,int width,int height)
     horzRenderDistance = std::stoi(Settings::get("horzRenderDistance"));
     vertRenderDistance = std::stoi(Settings::get("vertRenderDistance"));
     renderBuffer = std::stoi(Settings::get("renderBuffer"));
+    drawer.directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
   }
   catch(...)
   {
@@ -59,6 +60,7 @@ World::World(int numbBuildThreads,int width,int height)
   messenger.receiveMessage(&mainId,sizeof(mainId));
   drawer.setupShadersAndTextures(width,height);
   drawer.setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
+  drawer.updateViewProjection(45.0f,0.1f,(horzRenderDistance)*CHUNKSIZE);
 }
 
 

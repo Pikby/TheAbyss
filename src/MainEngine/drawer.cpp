@@ -28,9 +28,6 @@ void Drawer::setupShadersAndTextures(int width, int height)
   freeTexture(image);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-
-  glm::mat4 projectMat = glm::perspective(glm::radians(45.0f),
-                  (float)width/ (float)height, 0.1f, 100.0f);
   screenWidth = width;
   screenHeight = height;
 
@@ -49,20 +46,17 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader.setInt("dirLight.shadow",4);
   blockShader.setInt("pointLights[0].shadow",5);
   blockShader.setInt("pointLights[1].shadow",6);
-  blockShader.setMat4("projection",projectMat);
   blockShader.setFloat("far_plane",25.0f);
   debugDepthQuad = Shader("../src/Shaders/old/debugQuad.vs", "../src/Shaders/old/debugQuad.fs");
   debugDepthQuad.use();
   debugDepthQuad.setInt("depthMap", 0);
-  debugDepthQuad.use();
   debugDepthQuad.setFloat("near_plane", -1.0f);
   debugDepthQuad.setFloat("far_plane", (vertRenderDistance+renderBuffer+1)*CHUNKSIZE*2);
 
   dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
                             "../src/Shaders/dirDepthShader.vs");
-
+  dirDepthShader.use();
   glm::mat4 model;
-  model = glm::translate(model,glm::vec3(0.0,0.0,0.0));
   dirDepthShader.setMat4("model",model);
   pointDepthShader = Shader("../src/Shaders/pointDepthShader.fs",
                             "../src/Shaders/pointDepthShader.vs",
@@ -83,13 +77,13 @@ void Drawer::addCube(Cube newCube)
 void Drawer::renderDirectionalDepthMap()
 {
 
-  const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+
   glGenFramebuffers(1, &dirLight.depthMapFBO);
   glGenTextures(1, &dirLight.depthMap);
 
   glBindTexture(GL_TEXTURE_2D, dirLight.depthMap);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-               SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+               directionalShadowResolution,directionalShadowResolution, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -113,12 +107,13 @@ void Drawer::renderPointDepthMap(int id)
   glGenTextures(1,&(light->depthCubemap));
   glBindTexture(GL_TEXTURE_CUBE_MAP, light->depthCubemap);
 
-  const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
+
+  float SHADOW_RES = 1024;
   for(int i =0;i<6;i++)
   {
     glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0,GL_DEPTH_COMPONENT,
-                 SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+                 SHADOW_RES, SHADOW_RES, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
   }
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -203,27 +198,38 @@ void Drawer::renderDirectionalShadows()
   double sunAngle = 80;
   int distToSun = (vertRenderDistance/2+1)*CHUNKSIZE;
   //Makes sure the light is always at the correct angle above the player
-  glm::vec3 lightPos;
-  lightPos.x = cos(sunAngle*PI/180)*distToSun+viewPos.x;
-  lightPos.y = sin(sunAngle*PI/180)*distToSun+viewPos.y;
-  lightPos.z = viewPos.z;
-  float camNear = -1;
-  float camFar = distToSun*2;
+
+  float shadowNear = -1;
+  float shadowFar = distToSun*2;
   glm::mat4 lightProjection,lightView, lightSpaceMatrix;
-  float orthoSize = (3)*CHUNKSIZE;
-  lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize,orthoSize,camNear, camFar);
+
+
+
+  glm::vec3 dir = glm::normalize(glm::vec3(viewDir.x,0,viewDir.z));
+  float dist = (camFar/2.0f);
+  dir *= dist;
+  glm::vec3 lightPos;
+  lightPos.x = dir.x +viewPos.x;
+  lightPos.y = viewPos.y+30.0f;
+  lightPos.z = dir.z +viewPos.z;
+  glm::vec3 lightTarget = lightPos;
+  lightTarget.x += 1;
+  lightTarget.z += 1;
+  lightTarget.y -=30;
+
+  lightProjection = glm::ortho(-dist, dist, -dist,dist,shadowNear, shadowFar);
   lightView  = glm::lookAt(lightPos,
-                                    viewPos,
+                                    lightTarget,
                                     glm::vec3(0.0f,1.0f,0.0f));
   dirLight.lightSpaceMat = lightProjection * lightView;
 
-  debugDepthQuad.setFloat("near_plane", camNear);
-  debugDepthQuad.setFloat("far_plane", camFar);
+  debugDepthQuad.use();
+  debugDepthQuad.setFloat("near_plane", shadowNear);
+  debugDepthQuad.setFloat("far_plane", shadowFar);
 
   dirDepthShader.use();
   dirDepthShader.setMat4("lightSpace",dirLight.lightSpaceMat);
-  dirDepthShader.setMat4("model",glm::mat4(1.0f));
-  glViewport(0,0,1024,1024);
+  glViewport(0,0,directionalShadowResolution,directionalShadowResolution);
   glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
      glActiveTexture(GL_TEXTURE0);
@@ -249,7 +255,7 @@ void Drawer::renderPointShadows()
   for(int i=0;i<objList.size();i++)
   {
     PointLight* light = &(lightList[i]);
-    glViewport(0, 0, 1024, 1024);
+    glViewport(0, 0, directionalShadowResolution, directionalShadowResolution);
     glBindFramebuffer(GL_FRAMEBUFFER,light->depthMapFBO);
       glClear(GL_DEPTH_BUFFER_BIT);
       pointDepthShader.setVec3("lightPos",light->position);
@@ -314,17 +320,36 @@ void Drawer::drawFinal()
   setLights(shader);
   bindDirectionalShadows(shader);
 
-
-  viewProj = glm::perspective(glm::radians(45.0f),
-                            (float)screenWidth/ (float)screenHeight, 1.0f,
-                            (float)(horzRenderDistance-2)*CHUNKSIZE);
-  shader->setMat4("projection",viewProj);
   shader->setMat4("view", viewMat);
   shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
   shader->setVec3("viewPos", viewPos);
   drawTerrain(shader,true);
 }
 
+void Drawer::updateViewProjection(float camZoom,float near,float far)
+{
+
+  camZoomInDegrees = camZoom;
+  camNear = near == 0 ? camNear : near;
+  camFar  = far  == 0 ? camFar  : far;
+  viewProj = glm::perspective(glm::radians(camZoom),
+                              (float)screenWidth/(float)screenHeight,
+                              camNear,camFar);
+  objShader.use();
+  objShader.setMat4("projection",viewProj);
+  blockShader.use();
+  blockShader.setMat4("projection",viewProj);
+}
+
+void Drawer::updateCameraMatrices(Camera* cam)
+{
+
+  viewMat = cam->getViewMatrix();
+  hsrMat = cam->getHSRMatrix();
+  viewPos = cam->getPosition();
+  viewDir = cam->front;
+
+}
 
 void Drawer::drawTerrain(Shader* shader, bool useHSR)
 {

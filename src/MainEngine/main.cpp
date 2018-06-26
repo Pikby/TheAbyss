@@ -9,11 +9,7 @@
 int main()
 {
   glfwInit();
-
   const int numbBuildThreads = 1;
-
-
-
   int winWidth = std::stoi(Settings::get("windowWidth"));
   int winHeight = std::stoi(Settings::get("windowHeight"));
   GLFWwindow* newWindow = createWindow(winWidth,winHeight);

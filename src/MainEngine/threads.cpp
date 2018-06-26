@@ -35,8 +35,12 @@ GLFWwindow* createWindow(int width, int height)
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   //Create the window
+  std::cout << width << ":" << height << "\n";
   window = glfwCreateWindow(width, height, "Prototype 1.000", nullptr, nullptr);
-
+  if(window == NULL)
+  {
+    std::cout << "Window creation failed\n";
+  }
   int error = glGetError();
   if(error != 0)
   {
@@ -74,7 +78,7 @@ void draw()
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
-  newWorld->drawer.createDirectionalLight(glm::vec3(1.0f,1.0f,0),glm::vec3(0.8f,0.8f,0.8f));
+  newWorld->drawer.createDirectionalLight(glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.8f,0.8f,0.8f));
   SkyBox skyBox;
   Camera* mainCam = &(mainCharacter->mainCam);
 
@@ -88,7 +92,7 @@ void draw()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     mainCharacter->update();
     glm::mat4 view = mainCam->getViewMatrix();
-    newWorld->drawer.updateViewMatrix(view,mainCam->getHSRMatrix(),mainCam->getPosition());
+    newWorld->drawer.updateCameraMatrices(mainCam);
 
     newWorld->drawer.renderDirectionalShadows();
     newWorld->drawer.drawFinal();

@@ -1,5 +1,6 @@
 #include "bsp.h"
 #include "../../Objects/include/objects.h"
+#include "../../headers/camera.h"
 struct PointLight
 {
   glm::vec3 position;
@@ -15,7 +16,7 @@ struct PointLight
   float quadratic;
 
   glm::mat4 shadowTransform[6];
-  unsigned int depthMapFBO,depthCubemap;
+  uint depthMapFBO,depthCubemap;
 };
 struct DirLight
 {
@@ -25,7 +26,7 @@ struct DirLight
   glm::vec3 specular;
 
   glm::mat4 lightSpaceMat;
-  unsigned int depthMapFBO,depthMap;
+  uint depthMapFBO,depthMap;
 
 };
 
@@ -47,12 +48,20 @@ private:
   glm::mat4 hsrMat;
   glm::mat4 viewMat;
   glm::vec3 viewPos;
+  glm::vec3 viewDir;
+
+
+  float camZoomInDegrees;
+  float camNear;
+  float camFar;
 
   Shader objShader,dirDepthShader,pointDepthShader,blockShader;
   Shader debugDepthQuad;
 public:
+  float directionalShadowResolution;
   int screenWidth,screenHeight;
   std::shared_ptr<BSPNode> frontNode;
+  void updateViewProjection(float camZoom,float near=0, float far=0);
   void setupShadersAndTextures(int screenWidth, int screenHeight);
   void setRenderDistances(int vert,int horz,int buffer);
   void renderDirectionalDepthMap();
@@ -63,17 +72,11 @@ public:
   void renderPointShadows();
   void bindPointShadows();
   void setLights(Shader* shader);
-  void setupSockets(std::string ipAddress);
   void addCube(Cube newCube);
   std::shared_ptr<Object> getObject(int id) {return objList[id];}
   void drawObjects();
   void drawFinal();
-  void updateViewMatrix(glm::mat4 viewMatrix,glm::mat4 hsrMatrix,glm::vec3 viewPosition)
-  {
-    viewMat = viewMatrix;
-    hsrMat = hsrMatrix;
-    viewPos = viewPosition;
-  }
+  void updateCameraMatrices(Camera* cam);
   void addLight(glm::vec3 pos,
            glm::vec3 amb = glm::vec3(0.2f,0.2f,0.2f),
            glm::vec3 spe = glm::vec3(1.0f,1.0f,1.0f),
