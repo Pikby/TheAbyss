@@ -7,13 +7,34 @@
 #include <vector>
 #include <mutex>
 #include "../../headers/shaders.h"
-
+#include "../../headers/3darray.h"
 
 typedef unsigned char uchar;
 #define CHUNKSIZE 32
 
 //Class which holds the data for each individual chunk
 class BSPNode;
+
+
+enum Sides {LEFT = 1,RIGHT = (1 << 1),
+            UP = (1<<2), DOWN = (1<<3),
+            FRONT = (1<<4), BACK = (1<<5)};
+struct BlockFaces
+{
+  char block;
+  BlockFaces()
+  {
+    block=0;
+  }
+  bool get(Sides side)
+  {
+    return block & side != 0 ? true : false;
+  }
+  void set(Sides side)
+  {
+    block |= side;
+  }
+};
 
 class BSP
 {
@@ -38,7 +59,7 @@ private:
   int addVertex(int renderType, const glm::vec3 &pos,const glm::vec3 &norm, float texX, float texY);
   void addIndices(int renderType,int index1, int index2, int index3, int index4);
 
-  unsigned char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
+  Array3D<uchar, CHUNKSIZE> worldArray;
 
 public:
   int xCoord;
@@ -55,7 +76,7 @@ public:
   void freeGL();
   bool blockExists(int x,int y,int z);
   int blockVisibleType(int x, int y, int z);
-  int getBlock(int x, int y, int z);
+  uchar getBlock(int x, int y, int z);
   void delBlock(int x, int y, int z);
   void saveChunk();
   std::string compressChunk();

@@ -148,7 +148,6 @@ BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
   xCoord = x;
   yCoord = y;
   zCoord = z;
-  for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
   using namespace std;
   worldName = wName;
 
@@ -175,7 +174,7 @@ BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
       {
         std::cout << "ERROR CORRUPTED CHUNK AT " << x << ":" << y << ":" << z <<"\n";
       }
-      worldMap[i+j] = curId;
+      worldArray[i+j] = curId;
     }
     i+= curLength;
   }
@@ -200,7 +199,6 @@ BSP::BSP(int x, int y, int z,const std::string &wName)
     yCoord = y;
     zCoord = z;
     worldName = wName;
-    for(int x = 0;x<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;x++) worldMap[x] = 0;
     //Intialize Buffers
 
     using namespace std;
@@ -239,7 +237,7 @@ BSP::BSP(int x, int y, int z,const std::string &wName)
 
         for(int j = 0; j<curLength; j++)
         {
-          worldMap[i+j] = curId;
+          worldArray[i+j] = curId;
         }
         i+= curLength;
       }
@@ -267,10 +265,10 @@ inline std::string BSP::compressChunk()
     ostringstream chunk(ios::binary);
     unsigned int curTotal = 1;
     int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
-    char lastId = worldMap[0];
+    char lastId = worldArray[0];
     for(int i = 1; i<numbOfBlocks;i++)
     {
-      if(lastId == worldMap[i])
+      if(lastId == worldArray[i])
       {
         curTotal++;
       }
@@ -279,7 +277,7 @@ inline std::string BSP::compressChunk()
         chunk.write((char*) &lastId,sizeof(lastId));
         chunk.write((char*) &curTotal,sizeof(curTotal));
         curTotal = 1;
-        lastId = worldMap[i];
+        lastId = worldArray[i];
       }
     }
     chunk.write((char*) &lastId,sizeof(lastId));
@@ -300,11 +298,11 @@ inline void BSP::saveChunk()
   int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
   ofstream ochunk(chunkPath,ios::binary);
   unsigned int curTotal = 1;
-  char lastId = worldMap[0];
+  char lastId = worldArray[0];
 
   for(int i = 1; i<numbOfBlocks;i++)
   {
-    if(lastId == worldMap[i])
+    if(lastId == worldArray[i])
     {
       curTotal++;
     }
@@ -313,7 +311,7 @@ inline void BSP::saveChunk()
       ochunk.write((char*) &lastId,sizeof(lastId));
       ochunk.write((char*) &curTotal,sizeof(curTotal));
       curTotal = 1;
-      lastId = worldMap[i];
+      lastId = worldArray[i];
     }
   }
   ochunk.write((char*) &lastId,sizeof(lastId));
@@ -410,9 +408,7 @@ inline void BSP::addIndices(int renderType,int index1, int index2, int index3, i
 
 inline bool BSP::blockExists(int x, int y, int z)
 {
-  int id = worldMap[(int)x+CHUNKSIZE*(int)y+(int)z*CHUNKSIZE*CHUNKSIZE];
-  if(id == 0 ) return false;
-  else return true;
+  return worldArray.get(x,y,z) == 0 ? false : true;
 }
 
 inline int BSP::blockVisibleType(int x, int y, int z)
@@ -422,18 +418,18 @@ inline int BSP::blockVisibleType(int x, int y, int z)
 
 void BSP::addBlock(int x, int y, int z, char id)
 {
-  worldMap[x+y*CHUNKSIZE+z*CHUNKSIZE*CHUNKSIZE] = id;
+  worldArray.set(x,y,z,id);
 }
 
 inline void BSP::delBlock(int x, int y, int z)
 {
-  worldMap[x + y*CHUNKSIZE + z*CHUNKSIZE*CHUNKSIZE] = 0;
+  worldArray.set(x,y,z,0);
 
 }
 
-inline int BSP::getBlock(int x, int y, int z)
+inline uchar BSP::getBlock(int x, int y, int z)
 {
-  return worldMap[x+y*CHUNKSIZE+z*CHUNKSIZE*CHUNKSIZE];
+  return worldArray.get(x,y,z);
 }
 
 inline glm::vec3 BSP::offset(float x, float y, float z)
@@ -456,6 +452,8 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
   oIndicesBuffer->clear();
   tVerticesBuffer->clear();
   tIndicesBuffer->clear();
+
+  Array3D<BlockFaces,CHUNKSIZE> faceArray;
 
   for(int x = 0; x<CHUNKSIZE;x++)
   {
