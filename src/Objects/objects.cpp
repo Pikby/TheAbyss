@@ -142,7 +142,7 @@ void Cube::draw(Shader* shader)
 {
 
   shader->setMat4("model",modelMat);
-  shader->setVec3("objectColor",color);
+  shader->setVec3("objectColor",glm::vec3(0.5,0.5f,0.5f));
 
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);

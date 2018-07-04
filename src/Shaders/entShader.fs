@@ -140,5 +140,5 @@ void main()
     {
       result += calcPointLights(pointLights[i],shadow);
     }
-    finalcolor = vec4(result,1.0f);
+    finalcolor = vec4(objectColor,1.0f);
 }

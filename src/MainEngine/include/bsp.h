@@ -15,27 +15,27 @@ typedef unsigned char uchar;
 //Class which holds the data for each individual chunk
 class BSPNode;
 
-
+/*
 enum Sides {LEFT = 1,RIGHT = (1 << 1),
             UP = (1<<2), DOWN = (1<<3),
             FRONT = (1<<4), BACK = (1<<5)};
-struct BlockFaces
+struct BlockFace
 {
   char block;
-  BlockFaces()
+  BlockFace()
   {
     block=0;
   }
   bool get(Sides side)
   {
-    return block & side != 0 ? true : false;
+    return (block & side) != 0 ? true : false;
   }
   void set(Sides side)
   {
     block |= side;
   }
 };
-
+*/
 class BSP
 {
 private:
@@ -62,6 +62,7 @@ private:
   Array3D<uchar, CHUNKSIZE> worldArray;
 
 public:
+  static int totalChunks;
   int xCoord;
   int yCoord;
   int zCoord;

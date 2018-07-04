@@ -78,38 +78,51 @@ void draw()
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
-  newWorld->drawer.createDirectionalLight(glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.8f,0.8f,0.8f));
+  newWorld->drawer.createDirectionalLight(glm::vec3(-0.2f,-1.0f,-0.3f));
   SkyBox skyBox;
   Camera* mainCam = &(mainCharacter->mainCam);
 
+  Cube cube;
+  cube.render();
+
+  newWorld->drawer.addCube(glm::vec3(0,50,0));
   //newWorld->addLight(glm::vec3(10,50,10));
   while(!glfwWindowShouldClose(window))
   {
+
     updateInputs();
     //std::cout << newWorld->drawnChunks << "\n";
     newWorld->drawnChunks = 0;
     glfwPollEvents();
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     mainCharacter->update();
-    glm::mat4 view = mainCam->getViewMatrix();
+
+
     newWorld->drawer.updateCameraMatrices(mainCam);
 
+    newWorld->calculateViewableChunks();
     newWorld->drawer.renderDirectionalShadows();
+    double curTime = glfwGetTime();
     newWorld->drawer.drawFinal();
+    std::cout << glfwGetTime() - curTime << "\n";
 
-    //newWorld->drawObjects();
+    newWorld->drawer.drawObjects();
 
     int error = glGetError();
     if(error != 0)
     {
-      std::cout << "OPENGL ERROR" << error << ":" << std::hex << error << "\n";
+      std::cout << "OPENGL ERROR" << error << ":" << std::hex << error << std::dec << "\n";
 
     }
+
+    glm::mat4 view = mainCam->getViewMatrix();
     skyBox.draw(&view);
 
     mainCharacter->drawHud();
 
     glfwSwapBuffers(window);
+
   }
   std::cout << "exiting draw thread \n";
 }

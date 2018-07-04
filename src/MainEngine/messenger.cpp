@@ -16,14 +16,13 @@
 #include <iostream>
 #include <fstream>
 #include "include/messenger.h"
-#define PORT 3030
 
 inline int pack4chars(char a, char b, char c, char d)
 {
   return ((a << 24) | (b << 16) | (c << 8) | d);
 }
 
-void Messenger::setupSockets(std::string ipAddress)
+void Messenger::setupSockets(std::string ipAddress,std::string port)
 {
   std::ofstream error("outputlog.txt");
   #ifdef _WIN32
@@ -45,7 +44,7 @@ void Messenger::setupSockets(std::string ipAddress)
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
 
-  if (getaddrinfo(ipAddress.c_str(),"3030", &hints, &result) != 0)
+  if (getaddrinfo(ipAddress.c_str(),port, &hints, &result) != 0)
   {
     error << "getaddrinfo failed" << std::endl;
     WSACleanup();
@@ -83,7 +82,7 @@ void Messenger::setupSockets(std::string ipAddress)
 
   sockaddr_in serveraddress;
   serveraddress.sin_family = AF_INET;
-  serveraddress.sin_port = htons(PORT);
+  serveraddress.sin_port = htons(stoi(port));
 
   inet_pton(AF_INET, ipAddress.c_str(), &(serveraddress.sin_addr));
 

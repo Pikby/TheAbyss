@@ -5,6 +5,9 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/ext.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <iostream>
 #include <boost/filesystem.hpp>
 #include "include/world.h"
@@ -44,7 +47,7 @@ World::World(int numbBuildThreads,int width,int height)
   }
   worldName = Settings::get("worldName");
   std::string ipAddress = Settings::get("ipAddress");
-
+  std::string port = Settings::get("port");
   boost::filesystem::create_directory("saves");
   boost::filesystem::create_directory("saves/"+worldName);
   boost::filesystem::create_directory("saves/"+worldName+"/chunks");
@@ -56,7 +59,7 @@ World::World(int numbBuildThreads,int width,int height)
 
 
 
-  messenger.setupSockets(ipAddress);
+  messenger.setupSockets(ipAddress,port);
   messenger.receiveMessage(&mainId,sizeof(mainId));
   drawer.setupShadersAndTextures(width,height);
   drawer.setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
@@ -91,6 +94,19 @@ void World::removePlayer(uchar id)
   playerList.erase(id);
 }
 
+void World::calculateViewableChunks()
+{
+  glm::ivec3 min = toChunkCoords(drawer.viewMin);
+  glm::ivec3 max = toChunkCoords(drawer.viewMax);
+  //std::cout << std::dec << "Am drawing:" << BSP::totalChunks << "\n";
+  BSP::totalChunks = 0;
+  double curTime;
+  curTime = glfwGetTime();
+  drawer.chunksToDraw = BSPmap.findAll(min,max);
+  double nextTime = glfwGetTime();
+  //std::cout << "finding the list took: " << nextTime -curTime << "\n";
+  //std::cout << "Could be drawing" << drawer.chunksToDraw->size() << "\n";
+}
 
 
 void World::generateChunkFromString(int chunkx, int chunky, int chunkz,const std::string &value)
@@ -101,7 +117,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,const std
     std::cout << "Replacing CHunk \n";
     delChunk(chunkx,chunky,chunkz);
   }
-  std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName,value));
+  std::shared_ptr<BSPNode> tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName,value));
   BSPmap.add(chunkx,chunky,chunkz,tempChunk);
 
   if(drawer.frontNode == NULL)
@@ -188,7 +204,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,const std
   //Adds the chunk to the current mainBuildQueue if it is not already;
   if(!tempChunk->toBuild)
   {
-      addToBuildQueue(tempChunk);
+      addToBuildQueue(tempChunk); 
   }
 }
 
@@ -301,53 +317,35 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
 
 void World::renderWorld(float* mainx, float* mainy, float* mainz)
 {
-  for(int curDis = 0; curDis < horzRenderDistance; curDis++)
-   {
-     for(int height = 0; height < vertRenderDistance; height++)
-     {
 
-       int x = round(*mainx);
-       int y = round(*mainy);
-       int z = round(*mainz);
-       x/= CHUNKSIZE;
-       y/= CHUNKSIZE;
-       z/= CHUNKSIZE;
-       y--;
-       int ychunk;
-       if(height % 2 == 1) ychunk = y -(height/2);
-       else ychunk = y + (height/2);
+  for(int x =0;x<horzRenderDistance*2;x++)
+  {
+    for(int z=0;z<horzRenderDistance*2;z++)
+    {
+      for(int y=0;y<vertRenderDistance*2;y++)
+      {
+        int horzSquared = horzRenderDistance*horzRenderDistance;
+        int vertSquared = vertRenderDistance*vertRenderDistance;
+        int curx = (x%2 == 0) ? x/2 : -(x/2+1);
+        int cury = (y%2 == 0) ? y/2 : -(y/2+1);
+        int curz = (z%2 == 0) ? z/2 : -(z/2+1);
 
-       int xchunk = x;
-       int zchunk = z;
+        if((curx*curx)/horzSquared + (cury*cury)/vertSquared + (curz*curz)/horzSquared > 1) continue;
+        //std::cout << "requesting chunk\n";
+        int xchunk = round(*mainx);
+        int ychunk = round(*mainy);
+        int zchunk = round(*mainz);
+        xchunk/= CHUNKSIZE;
+        ychunk/= CHUNKSIZE;
+        zchunk/= CHUNKSIZE;
 
 
-       zchunk = z+curDis;
-       xchunk = x;
-       for(int i = -curDis+1;i<curDis;i++)
-       {
-         messenger.createChunkRequest(xchunk+i,ychunk,zchunk);
-       }
 
-       zchunk = z-curDis;
-       xchunk = x;
-       for(int i = -curDis+1;i<curDis;i++)
-       {
-         messenger.createChunkRequest(xchunk+i,ychunk,zchunk);
-       }
-       zchunk = z;
-       xchunk = x+curDis;
-       for(int i = -curDis;i<=curDis;i++)
-       {
-         messenger.createChunkRequest(xchunk,ychunk,zchunk+i);
-       }
-       zchunk = z;
-       xchunk = x-curDis;
-       for(int i = -curDis;i<=curDis;i++)
-       {
-         messenger.createChunkRequest(xchunk,ychunk,zchunk+i);
-       }
-     }
-   }
+        //std::cout << std::dec << curx << ":" << cury << ":" << curz << "\n";
+        messenger.createChunkRequest(xchunk+curx,ychunk+cury,zchunk+curz);
+      }
+    }
+  }
 }
 
 void World::buildWorld(int threadNumb)
@@ -464,7 +462,7 @@ glm::vec4 World::rayCast(glm::vec3 pos, glm::vec3 front, int max)
 
 
 
-glm::ivec3 inline toLocalCoords(glm::ivec3 in)
+glm::ivec3 inline World::toLocalCoords(glm::ivec3 in)
 {
   glm::ivec3 out;
   out.x = in.x >= 0 ? in.x % CHUNKSIZE : CHUNKSIZE + (in.x % CHUNKSIZE);
@@ -477,7 +475,7 @@ glm::ivec3 inline toLocalCoords(glm::ivec3 in)
   return out;
 }
 
-glm::ivec3 inline toChunkCoords(glm::ivec3 in)
+glm::ivec3 inline World::toChunkCoords(glm::ivec3 in)
 {
   glm::ivec3 out;
   out.x = floor((float)in.x/(float)CHUNKSIZE);
@@ -486,7 +484,7 @@ glm::ivec3 inline toChunkCoords(glm::ivec3 in)
   return out;
 }
 
-inline void checkForUpdates(glm::ivec3 local,std::shared_ptr<BSPNode> chunk)
+inline void World::checkForUpdates(glm::ivec3 local,std::shared_ptr<BSPNode> chunk)
 {
   if(local.x+1>=CHUNKSIZE)
   {

@@ -453,14 +453,14 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
   tVerticesBuffer->clear();
   tIndicesBuffer->clear();
 
-  Array3D<BlockFaces,CHUNKSIZE> faceArray;
 
   for(int x = 0; x<CHUNKSIZE;x++)
   {
-     for(int y = 0;y<CHUNKSIZE;y++)
-     {
-       for(int z = 0;z<CHUNKSIZE;z++)
-       {
+    for(int z = 0;z<CHUNKSIZE;z++)
+    {
+      for(int y = 0;y<CHUNKSIZE;y++)
+      {
+
          if(!blockExists(x,y,z)) continue;
          int renderType = blockVisibleType(x,y,z);
 
@@ -474,13 +474,14 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          bool rightNeigh = false;
          bool frontNeigh = false;
          bool backNeigh = false;
+
          bool defaultNull = false;
 
          if(x+1 >= CHUNKSIZE)
          {
-           if(curRightChunk != NULL)
+           if(curRightChunk != NULL && renderType == curRightChunk->blockVisibleType(0,y,z) )
            {
-              if(renderType == curRightChunk->blockVisibleType(0,y,z)) rightNeigh = true;
+             rightNeigh = true;
            }
            else if(defaultNull) rightNeigh = true;
          }
@@ -488,9 +489,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(x-1 < 0)
          {
-           if(curLeftChunk != NULL)
+           if(curLeftChunk != NULL && renderType == curLeftChunk->blockVisibleType(CHUNKSIZE-1,y,z))
            {
-            if(renderType == curLeftChunk->blockVisibleType(CHUNKSIZE-1,y,z)) leftNeigh = true;
+             leftNeigh = true;
            }
            else if(defaultNull) leftNeigh = true;
          }
@@ -498,9 +499,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(y+1 >= CHUNKSIZE)
          {
-           if(curTopChunk != NULL)
+           if(curTopChunk != NULL && renderType == curTopChunk->blockVisibleType(x,0,z))
            {
-              if(renderType == curTopChunk->blockVisibleType(x,0,z)) topNeigh = true;
+              topNeigh = true;
            }
            else if(defaultNull) topNeigh = true;
          }
@@ -508,9 +509,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(y-1 < 0)
          {
-          if(curBottomChunk != NULL)
+          if(curBottomChunk != NULL && renderType == curBottomChunk->blockVisibleType(x,CHUNKSIZE-1,z))
           {
-            if(renderType == curBottomChunk->blockVisibleType(x,CHUNKSIZE-1,z)) bottomNeigh = true;
+            bottomNeigh = true;
           }
           else if(defaultNull) bottomNeigh = true;
          }
@@ -518,9 +519,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(z+1 >= CHUNKSIZE)
          {
-           if(curBackChunk != NULL)
+           if(curBackChunk != NULL && renderType == curBackChunk->blockVisibleType(x,y,0))
            {
-             if(renderType == curBackChunk->blockVisibleType(x,y,0)) backNeigh = true;
+             backNeigh = true;
            }
            else if(defaultNull) backNeigh = true;
          }
@@ -528,9 +529,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(z-1 < 0)
          {
-           if(curFrontChunk != NULL)
+           if(curFrontChunk != NULL && renderType == curFrontChunk->blockVisibleType(x,y,CHUNKSIZE-1))
            {
-             if(renderType == curFrontChunk->blockVisibleType(x,y,CHUNKSIZE-1)) frontNeigh = true;
+             frontNeigh = true;
            }
            else if(defaultNull) frontNeigh = true;
          }
@@ -539,113 +540,124 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          Block tempBlock = ItemDatabase::blockDictionary[(getBlock(x,y,z))];
          float x1, y1, x2, y2;
 
+         glm::vec3 topleft, bottomleft,topright,bottomright;
          glm::vec3 tempVec;
          glm::vec3 normVec;
+
+
          if(!topNeigh)
          {
-           tempBlock.getTop(&x1,&y1,&x2,&y2);
-           tempVec = offset(realX,realY+1.0f,realZ);
+           int up = 1;
+           int down = 0;
+           int right = 1;
+           int left = 0;
+
+
+           bottomleft = glm::vec3(realX+up,realY+1.0f,realZ+left);
+           bottomright = glm::vec3(realX+up,realY+1.0f,realZ+right);
+           topleft = glm::vec3(realX-down,realY+1.0f,realZ+left);
+
+           topright = glm::vec3(realX-down,realY+1.0f,realZ+right);
+
+
            normVec = glm::vec3(0.0f,1.0f,0.0f);
-           int index1 = addVertex(renderType,tempVec,normVec,x1,y1);
+           tempBlock.getTop(&x1,&y1,&x2,&y2);
 
-           tempVec = offset(realX+1.0f,realY+1.0f,realZ);
-           int index3 = addVertex(renderType,tempVec,normVec,x2,y1);
+           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
+           int index3 = addVertex(renderType,bottomleft,normVec,x2,y1);
+           int index2 = addVertex(renderType,topright,normVec,x1,y2);
+           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
 
-           tempVec = offset(realX,realY+1.0f,realZ+1.0f);
-           int index2 = addVertex(renderType,tempVec,normVec,x1,y2);
-
-           tempVec = offset(realX+1.0f,realY+1.0f,realZ+1.0f);
-           int index4 = addVertex(renderType,tempVec,normVec,x2,y2);
 
            addIndices(renderType,index1,index2,index3,index4);
          }
 
          if(!bottomNeigh)
          {
+           topleft = glm::vec3(realX,realY,realZ);
+           bottomleft = glm::vec3(realX+1.0f,realY,realZ);
+           topright = glm::vec3(realX,realY,realZ+1.0f);
+           bottomright = glm::vec3(realX+1.0f,realY,realZ+1.0f);
+
            tempBlock.getBottom(&x1,&y1,&x2,&y2);
-           tempVec = offset(realX,realY,realZ);
            normVec = glm::vec3(0.0f,-1.0f,0.0f);
-           int index1 = addVertex(renderType,tempVec,normVec,x1,y1);
 
-           tempVec = offset(realX+1.0f,realY,realZ);
-           int index2 = addVertex(renderType,tempVec,normVec,x2,y1);
-
-           tempVec = offset(realX,realY,realZ+1.0f);
-           int index3 = addVertex(renderType,tempVec,normVec,x1,x2);
-
-           tempVec = offset(realX+1.0f,realY,realZ+1.0f);
-           int index4 = addVertex(renderType,tempVec,normVec,x2,x2);
+           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
+           int index2 = addVertex(renderType,bottomleft,normVec,x2,y1);
+           int index3 = addVertex(renderType,topright,normVec,x1,y2);
+           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
 
            addIndices(renderType,index1,index2,index3,index4);
          }
 
          if(!rightNeigh)
          {
+           topleft = glm::vec3(realX+1.0f,realY,realZ);
+           bottomleft = glm::vec3(realX+1.0f,realY+1.0f,realZ);
+           topright = glm::vec3(realX+1.0f,realY,realZ+1.0f);
+           bottomright = glm::vec3(realX+1.0f,realY+1.0f,realZ+1.0f);
+
            tempBlock.getRight(&x1,&y1,&x2,&y2);
            normVec = glm::vec3(1.0f,0.0f,0.0f);
-           tempVec = offset(realX+1.0f,realY,realZ);
-           int index1 = addVertex(renderType,tempVec,normVec,x1,y1);
 
-           tempVec = offset(realX+1.0f,realY+1.0f,realZ);
-           int index2 = addVertex(renderType,tempVec,normVec,x2,y1);
-
-           tempVec = offset(realX+1.0f,realY,realZ+1.0f);
-           int index3 = addVertex(renderType,tempVec,normVec,x1,y2);
-
-           tempVec = offset(realX+1.0f,realY+1.0f,realZ+1.0f);
-           int index4 = addVertex(renderType,tempVec,normVec,x2,y2);
+           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
+           int index2 = addVertex(renderType,bottomleft,normVec,x2,y1);
+           int index3 = addVertex(renderType,topright,normVec,x1,y2);
+           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
 
            addIndices(renderType,index1,index2,index3,index4);
          }
 
          if(!leftNeigh)
          {
+           topleft = glm::vec3(realX,realY,realZ);
+           bottomleft = glm::vec3(realX,realY+1.0f,realZ);
+           topright = glm::vec3(realX,realY,realZ+1.0f);
+           bottomright = glm::vec3(realX,realY+1.0f,realZ +1.0f);
+
            tempBlock.getLeft(&x1,&y1,&x2,&y2);
            normVec = glm::vec3(-1.0f,0.0f,0.0f);
 
-           tempVec = offset(realX,realY,realZ);
-           int index1 = addVertex(renderType,tempVec,normVec,x1,y1);
-           tempVec = offset(realX,realY+1.0f,realZ);
-           int index3 = addVertex(renderType,tempVec,normVec,x2,y1);
-           tempVec = offset(realX,realY,realZ+1.0f);
-           int index2 = addVertex(renderType,tempVec,normVec,x1,y2);
-           tempVec = offset(realX,realY+1.0f,realZ +1.0f);
-           int index4 = addVertex(renderType,tempVec,normVec,x2,y2);
+           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
+           int index3 = addVertex(renderType,bottomleft,normVec,x2,y1);
+           int index2 = addVertex(renderType,topright,normVec,x1,y2);
+           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
 
            addIndices(renderType,index1,index2,index3,index4);
          }
          if(!backNeigh)
          {
+           topleft = glm::vec3(realX,realY,realZ+1.0f);
+           bottomleft = glm::vec3(realX+1.0f,realY,realZ+1.0f);
+           topright = glm::vec3(realX,realY+1.0f,realZ+1.0f);
+           bottomright = glm::vec3(realX+1.0f,realY+1.0f,realZ+1.0f);
+
            tempBlock.getBack(&x1,&y1,&x2,&y2);
            normVec = glm::vec3(0.0f,0.0f,-1.0f);
 
-           tempVec = offset(realX,realY,realZ+1.0f);
-           int index1 = addVertex(renderType,tempVec,normVec,x1,y1);
-           tempVec = offset(realX+1.0f,realY,realZ+1.0f);
-           int index2 = addVertex(renderType,tempVec,normVec,x2,y1);
-           tempVec = offset(realX,realY+1.0f,realZ+1.0f);
-           int index3 = addVertex(renderType,tempVec,normVec,x1,y2);
-           tempVec = offset(realX+1.0f,realY+1.0f,realZ+1.0f);
-           int index4 = addVertex(renderType,tempVec,normVec,x2,y2);
-
+           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
+           int index2 = addVertex(renderType,bottomleft,normVec,x2,y1);
+           int index3 = addVertex(renderType,topright,normVec,x1,y2);
+           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
            addIndices(renderType,index1,index2,index3,index4);
          }
 
          if(!frontNeigh)
          {
            tempBlock.getFront(&x1,&y1,&x2,&y2);
+           topleft = glm::vec3(realX,realY,realZ);
+           bottomleft = glm::vec3(realX+1.0f,realY,realZ);
+           topright = glm::vec3(realX,realY+1.0f,realZ);
+           bottomright = glm::vec3(realX+1.0f,realY+1.0f,realZ);
 
            normVec = glm::vec3(0.0f,0.0f,-1.0f);
-           tempVec = offset(realX,realY,realZ);
 
 
-           int index1 = addVertex(renderType,tempVec,normVec,x1,y1);
-           tempVec = offset(realX+1.0f,realY,realZ);
-           int index3 = addVertex(renderType,tempVec,normVec,x2,y1);
-           tempVec = offset(realX,realY+1.0f,realZ);
-           int index2 = addVertex(renderType,tempVec,normVec,x1,y2);
-           tempVec = offset(realX+1.0f,realY+1.0f,realZ);
-           int index4 = addVertex(renderType,tempVec,normVec,x2,y2);
+           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
+           int index3 = addVertex(renderType,bottomleft,normVec,x2,y1);
+           int index2 = addVertex(renderType,topright,normVec,x1,y2);
+           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
+
            addIndices(renderType,index1,index2,index3,index4);
          }
        }
@@ -722,11 +734,14 @@ inline void BSP::render()
 
 
 }
+int BSP::totalChunks = 0;
 
 void BSP::drawOpaque()
 {
+
   if(oIndices->size() != 0)
   {
+      totalChunks++;
     //drawnChunks++;
     glBindVertexArray(oVAO);
     glDrawElements(GL_TRIANGLES, oIndices->size(), GL_UNSIGNED_INT,0);

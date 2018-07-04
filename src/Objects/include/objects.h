@@ -33,6 +33,7 @@ protected:
     rotAxis = r;
     angInRads = glm::radians(angInDegrees);
     updateModelMat();
+    color = glm::vec3(1.0f,1.0f,1.0f);
 
   }
   void setRotation(const glm::vec3 &rot,const double &newAngInRads)

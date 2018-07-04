@@ -1,6 +1,10 @@
 #include "bsp.h"
+#include <list>
 #include "../../Objects/include/objects.h"
 #include "../../headers/camera.h"
+
+
+#define NUMBOFCASCADEDSHADOWS 4
 struct PointLight
 {
   glm::vec3 position;
@@ -11,13 +15,13 @@ struct PointLight
 
   float constant;
   float linear;
-
-
   float quadratic;
 
   glm::mat4 shadowTransform[6];
-  uint depthMapFBO,depthCubemap;
+  uint depthMapFBO;
+  uint depthCubemap;
 };
+
 struct DirLight
 {
   glm::vec3 direction;
@@ -25,9 +29,10 @@ struct DirLight
   glm::vec3 diffuse;
   glm::vec3 specular;
 
-  glm::mat4 lightSpaceMat;
-  uint depthMapFBO,depthMap;
-
+  glm::mat4 lightSpaceMat[NUMBOFCASCADEDSHADOWS];
+  uint depthMapFBO[NUMBOFCASCADEDSHADOWS];
+  uint depthMap[NUMBOFCASCADEDSHADOWS];
+  float arrayOfDistances[NUMBOFCASCADEDSHADOWS];
 };
 
 class Drawer
@@ -38,7 +43,7 @@ private:
 
   int vertRenderDistance, horzRenderDistance,renderBuffer;
 
-
+  //std::list<std::shared_ptr<BSPNode> chunksToDraw;
   std::vector<std::shared_ptr<Object>> objList;
   std::vector<PointLight> lightList;
 
@@ -46,9 +51,19 @@ private:
   glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f),16.0f/9.0f,1.0f,25.0f);
   glm::mat4 viewProj;
   glm::mat4 hsrMat;
+  glm::mat4 hsrProj;
   glm::mat4 viewMat;
+
   glm::vec3 viewPos;
-  glm::vec3 viewDir;
+  glm::vec3 viewFront;
+  glm::vec3 viewUp;
+  glm::vec3 viewRight;
+
+  //Plane goes bottomleft,topleft,topright,bottomright;
+  //0-3 is near 4-7 is far
+  glm::vec3 viewFrustrum[8];
+
+
 
 
   float camZoomInDegrees;
@@ -57,7 +72,12 @@ private:
 
   Shader objShader,dirDepthShader,pointDepthShader,blockShader;
   Shader debugDepthQuad;
+  void calculateFrustrum(glm::vec3* arr, float near, float far);
+  void calculateMinandMaxPoints(glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
 public:
+  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> chunksToDraw;
+  glm::vec3 viewMin;
+  glm::vec3 viewMax;
   float directionalShadowResolution;
   int screenWidth,screenHeight;
   std::shared_ptr<BSPNode> frontNode;
@@ -69,6 +89,7 @@ public:
   void startPointShadowDraw(Shader* shader, int id);
   void renderDirectionalShadows();
   void bindDirectionalShadows(Shader* shader);
+
   void renderPointShadows();
   void bindPointShadows();
   void setLights(Shader* shader);
@@ -88,14 +109,14 @@ public:
   }
 
   void createDirectionalLight(glm::vec3 dir = glm::vec3(-1.0f,-1.0f,-1.0f),
-                              glm::vec3 amb = glm::vec3(0.8f,0.8f,0.8f),
+                              glm::vec3 amb = glm::vec3(0.2f,0.2f,0.2f),
                               glm::vec3 dif = glm::vec3(0.5f,0.5f,0.5f),
                               glm::vec3 spec = glm::vec3(1.0f,1.0f,1.0f))
   {
     dirLight = {dir,amb,dif,spec};
     renderDirectionalDepthMap();
   }
-  void drawTerrain(Shader* shader = NULL, bool useHSR = false);
+  void drawTerrain(Shader* shader, const glm::mat4 &clipMat, bool useHSR = true);
   void drawPlayers(Shader* shader);
 
 

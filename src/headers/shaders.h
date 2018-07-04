@@ -70,7 +70,7 @@ class Shader
       if(!success)
       {
         glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        std::cout << "ERROR::" + shaderType + "SHADER::COMPILATION_FAILED\n" << infoLog << std::endl;
+        std::cout << "ERROR::" + shaderType + "SHADER::COMPILATION_FAILED IN SHADER" +path+ "\n" << infoLog << std::endl;
         return;
       }
 
@@ -96,12 +96,12 @@ class Shader
       glUseProgram(id);
     }
 
-    void setMat4(std::string name, glm::mat4 value)
+    void setMat4(std::string name, const glm::mat4 &value)
     {
       glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
     }
 
-    void setVec3(std::string name, glm::vec3 value)
+    void setVec3(std::string name, const glm::vec3 &value)
     {
       glUniform3f(glGetUniformLocation(id, name.c_str()),value.x,value.y,value.z);
     }

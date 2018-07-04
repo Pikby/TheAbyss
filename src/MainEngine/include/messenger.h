@@ -22,7 +22,7 @@ private:
 public:
   Map3D<bool> requestMap;
   TSafeQueue<Message> messageQueue;
-  void setupSockets(std::string ipAddress);
+  void setupSockets(std::string ipAddress,std::string port);
   Message receiveAndDecodeMessage();
   void requestChunk(int x, int y, int z);
   void createMoveRequest(float x, float y, float z);
