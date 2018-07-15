@@ -11,7 +11,8 @@
 #include "include/bsp.h"
 #include "../Objects/include/items.h"
 
-int totalChunks;
+int BSPNode::totalChunks = 0;
+bool BSP::geometryChanged = true;
 
 
 BSPNode::BSPNode(int x,int y,int z,const std::string &wName)
@@ -19,15 +20,12 @@ BSPNode::BSPNode(int x,int y,int z,const std::string &wName)
   //std::cout << totalChunks << "\n";
 
   curBSP = BSP(x,y,z,wName);
-
+  totalChunks++;
   isGenerated = false;
-  nextNode = NULL;
-  prevNode = NULL;
   inUse = false;
   toRender = false;
   toBuild = false;
   toDelete = false;
-  totalChunks++;
 }
 
 BSPNode::~BSPNode()
@@ -38,16 +36,15 @@ BSPNode::~BSPNode()
 BSPNode::BSPNode(int x,int y, int z,const std::string &wName,const std::string &val)
 {
   //std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
+  //std::cout << "curNumber of chunks: " << totalChunks << "\n";
+  totalChunks++;
   BSPMutex.lock();
   curBSP = BSP(x,y,z,wName,val);
   isGenerated = false;
-  nextNode = NULL;
-  prevNode = NULL;
   inUse = false;
   toRender = false;
   toBuild = false;
   toDelete = false;
-  totalChunks++;
   BSPMutex.unlock();
 }
 
@@ -98,13 +95,7 @@ void BSPNode::saveChunk()
 void BSPNode::del()
 {
   BSPMutex.lock();
-  if(nextNode != NULL) nextNode->prevNode = prevNode;
-  if(prevNode != NULL) prevNode->nextNode = nextNode;
   curBSP.freeGL();
-  nextNode = NULL;
-  prevNode = NULL;
-
-
   BSPMutex.unlock();
 }
 
@@ -118,7 +109,9 @@ void BSPNode::disconnect()
   if(backChunk != NULL) backChunk->frontChunk = NULL;
   if(topChunk != NULL) topChunk->bottomChunk = NULL;
   if(bottomChunk != NULL) bottomChunk->topChunk = NULL;
+
   BSPMutex.unlock();
+
 }
 
 bool BSPNode::blockExists(int x, int y, int z)
@@ -142,9 +135,11 @@ int BSPNode::blockVisibleType(int x, int y, int z)
 }
 
 
-
 BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
 {
+
+
+
   xCoord = x;
   yCoord = y;
   zCoord = z;
@@ -254,11 +249,6 @@ BSP::BSP(int x, int y, int z,const std::string &wName)
     tIndices = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
 }
 
-BSP::~BSP()
-{
-  saveChunk();
-}
-
 inline std::string BSP::compressChunk()
 {
     using namespace std;
@@ -333,7 +323,6 @@ void BSP::freeGL()
   glDeleteVertexArrays(1,&tVAO);
 }
 
-BSP::BSP(){}
 
 
 
@@ -444,6 +433,8 @@ inline glm::vec3 BSP::offset(float x, float y, float z)
   return glm::vec3(x,y,z);
 
 }
+
+
 
 void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
                        std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk)
@@ -677,6 +668,8 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
 inline void BSP::render()
 {
+  if(oIndices->size() != 0)
+  {
   glDeleteBuffers(1, &oVBO);
   glDeleteBuffers(1, &oEBO);
   glDeleteVertexArrays(1, &oVAO);
@@ -688,23 +681,29 @@ inline void BSP::render()
   glBindVertexArray(oVAO);
 
   glBindBuffer(GL_ARRAY_BUFFER,oVBO);
-  glBufferData(GL_ARRAY_BUFFER, oVertices->size()*sizeof(GLfloat),&oVertices->front(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, oVertices->size()*sizeof(float),&oVertices->front(), GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,oEBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, oIndices->size()*sizeof(GLuint),&oIndices->front(), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, oIndices->size()*sizeof(uint),&oIndices->front(), GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)0);
+  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+  glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
   glEnableVertexAttribArray(1);
 
-  glVertexAttribPointer(2,2,GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(6*sizeof(GLfloat)));
+  glVertexAttribPointer(2,2,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
   glEnableVertexAttribArray(2);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
+    geometryChanged = true;
+  }
 
+
+  if(tIndices->size() != 0)
+  {
+    std::cout << "SUM TING WONG\n";
   glDeleteBuffers(1, &tVBO);
   glDeleteBuffers(1, &tEBO);
   glDeleteVertexArrays(1, &tVAO);
@@ -715,33 +714,32 @@ inline void BSP::render()
   glBindVertexArray(tVAO);
 
   glBindBuffer(GL_ARRAY_BUFFER,tVBO);
-  glBufferData(GL_ARRAY_BUFFER, tVertices->size()*sizeof(GLfloat),&tVertices->front(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, tVertices->size()*sizeof(float),&tVertices->front(), GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,tEBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, tIndices->size()*sizeof(GLuint),&tIndices->front(), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, tIndices->size()*sizeof(uint),&tIndices->front(), GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)0);
+  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+  glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
   glEnableVertexAttribArray(1);
 
-  glVertexAttribPointer(2,2,GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (GLvoid*)(6*sizeof(GLfloat)));
+  glVertexAttribPointer(2,2,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
   glEnableVertexAttribArray(2);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
+  }
 
 
 }
-int BSP::totalChunks = 0;
 
 void BSP::drawOpaque()
 {
 
   if(oIndices->size() != 0)
   {
-      totalChunks++;
     //drawnChunks++;
     glBindVertexArray(oVAO);
     glDrawElements(GL_TRIANGLES, oIndices->size(), GL_UNSIGNED_INT,0);

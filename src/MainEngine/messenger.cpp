@@ -107,7 +107,7 @@ Message Messenger::receiveAndDecodeMessage()
   uchar ext1 = (buf[0] >> 16) & 0xFF;
   uchar ext2 = (buf[0] >> 8) & 0xFF;
   uchar ext3 = buf[0] & 0xFF;
-  Message msg = {opcode,ext1,ext2,ext3,buf[1],buf[2],buf[3],buf[4]};
+  Message msg = Message(opcode,ext1,ext2,ext3,buf[1],buf[2],buf[3],buf[4]);
   return msg;
 
 }
@@ -121,26 +121,19 @@ void Messenger::requestChunk(int x, int y, int z)
   request[1] = x;
   request[2] = y;
   request[3] = z;
-
-
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send message to server\n";
-    return;
-  }
-  //std::cout << "Requesting chunk" << x << ":" << y << ":" << z << "\n";
+  sendMessage(request,sizeof(request));
 }
 
 
 void Messenger::createMoveRequest(float x, float y, float z)
 {
-  Message tmp = {91,0,0,0,*(int*)&x,*(int*)&y,*(int*)&z,0};
+  Message tmp = Message(91,0,0,0,x,y,z,0);
   messageQueue.push(tmp);
 }
 
 void Messenger::createAddBlockRequest(int x, int y, int z, uchar id)
 {
-  Message tmp = {2,id,0,0,x,y,z,0};
+  Message tmp = Message(2,id,0,0,x,y,z,0);
   messageQueue.push(tmp);
 }
 
@@ -151,16 +144,12 @@ void Messenger::requestAddBlock(int x, int y, int z, uchar id)
   request[1] = x;
   request[2] = y;
   request[3] = z;
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send message to server\n";
-    return;
-  }
+  sendMessage(request,sizeof(request));
 }
 
 void Messenger::createDelBlockRequest(int x, int y, int z)
 {
-  Message tmp = {1,0,0,0,x,y,z,0};
+  Message tmp = Message(1,0,0,0,x,y,z,0);
   messageQueue.push(tmp);
 
 }
@@ -171,27 +160,17 @@ void Messenger::requestDelBlock(int x, int y, int z)
   request[1] = x;
   request[2] = y;
   request[3] = z;
-
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send message to server\n";
-    return;
-  }
+  sendMessage(request,sizeof(request));
 }
 
 void Messenger::requestMove(float x, float y, float z)
 {
-
   int request[4];
   request[0] = pack4chars(91,0,0,0);
   request[1] = *(int*)&x;
   request[2] = *(int*)&y;
   request[3] = *(int*)&z;
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send message to server\n";
-    return;
-  }
+  sendMessage(request, sizeof(request));
 }
 
 
@@ -199,11 +178,7 @@ void Messenger::requestExit()
 {
   int request[4];
   request[0] = 0xFFFFFFFF;
-  if(send(fd,(char*)request,4*sizeof(int),0)<0)
-  {
-    std::cout << "Failed to send exit message to server\n";
-    return;
-  }
+  sendMessage(request,sizeof(request));
   std::cout << "exit message Sent\n";
 }
 
@@ -220,7 +195,21 @@ void Messenger::receiveMessage(void *buffer,int length)
       std::cout << "ERROR: receiving message." << std::endl;
     }
     totalReceived += curReceived;
+  }
+}
 
+void Messenger::sendMessage(void* buffer, int length)
+{
+  char* buf = (char*)buffer;
+  int totalSent = 0;
+  while(totalSent<length)
+  {
+    int curSent = send(fd,buf+totalSent,length-totalSent,0);
+    if( curSent< -1)
+    {
+      std::cout << "ERROR: sending message.\n";
+    }
+    totalSent += curSent;
   }
 }
 

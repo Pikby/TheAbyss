@@ -93,6 +93,7 @@ void draw()
     updateInputs();
     //std::cout << newWorld->drawnChunks << "\n";
     newWorld->drawnChunks = 0;
+    newWorld->deleteChunksFromQueue();
     glfwPollEvents();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -102,11 +103,15 @@ void draw()
     newWorld->drawer.updateCameraMatrices(mainCam);
 
     newWorld->calculateViewableChunks();
-    newWorld->drawer.renderDirectionalShadows();
-    double curTime = glfwGetTime();
+    /*
+    if(BSP::geometryChanged == true)
+    {
+      std::cout << "renderingShadows\n";
+      newWorld->drawer.renderDirectionalShadows();
+      BSP::geometryChanged = false;
+    }
+    */
     newWorld->drawer.drawFinal();
-    std::cout << glfwGetTime() - curTime << "\n";
-
     newWorld->drawer.drawObjects();
 
     int error = glGetError();
@@ -187,16 +192,16 @@ void send()
     switch(opcode)
     {
       case(0):
-        newWorld->messenger.requestChunk(msg.x,msg.y,msg.z);
+        newWorld->messenger.requestChunk(msg.x.i,msg.y.i,msg.z.i);
         break;
       case(1):
-        newWorld->messenger.requestDelBlock(msg.x,msg.y,msg.z);
+        newWorld->messenger.requestDelBlock(msg.x.i,msg.y.i,msg.z.i);
         break;
       case(2):
-        newWorld->messenger.requestAddBlock(msg.x,msg.y,msg.z,msg.ext1);
+        newWorld->messenger.requestAddBlock(msg.x.i,msg.y.i,msg.z.i,msg.ext1);
         break;
       case(91):
-        newWorld->messenger.requestMove(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z);
+        newWorld->messenger.requestMove(msg.x.f,msg.y.f,msg.z.f);
         break;
       default:
         std::cout << "Sending unknown opcode" << std::dec << (int)msg.opcode << "\n";
@@ -220,28 +225,28 @@ void receive()
         {
           char* buf = new char[msg.length];
           newWorld->messenger.receiveMessage(buf,msg.length);
-          newWorld->generateChunkFromString(msg.x,msg.y,msg.z,std::string(buf,msg.length));
+          newWorld->generateChunkFromString(msg.x.i,msg.y.i,msg.z.i,std::string(buf,msg.length));
           delete[] buf;
         }
         break;
       case(1):
-        newWorld->delBlock(msg.x,msg.y,msg.z);
+        newWorld->delBlock(msg.x.i,msg.y.i,msg.z.i);
         break;
       case(2):
-        newWorld->addBlock(msg.x,msg.y,msg.z,msg.ext1);
+        newWorld->addBlock(msg.x.i,msg.y.i,msg.z.i,msg.ext1);
         break;
       case(10):
         //mainCharacter->(msg.x,msg.y,msg.z);
         break;
       case(90):
-        newWorld->addPlayer(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z,msg.ext1);
+        newWorld->addPlayer(msg.x.f,msg.y.f,msg.z.f,msg.ext1);
         break;
       case(91):
         if(msg.ext1 == newWorld->mainId)
         {
-          mainCharacter->setPosition(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z);
+          mainCharacter->setPosition(msg.x.f,msg.y.f,msg.z.f);
         }
-        else newWorld->movePlayer(*(float*)&msg.x,*(float*)&msg.y,*(float*)&msg.z,msg.ext1);
+        else newWorld->movePlayer(msg.x.f,msg.y.f,msg.z.f,msg.ext1);
         break;
       case(99):
         newWorld->removePlayer(msg.ext1);

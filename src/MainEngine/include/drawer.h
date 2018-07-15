@@ -80,7 +80,6 @@ public:
   glm::vec3 viewMax;
   float directionalShadowResolution;
   int screenWidth,screenHeight;
-  std::shared_ptr<BSPNode> frontNode;
   void updateViewProjection(float camZoom,float near=0, float far=0);
   void setupShadersAndTextures(int screenWidth, int screenHeight);
   void setRenderDistances(int vert,int horz,int buffer);

@@ -24,12 +24,8 @@
 
 World::World(int numbBuildThreads,int width,int height)
 {
-  drawer.frontNode = NULL;
-  typedef std::queue<std::shared_ptr<BSPNode>> buildType;
-  buildQueue = new buildType[numbBuildThreads];
+  buildQueue = new TSafeQueue<std::shared_ptr<BSPNode>>[numbBuildThreads];
   numbOfThreads = numbBuildThreads;
-
-
 
   ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
 
@@ -53,11 +49,6 @@ World::World(int numbBuildThreads,int width,int height)
   boost::filesystem::create_directory("saves/"+worldName+"/chunks");
 
   drawnChunks = 0;
-
-
-  totalChunks = 0;
-
-
 
   messenger.setupSockets(ipAddress,port);
   messenger.receiveMessage(&mainId,sizeof(mainId));
@@ -99,7 +90,7 @@ void World::calculateViewableChunks()
   glm::ivec3 min = toChunkCoords(drawer.viewMin);
   glm::ivec3 max = toChunkCoords(drawer.viewMax);
   //std::cout << std::dec << "Am drawing:" << BSP::totalChunks << "\n";
-  BSP::totalChunks = 0;
+  //BSP::totalChunks = 0;
   double curTime;
   curTime = glfwGetTime();
   drawer.chunksToDraw = BSPmap.findAll(min,max);
@@ -119,17 +110,6 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,const std
   }
   std::shared_ptr<BSPNode> tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName,value));
   BSPmap.add(chunkx,chunky,chunkz,tempChunk);
-
-  if(drawer.frontNode == NULL)
-  {
-    drawer.frontNode = tempChunk;
-  }
-  else
-  {
-    tempChunk->nextNode = drawer.frontNode;
-    drawer.frontNode->prevNode = tempChunk;
-    drawer.frontNode = tempChunk;
-  }
 
 
   /*
@@ -204,7 +184,7 @@ void World::generateChunkFromString(int chunkx, int chunky, int chunkz,const std
   //Adds the chunk to the current mainBuildQueue if it is not already;
   if(!tempChunk->toBuild)
   {
-      addToBuildQueue(tempChunk); 
+      addToBuildQueue(tempChunk);
   }
 }
 
@@ -226,17 +206,6 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   messenger.requestChunk(chunkx,chunky,chunkz);
   std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName));
   BSPmap.add(chunkx,chunky,chunkz,tempChunk);
-  if(drawer.frontNode == NULL)
-  {
-    drawer.frontNode = tempChunk;
-  }
-  else
-  {
-    tempChunk->nextNode = drawer.frontNode;
-    drawer.frontNode->prevNode = tempChunk;
-    drawer.frontNode = tempChunk;
-  }
-
 
   /*
     At this point the chunk is in both the linked list as well as the unorderedmap
@@ -367,6 +336,16 @@ std::shared_ptr<BSPNode>  World::getChunk(int x, int y, int z)
 
 
 
+void World::deleteChunksFromQueue()
+{
+  while(!chunkDeleteQueue.empty())
+  {
+    auto temp = chunkDeleteQueue.front();
+    temp->del();
+    chunkDeleteQueue.pop();
+  }
+}
+
 void World::delChunk(int x, int y, int z)
 {
   std::shared_ptr<BSPNode>  tempChunk = getChunk(x,y,z);
@@ -375,6 +354,7 @@ void World::delChunk(int x, int y, int z)
     BSPmap.del(x,y,z);
     messenger.requestMap.del(x,y,z);
     tempChunk->disconnect();
+    chunkDeleteQueue.push(tempChunk);
     /*
     Essentially marks the chunk for death
     Removes all connected pointers besides the linked list
@@ -393,10 +373,10 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
     Scans through the same list as the draw function
     however this time referencing the current position of the player
     and raises the destroy flag if its out of a certain range
-  */
+    */
 
-  std::shared_ptr<BSPNode>  curNode = drawer.frontNode;
-  while(curNode != NULL)
+  auto list = BSPmap.getFullList();
+  for(auto itr = list.begin();itr != list.end();++itr)
   {
     int x = round(*mainx);
     int y = round(*mainy);
@@ -406,11 +386,10 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
     y/= CHUNKSIZE;
     z/= CHUNKSIZE;
 
-    int chunkx = curNode->curBSP.xCoord;
-    int chunky = curNode->curBSP.yCoord;
-    int chunkz = curNode->curBSP.zCoord;
+    int chunkx = (*itr)->curBSP.xCoord;
+    int chunky = (*itr)->curBSP.yCoord;
+    int chunkz = (*itr)->curBSP.zCoord;
 
-    curNode = curNode->nextNode;
     if(abs(chunkx-x) > horzRenderDistance + renderBuffer
     || abs(chunky-y) > horzRenderDistance + renderBuffer
     || abs(chunkz-z) > horzRenderDistance + renderBuffer)
@@ -418,16 +397,19 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
       delChunk(chunkx,chunky,chunkz);
     }
   }
+
 }
 
 void World::saveWorld()
 {
+  /*
     std::shared_ptr<BSPNode>  curNode = drawer.frontNode;
     while(curNode != NULL)
     {
       curNode->saveChunk();
       curNode = curNode->nextNode;
     }
+    */
 }
 
 bool World::chunkExists(int x ,int y, int z)

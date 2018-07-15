@@ -31,20 +31,23 @@ private:
   glm::ivec3 inline toChunkCoords(glm::ivec3 in);
   inline void checkForUpdates(glm::ivec3 local,std::shared_ptr<BSPNode> chunk);
 public:
-  void calculateViewableChunks();
-  std::mutex playerListMutex;
-  std::map<uchar, std::shared_ptr<Player>> playerList;
-  unsigned int quadVAO = 0;
-  unsigned int quadVBO;
-  char mainId;
   Messenger messenger;
   Drawer drawer;
-  unsigned int totalChunks;
+  Map3D<std::shared_ptr<BSPNode>> BSPmap;
+  std::mutex playerListMutex;
+  std::map<uchar, std::shared_ptr<Player>> playerList;
+  char mainId;
+
+  TSafeQueue<std::shared_ptr<BSPNode>>* buildQueue;
+  TSafeQueue<std::shared_ptr<BSPNode>> chunkDeleteQueue;
   int horzRenderDistance,vertRenderDistance,renderBuffer;
   int drawnChunks;
   int numbOfThreads;
+
   //The name of the world, for saving and loading
   std::string worldName;
+
+  void calculateViewableChunks();
   bool blockExists(int x, int y, int z);
   bool blockExists(glm::vec3 pos)
   {
@@ -57,7 +60,7 @@ public:
   int anyExists(glm::vec3 pos);
   bool entityExists(glm::vec3 pos);
   bool entityExists(float x, float y, float z);
-  Map3D<std::shared_ptr<BSPNode>> BSPmap;
+
   std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
   glm::vec4 rayCast(glm::vec3 pos, glm::vec3 front, int max);
 
@@ -65,7 +68,6 @@ public:
   World(int numbBuildThreads,int width,int height);
 
   void renderWorld(float* mainx, float* mainy, float* mainz);
-  //void drawWorld(glm::mat4 viewMat, glm::mat4 projMat, bool useHSR);
 
   void buildWorld(int threadNumb);
   bool chunkExists(int x, int y, int z);
@@ -75,6 +77,7 @@ public:
 
   void delBlock(int x, int y, int z);
   void delChunk(int x, int y, int z);
+  void deleteChunksFromQueue();
   void addBlock(int x, int y, int z, int id);
   void updateBlock(int x, int y, int z);
   void delScan(float* mainx, float* mainy, float* mainz);
@@ -82,7 +85,7 @@ public:
   void generateChunkFromString(int chunkx, int chunky, int chunkz,const std::string &val);
   void saveWorld();
   void loadChunk(std::string);
-  std::queue<std::shared_ptr<BSPNode>>* buildQueue;
+
 };
 
 //The class for each individual block in the dictionary

@@ -44,8 +44,8 @@ int main()
   //Cull face unrenders the back side of polygons
 
 
-  //glfwWindowHint(GLFW_SAMPLES, 4);
-  //glEnable(GL_MULTISAMPLE);
+  glfwWindowHint(GLFW_SAMPLES, 4);
+  glEnable(GL_MULTISAMPLE);
 
 
   glEnable(GL_CULL_FACE);

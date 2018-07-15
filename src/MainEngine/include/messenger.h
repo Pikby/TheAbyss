@@ -3,16 +3,44 @@
 #include "../../headers/threadSafeQueue.h"
 #include "../../headers/3dmap.h"
 typedef unsigned char uchar;
+
+union IntOrFloat
+{
+  int i;
+  float f;
+};
 struct Message
 {
   uchar opcode;
   uchar ext1;
   uchar ext2;
   uchar ext3;
-  int x;
-  int y;
-  int z;
+  IntOrFloat x;
+  IntOrFloat y;
+  IntOrFloat z;
   int length;
+  Message(uchar a, uchar b, uchar c, uchar d, int xpos, int ypos, int zpos,int len)
+  {
+    opcode = a;
+    ext1 = b;
+    ext2 = c;
+    ext3 = d;
+    x.i = xpos;
+    y.i = ypos;
+    z.i = zpos;
+    length = len;
+  }
+  Message(uchar a, uchar b, uchar c, uchar d, float xpos, float ypos, float zpos,int len)
+  {
+    opcode = a;
+    ext1 = b;
+    ext2 = c;
+    ext3 = d;
+    x.f = xpos;
+    y.f = ypos;
+    z.f = zpos;
+    length = len;
+  }
 };
 
 class Messenger
@@ -33,5 +61,6 @@ public:
   void requestMove(float x, float y, float z);
   void requestExit();
   void receiveMessage(void *buffer,int length);
+  void sendMessage( void* buffer,int length);
   void createChunkRequest(int x, int y, int z);
 };

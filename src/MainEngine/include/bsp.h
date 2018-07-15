@@ -15,27 +15,6 @@ typedef unsigned char uchar;
 //Class which holds the data for each individual chunk
 class BSPNode;
 
-/*
-enum Sides {LEFT = 1,RIGHT = (1 << 1),
-            UP = (1<<2), DOWN = (1<<3),
-            FRONT = (1<<4), BACK = (1<<5)};
-struct BlockFace
-{
-  char block;
-  BlockFace()
-  {
-    block=0;
-  }
-  bool get(Sides side)
-  {
-    return (block & side) != 0 ? true : false;
-  }
-  void set(Sides side)
-  {
-    block |= side;
-  }
-};
-*/
 class BSP
 {
 private:
@@ -62,15 +41,14 @@ private:
   Array3D<uchar, CHUNKSIZE> worldArray;
 
 public:
-  static int totalChunks;
+  static bool geometryChanged;
   int xCoord;
   int yCoord;
   int zCoord;
 
   BSP(int x,int y,int z,const std::string &wName);
   BSP(int x,int y,int z,const std::string &wName, const std::string &val);
-  BSP();
-  ~BSP();
+  BSP(){};
   void generateTerrain();
   void render();
   void addBlock(int x, int y, int z,char id);
@@ -82,6 +60,8 @@ public:
   void saveChunk();
   std::string compressChunk();
   glm::vec3 offset(float x, float y,float z);
+  //Array3D<BlockFace,CHUNKSIZE>* findEdges(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
+    //                     std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
   void build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
                        std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
   void drawOpaque();
@@ -94,6 +74,7 @@ class BSPNode
   private:
   std::mutex BSPMutex;
   public:
+  static int totalChunks;
   BSP curBSP;
   BSPNode(int x,int y,int z,const std::string &wName);
   BSPNode(int x,int y,int z,const std::string &wName,const std::string &val);
@@ -110,8 +91,6 @@ class BSPNode
   void addBlock(int x, int y, int z, int id);
   void del();
   void disconnect();
-  //next and prev node for the linked list of all nodes
-  std::shared_ptr<BSPNode>  nextNode,prevNode;
 
   //references to the 6 cardinal neighbours of the chunk
   std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;

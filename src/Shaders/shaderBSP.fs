@@ -166,7 +166,7 @@ void main()
     if(shadow>1) shadow = 1;
 
     //vec3 result = calcDirectionalLight(1.0f) * objectColor;
-    shadow = 1-calcDirShadows();
+    //shadow = 1-calcDirShadows();
     //shadow = 1.0f;
     color = calcDirectionalLight(shadow);
     // /color *= objectColor;
@@ -178,10 +178,12 @@ void main()
     */
     vec3 objColor = objectColor;
 
+    /*
     if(findCorrectShadowMap() == 0) objColor =  vec3(0.000, 0.500, 1.000);
     else if(findCorrectShadowMap() == 1) objColor = vec3(1,0,0);
     else if(findCorrectShadowMap() == 2) objColor = vec3(0,1,0);
-
+    */
+    float maxDistance = dirLight.arrayOfDistances[numbOfCascadedShadows];
     vec3 finColor = color*objColor*texture(curTexture,TexCoord).rgb;
     finalcolor =vec4(finColor,1);
 }

@@ -235,7 +235,7 @@ void Drawer::renderDirectionalShadows()
     }
     glm::vec3 min,max;
     calculateMinandMaxPoints(frustrum,8,&min,&max);
-    std::cout << glm::to_string(min) << ":" << glm::to_string(max) << "\n";
+    //std::cout << glm::to_string(min) << ":" << glm::to_string(max) << "\n";
     lightProjection = glm::ortho(min.x, max.x, min.y,max.y,shadowNear, shadowFar);
 
     dirLight.lightSpaceMat[x] = lightProjection * lightView;
@@ -466,12 +466,7 @@ void Drawer::drawTerrain(Shader* shader, const glm::mat4 &clipMat, bool useHSR)
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, glTexture);
 
-
-  /*
-  std::shared_ptr<BSPNode>  curNode = frontNode;
-  std::shared_ptr<BSPNode>  nextNode;
-
-
+/*
   while(curNode != NULL)
   {
     nextNode = curNode->nextNode;
@@ -502,38 +497,25 @@ void Drawer::drawTerrain(Shader* shader, const glm::mat4 &clipMat, bool useHSR)
     }
     curNode = nextNode;
   }
-*/
+  */
 
-
+  useHSR = false;
   if(chunksToDraw->empty()) return;
   for(auto it = chunksToDraw->cbegin();it != chunksToDraw->cend();++it)
   {
     std::shared_ptr<BSPNode> curNode = (*it);
     if(curNode->toDelete == true)
     {
+      std::cout << "Found a chunk to delete\n";
       curNode->del();
+      std::cout << curNode.use_count() << "\n";
     }
     else
     {
-      if(useHSR)
-      {
-        int x = curNode->curBSP.xCoord*CHUNKSIZE+CHUNKSIZE/2;
-        int y = curNode->curBSP.yCoord*CHUNKSIZE+CHUNKSIZE/2;
-        int z = curNode->curBSP.zCoord*CHUNKSIZE+CHUNKSIZE/2;
-
-
-        glm::vec4 p1 = glm::vec4(x,y,z,1);
-
-        p1 = clipMat*p1;
-        double w = p1.w;
-
-
-        if(abs(p1.x) < w && abs(p1.y) < w && 0 < p1.z && p1.z < w)
-          curNode->drawOpaque();
-      }
-      else curNode->drawOpaque();
+      curNode->drawOpaque();
     }
 
   }
+
 
 }

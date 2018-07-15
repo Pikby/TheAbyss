@@ -6,12 +6,24 @@
 #include <list>
 
 using namespace std;
+
 template <class T>
 class Map3D
 {
+  struct Node
+  {
+    typename std::list<T>::iterator placeInList;
+    T data;
+  };
   private:
     std::mutex mapMutex;
-    map<int, map<int, map<int, T>>> map3D;
+    std::list<T> fullList;
+    typename std::list<T>::iterator addToList(const T& data)
+    {
+      fullList.push_back(data);
+      return --fullList.end();
+    }
+    map<int, map<int, map<int, Node>>> map3D;
   public:
     Map3D()
     {
@@ -22,13 +34,20 @@ class Map3D
     T get(int x, int y, int z);
     void add(int x, int y, int z, T data);
     void del(int x, int y, int z);
+    void print();
     std::shared_ptr<std::list<T>> findAll(glm::ivec3 min, glm::ivec3 max);
+    const std::list<T> &getFullList()
+    {
+      return fullList;
+    }
 };
 template <class T>
 void Map3D<T>::add(int x, int y,int z,T data)
 {
   std::lock_guard<std::mutex> lock(mapMutex);
-  map3D[x][y][z] = data;
+  auto itr = addToList(data);
+  Node tmp = {itr,data};
+  map3D[x][y][z] = tmp;
   size++;
 }
 
@@ -59,7 +78,7 @@ T Map3D<T>::get(int x, int y, int z)
      {
        if(map3D[x][y].count(z) == 1)
        {
-         T tmp = map3D[x][y][z];
+         T tmp = map3D[x][y][z].data;
          return tmp;
        }
      }
@@ -71,6 +90,7 @@ template <class T>
 void Map3D<T>::del(int x, int y, int z)
 {
   std::lock_guard<std::mutex> lock(mapMutex);
+  fullList.erase(map3D[x][y][z].placeInList);
   map3D[x][y].erase(z);
   if(map3D[x][y].empty())
   {
@@ -95,10 +115,27 @@ std::shared_ptr<std::list<T>> Map3D<T>::findAll(glm::ivec3 min,glm::ivec3 max)
 
       for(auto itz = ity->second.lower_bound(min.z); itz->first <= max.z && itz != ity->second.end();++itz)
       {
-        partList->push_back(itz->second);
+        partList->push_back(itz->second.data);
       }
 
     }
   }
   return partList;
+}
+
+template <class T>
+void Map3D<T>::print()
+{
+  for(auto itx = map3D.begin();itx != map3D.end();++itx)
+  {
+    std::cout << itx->first << ":\n";
+    for(auto ity = itx->second.begin();ity != itx->second.end();++ity)
+    {
+      std::cout << "  " << ity->first << ":\n";
+        for(auto itz = ity->second.begin();itz != ity->second.end();++itz)
+        {
+          std::cout << "    " << itz->first << "\n";
+        }
+    }
+  }
 }
