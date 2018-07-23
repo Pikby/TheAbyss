@@ -173,19 +173,15 @@ BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
     }
     i+= curLength;
   }
+  oVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+  oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+  tVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+  tIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
 
-
-
-
-  oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-  oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
-  tVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-  tIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
-
-  oVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-  oIndices  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
-  tVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-  tIndices = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+  oVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+  oIndices  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+  tVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+  tIndices = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
 }
 
 BSP::BSP(int x, int y, int z,const std::string &wName)
@@ -238,15 +234,15 @@ BSP::BSP(int x, int y, int z,const std::string &wName)
       }
       ichunk.close();
     }
-    oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-    oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
-    tVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-    tIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+    oVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+    oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+    tVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+    tIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
 
-    oVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-    oIndices  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
-    tVertices = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-    tIndices = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+    oVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+    oIndices  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+    tVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+    tIndices = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
 }
 
 inline std::string BSP::compressChunk()
@@ -323,21 +319,30 @@ void BSP::freeGL()
   glDeleteVertexArrays(1,&tVAO);
 }
 
+inline int pack4chars(char a, char b, char c, char d)
+{
+  return ((a << 24) | (b << 16) | (c << 8) | d);
+}
 
-
-
-
-
-inline int BSP::addVertex(int renderType,const glm::vec3 &pos,const glm::vec3 &norm, float texX, float texY)
+inline int BSP::addVertex(int renderType,const glm::vec3 &pos,Faces face, TextureSides top, TextureSides right)
 {
   if(renderType == 0)
   {
-    int numbVert = oVerticesBuffer->size()/8;
+    int numbVert = oVerticesBuffer->size()/4;
     //Adds position vector
     oVerticesBuffer->push_back(pos.x);
     oVerticesBuffer->push_back(pos.y);
     oVerticesBuffer->push_back(pos.z);
 
+    char normandtex = face | top | right;
+    char texId = curBlockid;
+    char xtextcount = xdist;
+    char ytextcount = ydist;
+
+    //std::cout << "Norm is" << face << "\n";
+    int package = pack4chars(normandtex,texId,xtextcount,ytextcount);
+    oVerticesBuffer->push_back(*(float*)&package);
+    /*
     //Adds normal vector
     oVerticesBuffer->push_back(norm.x);
     oVerticesBuffer->push_back(norm.y);
@@ -347,8 +352,10 @@ inline int BSP::addVertex(int renderType,const glm::vec3 &pos,const glm::vec3 &n
     oVerticesBuffer->push_back(texX);
     oVerticesBuffer->push_back(texY);
     //Returns the location of the vertice
+    */
     return numbVert;
   }
+  /*
   else if(renderType == 1)
   {
     int numbVert = tVerticesBuffer->size()/8;
@@ -368,6 +375,7 @@ inline int BSP::addVertex(int renderType,const glm::vec3 &pos,const glm::vec3 &n
     //Returns the location of the vertice
     return numbVert;
   }
+  */
 }
 
 inline void BSP::addIndices(int renderType,int index1, int index2, int index3, int index4)
@@ -444,7 +452,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
   tVerticesBuffer->clear();
   tIndicesBuffer->clear();
 
-
+  Array3D<BlockFace,32> arrayFaces;
   for(int x = 0; x<CHUNKSIZE;x++)
   {
     for(int z = 0;z<CHUNKSIZE;z++)
@@ -528,132 +536,354 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          }
          else if(renderType == blockVisibleType(x,y,z-1)) frontNeigh = true;
 
-         Block tempBlock = ItemDatabase::blockDictionary[(getBlock(x,y,z))];
-         float x1, y1, x2, y2;
+         BlockFace& curFace = arrayFaces.get(x,y,z);
+         if(!frontNeigh) curFace.setFace(FRONTF);
+         if(!backNeigh) curFace.setFace(BACKF);
+         if(!topNeigh) curFace.setFace(TOPF);
+         if(!bottomNeigh) curFace.setFace(BOTTOMF);
+         if(!leftNeigh) curFace.setFace(LEFTF);
+         if(!rightNeigh) curFace.setFace(RIGHTF);
+
+       }
+     }
+   }
+
+   for(int x = 0; x<CHUNKSIZE;x++)
+   {
+     for(int z = 0;z<CHUNKSIZE;z++)
+     {
+       for(int y = 0;y<CHUNKSIZE;y++)
+       {
+         int renderType = blockVisibleType(x,y,z);
+         float realX = x+CHUNKSIZE*xCoord;
+         float realY = y+CHUNKSIZE*yCoord;
+         float realZ = z+CHUNKSIZE*zCoord;
+
+
+         BlockFace curFace = arrayFaces.get(x,y,z);
+         char blockId = getBlock(x,y,z);
+         Block tempBlock = ItemDatabase::blockDictionary[blockId];
 
          glm::vec3 topleft, bottomleft,topright,bottomright;
          glm::vec3 tempVec;
-         glm::vec3 normVec;
+         Faces normVec;
 
-
-         if(!topNeigh)
+         xdist = 1;
+         ydist = 1;
+         if(curFace.getFace(TOPF))
          {
-           int up = 1;
-           int down = 0;
-           int right = 1;
-           int left = 0;
+           char top = 1;
+           char right = 1;
+
+           arrayFaces.get(x,y,z).delFace(TOPF);
+           while(x+right < CHUNKSIZE && getBlock(x+right,y,z) == blockId &&
+                 arrayFaces.get(x+right,y,z).getFace(TOPF))
+           {
+             arrayFaces.get(x+right,y,z).delFace(TOPF);
+             right +=1;
+           }
+
+           while(z+top < CHUNKSIZE && getBlock(x,y,z+top) == blockId
+                 && arrayFaces.get(x,y,z+top).getFace(TOPF))
+           {
+             bool clearRow = true;
+             for(int i=0;i<right;i++)
+             {
+               if(getBlock(x+i,y,z+top) != blockId || !arrayFaces.get(x+i,y,z+top).getFace(TOPF) ) clearRow = false;
+             }
+
+             if(clearRow)
+             {
+               for(int i=0;i<right;i++)
+               {
+                 arrayFaces.get(x+i,y,z+top).delFace(TOPF);
+               }
+               top += 1;
+             }
+             else break;
+           }
 
 
-           bottomleft = glm::vec3(realX+up,realY+1.0f,realZ+left);
-           bottomright = glm::vec3(realX+up,realY+1.0f,realZ+right);
-           topleft = glm::vec3(realX-down,realY+1.0f,realZ+left);
+           bottomleft = glm::vec3(realX+right,realY+1.0f,realZ);
+           bottomright = glm::vec3(realX+right,realY+1.0f,realZ+top);
+           topleft = glm::vec3(realX,realY+1.0f,realZ);
+           topright = glm::vec3(realX,realY+1.0f,realZ+top);
 
-           topright = glm::vec3(realX-down,realY+1.0f,realZ+right);
+           normVec = TOPF;
+           xdist = right;
+           ydist = top;
+           curBlockid = tempBlock.getTop();
 
-
-           normVec = glm::vec3(0.0f,1.0f,0.0f);
-           tempBlock.getTop(&x1,&y1,&x2,&y2);
-
-           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
-           int index3 = addVertex(renderType,bottomleft,normVec,x2,y1);
-           int index2 = addVertex(renderType,topright,normVec,x1,y2);
-           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
+           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
+           int index3 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
+           int index2 = addVertex(renderType,topright,normVec,TOP,RIGHT);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
 
 
            addIndices(renderType,index1,index2,index3,index4);
          }
 
-         if(!bottomNeigh)
+         if(curFace.getFace(BOTTOMF))
          {
+           char top = 1;
+           char right = 1;
+
+           arrayFaces.get(x,y,z).delFace(BOTTOMF);
+
+
+           while(x+right < CHUNKSIZE && getBlock(x+right,y,z) == blockId &&
+                 arrayFaces.get(x+right,y,z).getFace(BOTTOMF))
+           {
+             arrayFaces.get(x+right,y,z).delFace(BOTTOMF);
+             right +=1;
+           }
+
+           while(z+top < CHUNKSIZE && getBlock(x,y,z+top) == blockId
+                 && arrayFaces.get(x,y,z+top).getFace(BOTTOMF))
+           {
+             bool clearRow = true;
+             for(int i=0;i<right;i++)
+             {
+               if(getBlock(x+i,y,z+top) != blockId || !arrayFaces.get(x+i,y,z+top).getFace(BOTTOMF) ) clearRow = false;
+             }
+
+             if(clearRow)
+             {
+               for(int i=0;i<right;i++)
+               {
+                 arrayFaces.get(x+i,y,z+top).delFace(BOTTOMF);
+               }
+               top += 1;
+             }
+             else break;
+           }
+
            topleft = glm::vec3(realX,realY,realZ);
-           bottomleft = glm::vec3(realX+1.0f,realY,realZ);
-           topright = glm::vec3(realX,realY,realZ+1.0f);
-           bottomright = glm::vec3(realX+1.0f,realY,realZ+1.0f);
-
-           tempBlock.getBottom(&x1,&y1,&x2,&y2);
-           normVec = glm::vec3(0.0f,-1.0f,0.0f);
-
-           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
-           int index2 = addVertex(renderType,bottomleft,normVec,x2,y1);
-           int index3 = addVertex(renderType,topright,normVec,x1,y2);
-           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
+           bottomleft = glm::vec3(realX+right,realY,realZ);
+           topright = glm::vec3(realX,realY,realZ+top);
+           bottomright = glm::vec3(realX+right,realY,realZ+top);
+           normVec = BOTTOMF;
+           curBlockid = tempBlock.getBottom();
+           xdist = right;
+           ydist = top;
+           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
+           int index2 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
+           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
 
            addIndices(renderType,index1,index2,index3,index4);
          }
 
-         if(!rightNeigh)
+         if(curFace.getFace(RIGHTF))
          {
+           char top = 1;
+           char right = 1;
+           arrayFaces.get(x,y,z).delFace(RIGHTF);
+
+           while(z+right < CHUNKSIZE && getBlock(x,y,z+right) == blockId
+                 && arrayFaces.get(x,y,z+right).getFace(RIGHTF))
+           {
+             arrayFaces.get(x,y,z+right).delFace(RIGHTF);
+             right +=1;
+           }
+
+           while(y+top < CHUNKSIZE && getBlock(x,y+top,z) == blockId
+                 && arrayFaces.get(x,y+top,z).getFace(RIGHTF))
+           {
+             bool clearRow = true;
+             for(int i=0;i<right;i++)
+             {
+               if(getBlock(x,y+top,z+i) != blockId || !arrayFaces.get(x,y+top,z+i).getFace(RIGHTF)) clearRow = false;
+             }
+
+             if(clearRow)
+             {
+               for(int i=0;i<right;i++)
+               {
+                 arrayFaces.get(x,y+top,z+i).delFace(RIGHTF);
+               }
+               top += 1;
+             }
+             else break;
+           }
            topleft = glm::vec3(realX+1.0f,realY,realZ);
-           bottomleft = glm::vec3(realX+1.0f,realY+1.0f,realZ);
-           topright = glm::vec3(realX+1.0f,realY,realZ+1.0f);
-           bottomright = glm::vec3(realX+1.0f,realY+1.0f,realZ+1.0f);
-
-           tempBlock.getRight(&x1,&y1,&x2,&y2);
-           normVec = glm::vec3(1.0f,0.0f,0.0f);
-
-           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
-           int index2 = addVertex(renderType,bottomleft,normVec,x2,y1);
-           int index3 = addVertex(renderType,topright,normVec,x1,y2);
-           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
+           bottomleft = glm::vec3(realX+1.0f,realY+top,realZ);
+           topright = glm::vec3(realX+1.0f,realY,realZ+right);
+           bottomright = glm::vec3(realX+1.0f,realY+top,realZ +right);
+           normVec = RIGHTF;
+           xdist = top;
+           ydist = right;
+           curBlockid = tempBlock.getRight();
+           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
+           int index2 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
+           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
 
            addIndices(renderType,index1,index2,index3,index4);
          }
 
-         if(!leftNeigh)
+         if(curFace.getFace(LEFTF))
          {
+           char top = 1;
+           char right = 1;
+           arrayFaces.get(x,y,z).delFace(LEFTF);
+
+           while(z+right < CHUNKSIZE && getBlock(x,y,z+right) == blockId
+                 && arrayFaces.get(x,y,z+right).getFace(LEFTF))
+           {
+             arrayFaces.get(x,y,z+right).delFace(LEFTF);
+             right +=1;
+           }
+
+           while(y+top < CHUNKSIZE && getBlock(x,y+top,z) == blockId
+                 && arrayFaces.get(x,y+top,z).getFace(LEFTF))
+           {
+             bool clearRow = true;
+             for(int i=0;i<right;i++)
+             {
+               if(getBlock(x,y+top,z+i) != blockId || !arrayFaces.get(x,y+top,z+i).getFace(LEFTF)) clearRow = false;
+             }
+
+             if(clearRow)
+             {
+               for(int i=0;i<right;i++)
+               {
+                 arrayFaces.get(x,y+top,z+i).delFace(LEFTF);
+               }
+               top += 1;
+             }
+             else break;
+           }
+
+
            topleft = glm::vec3(realX,realY,realZ);
-           bottomleft = glm::vec3(realX,realY+1.0f,realZ);
-           topright = glm::vec3(realX,realY,realZ+1.0f);
-           bottomright = glm::vec3(realX,realY+1.0f,realZ +1.0f);
-
-           tempBlock.getLeft(&x1,&y1,&x2,&y2);
-           normVec = glm::vec3(-1.0f,0.0f,0.0f);
-
-           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
-           int index3 = addVertex(renderType,bottomleft,normVec,x2,y1);
-           int index2 = addVertex(renderType,topright,normVec,x1,y2);
-           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
+           bottomleft = glm::vec3(realX,realY+top,realZ);
+           topright = glm::vec3(realX,realY,realZ+right);
+           bottomright = glm::vec3(realX,realY+top,realZ +right);
+           normVec = LEFTF;
+           xdist = top;
+           ydist = right;
+           curBlockid = tempBlock.getLeft();
+           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
+           int index3 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
+           int index2 = addVertex(renderType,topright,normVec,TOP,RIGHT);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
 
            addIndices(renderType,index1,index2,index3,index4);
          }
-         if(!backNeigh)
+
+
+
+         if(curFace.getFace(BACKF))
          {
+           char top = 1;
+           char right = 1;
+
+           arrayFaces.get(x,y,z).delFace(BACKF);
+
+
+           while(x+right < CHUNKSIZE && getBlock(x+right,y,z) == blockId
+                 && arrayFaces.get(x+right,y,z).getFace(BACKF))
+           {
+             arrayFaces.get(x+right,y,z).delFace(BACKF);
+             right +=1;
+           }
+
+           while(y+top < CHUNKSIZE && getBlock(x,y+top,z) == blockId
+                 && arrayFaces.get(x,y+top,z).getFace(BACKF))
+           {
+             bool clearRow = true;
+             for(int i=0;i<right;i++)
+             {
+               if(getBlock(x+i,y+top,z) != blockId || !arrayFaces.get(x+i,y+top,z).getFace(BACKF)) clearRow = false;
+             }
+
+             if(clearRow)
+             {
+               for(int i=0;i<right;i++)
+               {
+                 arrayFaces.get(x+i,y+top,z).delFace(BACKF);
+               }
+               top += 1;
+             }
+             else break;
+           }
+
            topleft = glm::vec3(realX,realY,realZ+1.0f);
-           bottomleft = glm::vec3(realX+1.0f,realY,realZ+1.0f);
-           topright = glm::vec3(realX,realY+1.0f,realZ+1.0f);
-           bottomright = glm::vec3(realX+1.0f,realY+1.0f,realZ+1.0f);
+           bottomleft = glm::vec3(realX+right,realY,realZ+1.0f);
+           topright = glm::vec3(realX,realY+top,realZ+1.0f);
+           bottomright = glm::vec3(realX+right,realY+top,realZ+1.0f);
 
-           tempBlock.getBack(&x1,&y1,&x2,&y2);
-           normVec = glm::vec3(0.0f,0.0f,-1.0f);
-
-           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
-           int index2 = addVertex(renderType,bottomleft,normVec,x2,y1);
-           int index3 = addVertex(renderType,topright,normVec,x1,y2);
-           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
+           curBlockid = tempBlock.getBack();
+           normVec = BACKF;
+           xdist = right;
+           ydist = top;
+           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
+           int index2 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
+           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
            addIndices(renderType,index1,index2,index3,index4);
          }
 
-         if(!frontNeigh)
-         {
-           tempBlock.getFront(&x1,&y1,&x2,&y2);
-           topleft = glm::vec3(realX,realY,realZ);
-           bottomleft = glm::vec3(realX+1.0f,realY,realZ);
-           topright = glm::vec3(realX,realY+1.0f,realZ);
-           bottomright = glm::vec3(realX+1.0f,realY+1.0f,realZ);
 
-           normVec = glm::vec3(0.0f,0.0f,-1.0f);
+         if(curFace.getFace(FRONTF))
+          {
+            char top = 1;
+            char right = 1;
+
+            arrayFaces.get(x,y,z).delFace(FRONTF);
 
 
-           int index1 = addVertex(renderType,topleft,normVec,x1,y1);
-           int index3 = addVertex(renderType,bottomleft,normVec,x2,y1);
-           int index2 = addVertex(renderType,topright,normVec,x1,y2);
-           int index4 = addVertex(renderType,bottomright,normVec,x2,y2);
+            while(x+right < CHUNKSIZE && getBlock(x+right,y,z) == blockId &&
+                  arrayFaces.get(x+right,y,z).getFace(FRONTF))
+            {
+              arrayFaces.get(x+right,y,z).delFace(FRONTF);
+              right +=1;
+            }
 
-           addIndices(renderType,index1,index2,index3,index4);
-         }
+            while(y+top < CHUNKSIZE && getBlock(x,y+top,z) == blockId
+                  && arrayFaces.get(x,y+top,z).getFace(FRONTF))
+            {
+              bool clearRow = true;
+              for(int i=0;i<right;i++)
+              {
+                if(getBlock(x+i,y+top,z) != blockId || !arrayFaces.get(x+i,y+top,z).getFace(FRONTF) ) clearRow = false;
+              }
+
+              if(clearRow)
+              {
+                for(int i=0;i<right;i++)
+                {
+                  arrayFaces.get(x+i,y+top,z).delFace(FRONTF);
+                }
+                top += 1;
+              }
+              else break;
+            }
+
+            xdist = right;
+            ydist = top;
+            topleft = glm::vec3(realX,realY,realZ);
+            bottomleft = glm::vec3(realX+right,realY,realZ);
+            topright = glm::vec3(realX,realY+top,realZ);
+            bottomright = glm::vec3(realX+right,realY+top,realZ);
+
+            curBlockid = tempBlock.getBack();
+            normVec = FRONTF;
+
+
+            int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
+            int index3 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
+            int index2 = addVertex(renderType,topright,normVec,TOP,RIGHT);
+            int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
+
+            addIndices(renderType,index1,index2,index3,index4);
+
+          }
        }
      }
-  }
+   }
+
   oVertices = oVerticesBuffer;
   oIndices = oIndicesBuffer;
   tVertices = tVerticesBuffer;
@@ -686,14 +916,12 @@ inline void BSP::render()
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,oEBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, oIndices->size()*sizeof(uint),&oIndices->front(), GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+  int vertexSize = 4*sizeof(float);
+  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE,vertexSize, (void*)0);
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+  glVertexAttribPointer(1,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(3*sizeof(float)));
   glEnableVertexAttribArray(1);
-
-  glVertexAttribPointer(2,2,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-  glEnableVertexAttribArray(2);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
@@ -703,7 +931,7 @@ inline void BSP::render()
 
   if(tIndices->size() != 0)
   {
-    std::cout << "SUM TING WONG\n";
+  std::cout << "ITS BROKE\n";
   glDeleteBuffers(1, &tVBO);
   glDeleteBuffers(1, &tEBO);
   glDeleteVertexArrays(1, &tVAO);

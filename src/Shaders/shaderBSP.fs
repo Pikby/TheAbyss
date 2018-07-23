@@ -30,7 +30,8 @@ in vec2 TexCoord;
 in vec3 FinNormal;
 in vec3 FragPos;
 in float ClipSpaceDepth;
-
+in vec2 TexCells;
+in vec2 TexOrigin;
 out vec4 finalcolor;
 
 uniform sampler2D curTexture;
@@ -59,7 +60,6 @@ int findCorrectShadowMap()
 float calcDirShadows()
 {
   int index = findCorrectShadowMap();
-
   vec4 fragPosLightSpace = dirLight.lightSpaceMatrix[index]*vec4(FragPos,1.0f);
   vec3 proj = fragPosLightSpace.xyz/fragPosLightSpace.w;
   proj = proj *0.5+0.5;
@@ -119,7 +119,7 @@ vec3 calcDirectionalLight(float shadow)
 
   vec3 viewDir = normalize(viewPos - FragPos);
   vec3 reflectDir = reflect(-lightDir, FinNormal);
-  float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+  float spec = pow(max(dot(viewDir, reflectDir), 0.0), 8);
 
   vec3 ambient = dirLight.ambient;
   vec3 diffuse = dirLight.diffuse*diff;
@@ -150,20 +150,21 @@ vec3 calcPointLights(PointLight light, float shadow)
 }
 */
 
+vec3 getTexture()
+{
+  vec2 temp;
+  temp.x = mod(TexCoord.x*TexCells.x,(1.0f/3.0f))+TexOrigin.x;
+  temp.y = mod(TexCoord.y*TexCells.y,1)+TexOrigin.y;
+  return texture(curTexture,temp).rgb;
+}
+
 void main()
 {
+
     float shadow = 1;
     vec3 color;
-    //shadow += 1-calcDirShadows();
+    shadow += 1-calcDirShadows();
 
-    /*
-    for(int i=0;i<numbOfLights;i++)
-    {
-      shadow += 1-calcPointShadows(pointLights[i]);
-    }
-
-    */
-    if(shadow>1) shadow = 1;
 
     //vec3 result = calcDirectionalLight(1.0f) * objectColor;
     //shadow = 1-calcDirShadows();
@@ -182,8 +183,10 @@ void main()
     if(findCorrectShadowMap() == 0) objColor =  vec3(0.000, 0.500, 1.000);
     else if(findCorrectShadowMap() == 1) objColor = vec3(1,0,0);
     else if(findCorrectShadowMap() == 2) objColor = vec3(0,1,0);
-    */
+    *//*
     float maxDistance = dirLight.arrayOfDistances[numbOfCascadedShadows];
-    vec3 finColor = color*objColor*texture(curTexture,TexCoord).rgb;
-    finalcolor =vec4(finColor,1);
+    */
+    vec3 finColor = color*objColor*getTexture();
+
+    finalcolor = vec4(finColor,1);
 }

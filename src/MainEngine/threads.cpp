@@ -103,14 +103,15 @@ void draw()
     newWorld->drawer.updateCameraMatrices(mainCam);
 
     newWorld->calculateViewableChunks();
-    /*
+
+
     if(BSP::geometryChanged == true)
     {
-      std::cout << "renderingShadows\n";
+      //std::cout << "renderingShadows\n";
       newWorld->drawer.renderDirectionalShadows();
       BSP::geometryChanged = false;
     }
-    */
+    
     newWorld->drawer.drawFinal();
     newWorld->drawer.drawObjects();
 

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <mutex>
+#include <atomic>
 #include "../../headers/shaders.h"
 #include "../../headers/3darray.h"
 
@@ -18,7 +19,31 @@ class BSPNode;
 class BSP
 {
 private:
+  uchar curBlockid;
+  char xdist;
+  char ydist;
+  enum Faces {FRONTF = 1 << 0, BACKF = 1 << 1,
+              TOPF = 1 << 2, BOTTOMF = 1 << 3,
+              LEFTF = 1 << 4, RIGHTF = 1 << 5};
 
+  enum TextureSides {BOTTOM  = 0,TOP = 1 << 6, RIGHT = 1 << 7, LEFT = 0};
+  struct BlockFace
+  {
+    char data;
+    void setFace(Faces f)
+    {
+      data |= f;
+    }
+    void delFace(Faces f)
+    {
+      data &= ~f;
+    }
+    bool getFace(Faces f)
+    {
+      return (data & f) != 0 ? true : false;
+    }
+    BlockFace(){data = 0;}
+  };
   //Opaque objects
   std::shared_ptr<std::vector<float>> oVertices;
   std::shared_ptr<std::vector<uint>> oIndices;
@@ -35,7 +60,7 @@ private:
   uint tVBO, tEBO, tVAO;
   std::string worldName;
 
-  int addVertex(int renderType, const glm::vec3 &pos,const glm::vec3 &norm, float texX, float texY);
+  int addVertex(int renderType, const glm::vec3 &pos,Faces face, TextureSides texX, TextureSides texY);
   void addIndices(int renderType,int index1, int index2, int index3, int index4);
 
   Array3D<uchar, CHUNKSIZE> worldArray;
@@ -60,8 +85,7 @@ public:
   void saveChunk();
   std::string compressChunk();
   glm::vec3 offset(float x, float y,float z);
-  //Array3D<BlockFace,CHUNKSIZE>* findEdges(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
-    //                     std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
+
   void build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
                        std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
   void drawOpaque();
@@ -96,5 +120,5 @@ class BSPNode
   std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;
 
   //Flags for use inbetween pointers
-  bool toRender,toBuild,toDelete,isGenerated,inUse;
+  std::atomic<bool> toRender,toBuild,toDelete,isGenerated,inUse;
 };

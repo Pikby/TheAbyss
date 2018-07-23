@@ -108,7 +108,7 @@ public:
   }
 
   void createDirectionalLight(glm::vec3 dir = glm::vec3(-1.0f,-1.0f,-1.0f),
-                              glm::vec3 amb = glm::vec3(0.2f,0.2f,0.2f),
+                              glm::vec3 amb = glm::vec3(0.5f,0.5f,0.5f),
                               glm::vec3 dif = glm::vec3(0.5f,0.5f,0.5f),
                               glm::vec3 spec = glm::vec3(1.0f,1.0f,1.0f))
   {

@@ -81,13 +81,7 @@ bool ItemDatabase::loadBlockDictionary(const char* file)
       }
       getline(dictionaryf,line);
       int visibleType = stoi(line);
-      getline(dictionaryf,line);
-      int width = stoi(line);
-      getline(dictionaryf,line);
-      int height = stoi(line);
-      getline(dictionaryf,line);
-      int depth = stoi(line);
-      blockDictionary[curBlock] = Block(name,id++,texArray,visibleType,width,height,depth,atlasWidth,atlasHeight);
+      blockDictionary[curBlock] = Block(name,id++,texArray,visibleType);
       curBlock++;
     }
     for(int i = 0; i< 4;i++)

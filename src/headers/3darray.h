@@ -8,7 +8,7 @@ class Array3D
     {
       memset(array,0,sizeof(array));
     }
-    T get(int x,int y, int z)
+    T &get(int x,int y, int z)
     {
       return array[x+y*N+z*N*N];
     }

@@ -49,6 +49,11 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader.setInt("dirLight.shadow[2]",6);
   blockShader.setInt("dirLight.shadow[3]",7);
   blockShader.setFloat("far_plane",25.0f);
+
+  blockShader.setInt("textureAtlasWidth",384);
+  blockShader.setInt("textureAtlasHeight",128);
+  blockShader.setInt("cellWidth",128);
+
   debugDepthQuad = Shader("../src/Shaders/old/debugQuad.vs", "../src/Shaders/old/debugQuad.fs");
   debugDepthQuad.use();
   debugDepthQuad.setInt("depthMap", 0);
@@ -355,7 +360,13 @@ void Drawer::drawFinal()
   shader->setMat4("view", viewMat);
   shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
   shader->setVec3("viewPos", viewPos);
+  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
   drawTerrain(shader,hsrMat);
+
+  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+
 }
 
 void Drawer::updateViewProjection(float camZoom,float near,float far)
