@@ -6,7 +6,7 @@ Settings::Settings()
 {
   definitions = Parser("../assets/settings.ini");
 
-} 
+}
 
 
 std::string Settings::get(std::string key)
@@ -15,7 +15,7 @@ std::string Settings::get(std::string key)
 }
 
 
-void Settings::add(std::string val,std::string key)
+void Settings::set(std::string val,std::string key)
 {
   definitions.add(val,key);
 }

@@ -1,19 +1,19 @@
 # the compiler: gcc for C program, define as g++ for C++
 CC = g++
-WCC = /media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static.posix-g++
-WPATH = /media/kibby/WorkSpace/MXE/mxe/usr/i686-w64-mingw32.static.posix-g++
+WCC = /mnt/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static.posix-g++
+WPATH = /mnt/WorkSpace/MXE/mxe/usr/i686-w64-mingw32.static.posix-g++
 
-WCC = /media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static.posix-g++
+WCC = /mnt/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static.posix-g++
 CFLAGSLINUX  = -I/usr/local/include/freetype2 -I/usr/include/libpng12 \
 					-lglfw3 -lGLEW -lGL -lm -ldl -lXinerama -lXrandr -lXi \
 					-lXcursor -lX11 -lXxf86vm -lpthread -std=c++17 \
 					-L/usr/local/lib -lfreetype -lstdc++fs -lboost_system -lboost_filesystem
 
 CFLAGSWINDOWS =-I/usr/local/include/freetype2 -I/usr/include/libpng12  \
-		-mwindows -lSOIL -lmingw32 -lGLEW \
-		-lopengl32 -lm `/media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-pkg-config --libs glfw3` \
+		-mwindows -lmingw32 -lGLEW \
+		-lopengl32 -lm `/mnt/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-pkg-config --libs glfw3` \
 		-lglu32 -lglew32 -lglew32s -std=c++17 -lpng -pthread -lz -lfreetype \
-		`/media/kibby/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-pkg-config --libs freetype2` \
+		`/mnt/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static-pkg-config --libs freetype2` \
 		-lboost_filesystem-mt -lboost_system-mt \
 		-lboost_serialization-mt \
 		-lboost_thread_win32-mt \
@@ -23,10 +23,13 @@ CFLAGSWINDOWS =-I/usr/local/include/freetype2 -I/usr/include/libpng12  \
 
 
 FPATH = ../src/
-TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEngine/bsp.cpp MainEngine/entities.cpp \
-				 Character/gui.cpp TerrainGeneration/FastNoise.cpp\
+TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEngine/bsp.cpp MainEngine/drawer.cpp MainEngine/messenger.cpp \
+				 Objects/items.cpp Objects/objects.cpp \
+				 Character/gui.cpp TerrainGeneration/FastNoise.cpp \
 				 Character/mainchar.cpp TerrainGeneration/bspterraingen.cpp  \
-				 InputHandling/inputhandling.cpp Inventory/items.cpp \
+				 InputHandling/inputhandling.cpp \
+				 Settings/settings.cpp \
+				 TextureLoading/textureLoading.cpp
 
 
 

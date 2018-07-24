@@ -9,6 +9,7 @@
 int main()
 {
   glfwInit();
+  glfwWindowHint(GLFW_SAMPLES, 4);
   const int numbBuildThreads = 1;
   int winWidth = std::stoi(Settings::get("windowWidth"));
   int winHeight = std::stoi(Settings::get("windowHeight"));
@@ -41,13 +42,13 @@ int main()
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  //Cull face unrenders the back side of polygons
 
 
-  glfwWindowHint(GLFW_SAMPLES, 4);
+
+  //Enable antialiasing
   glEnable(GL_MULTISAMPLE);
 
-
+  //Cull face unrenders the back side of polygons
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);

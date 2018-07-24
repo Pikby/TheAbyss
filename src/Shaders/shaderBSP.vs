@@ -19,6 +19,7 @@ uniform int cellWidth;
 
 void main()
 {
+  
   int package = floatBitsToInt(packagef);
   int norm = ((package >> 24) & 0x3F);
   int texCoord = ((package >> 24) & 0xC0);
@@ -83,6 +84,7 @@ void main()
 
   FinNormal = normVec;
   FragPos = position;
+
   gl_Position = projection*view*vec4(position, 1.0f);
   ClipSpaceDepth = gl_Position.z;
 }

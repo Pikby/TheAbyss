@@ -67,9 +67,7 @@ private:
 
 public:
   static bool geometryChanged;
-  int xCoord;
-  int yCoord;
-  int zCoord;
+  int xCoord,yCoord,zCoord;
 
   BSP(int x,int y,int z,const std::string &wName);
   BSP(int x,int y,int z,const std::string &wName, const std::string &val);

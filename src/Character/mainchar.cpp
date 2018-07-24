@@ -112,17 +112,17 @@ void MainChar::update()
   //std::cout << xpos /10.0f<<":"<<ypos/10.0f<<":"<<zpos/10.0f<<"\n";
   if(!curWorld->blockExists(floor(xpos+deltax),floor(ypos),floor(zpos)))
   {
-    xpos += deltax;
+    xpos = xpos + deltax;
   }
 
   if(!curWorld->blockExists(floor(xpos),floor(ypos),floor(zpos+deltaz)))
   {
-    zpos += deltaz;
+    zpos = zpos + deltaz;
   }
 
   if(!curWorld->blockExists(floor(xpos),floor(ypos+deltay),floor(zpos)))
   {
-    ypos += deltay;
+    ypos = ypos + deltay;
     grounded = false;
   }
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "gui.h"
+#include <atomic>
 #include "../../headers/camera.h"
 class World;
 
@@ -35,7 +36,7 @@ public:
   Camera mainCam;
 
 
-  float xpos,ypos,zpos;
+  std::atomic<float> xpos,ypos,zpos;
 
   MainChar(float x, float y, float z, World* curWorld );
   //Update movement

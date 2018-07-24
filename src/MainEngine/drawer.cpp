@@ -331,16 +331,23 @@ void Drawer::drawObjects()
 
 }
 
-/*
-void Drawer::drawPlayers(Shader* shader)
+
+void Drawer::drawPlayers()
 {
-  //std::cout << "Map has: " << playerList.size() << "\n";
+  glViewport(0,0,screenWidth,screenHeight);
+  objShader.use();
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP,0);
+  glBindTexture(GL_TEXTURE_2D,0);
+  objShader.setMat4("view",viewMat);
+  objShader.setVec3("viewPos",viewPos);
+
   for(auto it = playerList.begin(); it != playerList.end();it++)
   {
-    it->second->draw(shader);
+    it->second->draw(&objShader);
   }
 }
-*/
+
 void Drawer::drawFinal()
 {
   debugDepthQuad.use();
@@ -349,10 +356,7 @@ void Drawer::drawFinal()
   glBindTexture(GL_TEXTURE_2D, dirLight.depthMap[0]);
   renderQuad();
   glViewport(0,0,screenWidth,screenHeight);
-
   Shader* shader = &blockShader;
-
-
   shader->use();
   setLights(shader);
   bindDirectionalShadows(shader);
@@ -441,6 +445,7 @@ void Drawer::calculateFrustrum(glm::vec3* arr,float near, float far)
 
 }
 
+//Takes array of variable size and the sets the min and max points
 void Drawer::calculateMinandMaxPoints(glm::vec3* array, int arrsize, glm::vec3* finmin, glm::vec3* finmax)
 {
 
@@ -471,25 +476,24 @@ void Drawer::drawTerrain(Shader* shader, const glm::mat4 &clipMat, bool useHSR)
   At that point the chunk should be deleted by the smart pointers;
   */
 
-  //blockShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-  //std::cout << dirLight.arrayOfDistances[0] << ":"<< dirLight.arrayOfDistances[1] << "\n";
   glEnable(GL_DEPTH_TEST);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, glTexture);
 
-/*
-  while(curNode != NULL)
+  useHSR = true;
+  if(chunksToDraw->empty()) return;
+  for(auto it = chunksToDraw->cbegin();it != chunksToDraw->cend();++it)
   {
-    nextNode = curNode->nextNode;
+    std::shared_ptr<BSPNode> curNode = (*it);
     if(curNode->toDelete == true)
     {
-      if(curNode->prevNode == NULL) frontNode = curNode->nextNode;
       curNode->del();
     }
     else
     {
       if(useHSR)
       {
+        //Do view frustrum clipping
         int x = curNode->curBSP.xCoord*CHUNKSIZE+CHUNKSIZE/2;
         int y = curNode->curBSP.yCoord*CHUNKSIZE+CHUNKSIZE/2;
         int z = curNode->curBSP.zCoord*CHUNKSIZE+CHUNKSIZE/2;
@@ -505,25 +509,6 @@ void Drawer::drawTerrain(Shader* shader, const glm::mat4 &clipMat, bool useHSR)
           curNode->drawOpaque();
       }
       else curNode->drawOpaque();
-    }
-    curNode = nextNode;
-  }
-  */
-
-  useHSR = false;
-  if(chunksToDraw->empty()) return;
-  for(auto it = chunksToDraw->cbegin();it != chunksToDraw->cend();++it)
-  {
-    std::shared_ptr<BSPNode> curNode = (*it);
-    if(curNode->toDelete == true)
-    {
-      std::cout << "Found a chunk to delete\n";
-      curNode->del();
-      std::cout << curNode.use_count() << "\n";
-    }
-    else
-    {
-      curNode->drawOpaque();
     }
 
   }

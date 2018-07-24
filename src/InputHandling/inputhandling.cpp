@@ -9,6 +9,8 @@
 #include "../Character/include/mainchar.h"
 #include "../MainEngine/include/world.h"
 #include "../MainEngine/include/threads.h"
+#include "../Settings/settings.h"
+
 // timing
 static float deltaTime = 0.0f;	// time between current frame and last frame
 static float lastFrame = 0.0f;
@@ -41,6 +43,7 @@ void updateInputs()
 			case GLFW_KEY_S:			mainCharacter->moveBackward();					break;
 			case GLFW_KEY_SPACE:	mainCharacter->moveUp();								break;
 			case GLFW_KEY_N: std::cout << mainCharacter->xpos << ":" << mainCharacter->ypos << ":" << mainCharacter->zpos << "\n";
+			//case GLFW_KEY_P: Settings::set("unlockCamera","1"); 
 		}
 	}
 }

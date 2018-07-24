@@ -35,7 +35,7 @@ public:
   Drawer drawer;
   Map3D<std::shared_ptr<BSPNode>> BSPmap;
   std::mutex playerListMutex;
-  std::map<uchar, std::shared_ptr<Player>> playerList;
+
   char mainId;
 
   TSafeQueue<std::shared_ptr<BSPNode>>* buildQueue;
@@ -67,7 +67,7 @@ public:
   void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
   World(int numbBuildThreads,int width,int height);
 
-  void renderWorld(float* mainx, float* mainy, float* mainz);
+  void renderWorld(float mainx, float mainy, float mainz);
 
   void buildWorld(int threadNumb);
   bool chunkExists(int x, int y, int z);
@@ -80,7 +80,7 @@ public:
   void deleteChunksFromQueue();
   void addBlock(int x, int y, int z, int id);
   void updateBlock(int x, int y, int z);
-  void delScan(float* mainx, float* mainy, float* mainz);
+  void delScan(float mainx, float mainy, float mainz);
   void generateChunk(int chunkx, int chunky, int chunkz);
   void generateChunkFromString(int chunkx, int chunky, int chunkz,const std::string &val);
   void saveWorld();

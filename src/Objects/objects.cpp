@@ -179,7 +179,7 @@ void Player::draw(Shader* shader)
 {
   shader->setMat4("model",modelMat);
   shader->setVec3("objectColor",color);
-
+ 
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
   glBindVertexArray(0);

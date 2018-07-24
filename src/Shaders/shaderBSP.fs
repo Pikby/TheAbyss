@@ -187,6 +187,6 @@ void main()
     float maxDistance = dirLight.arrayOfDistances[numbOfCascadedShadows];
     */
     vec3 finColor = color*objColor*getTexture();
-
+    //vec3 finColor = objectColor;
     finalcolor = vec4(finColor,1);
 }

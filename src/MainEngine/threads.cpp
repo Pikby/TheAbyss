@@ -16,6 +16,7 @@
 #include "../Character/include/mainchar.h"
 #include "../InputHandling/include/inputhandling.h"
 #include "../Objects/include/objects.h"
+#include "../Settings/settings.h"
 
 
 //Global maincharacter reference which encapsulates the camera
@@ -35,7 +36,6 @@ GLFWwindow* createWindow(int width, int height)
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   //Create the window
-  std::cout << width << ":" << height << "\n";
   window = glfwCreateWindow(width, height, "Prototype 1.000", nullptr, nullptr);
   if(window == NULL)
   {
@@ -85,6 +85,9 @@ void draw()
   Cube cube;
   cube.render();
 
+  Player player;
+  player.render();
+
   newWorld->drawer.addCube(glm::vec3(0,50,0));
   //newWorld->addLight(glm::vec3(10,50,10));
   while(!glfwWindowShouldClose(window))
@@ -95,25 +98,30 @@ void draw()
     newWorld->drawnChunks = 0;
     newWorld->deleteChunksFromQueue();
     glfwPollEvents();
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     mainCharacter->update();
 
 
     newWorld->drawer.updateCameraMatrices(mainCam);
 
-    newWorld->calculateViewableChunks();
+    //if(std::stoi(Settings::get("unlockCamera")))
+    {
+      newWorld->calculateViewableChunks();
+    }
 
 
+    /*
     if(BSP::geometryChanged == true)
     {
       //std::cout << "renderingShadows\n";
       newWorld->drawer.renderDirectionalShadows();
       BSP::geometryChanged = false;
     }
-    
+    */
+
     newWorld->drawer.drawFinal();
     newWorld->drawer.drawObjects();
+    newWorld->drawer.drawPlayers();
 
     int error = glGetError();
     if(error != 0)
@@ -139,7 +147,7 @@ void render()
   while(!glfwWindowShouldClose(window))
   {
     //std::cout << "finished render loop\n";
-    newWorld->renderWorld(&mainCharacter->xpos,&mainCharacter->ypos,&mainCharacter->zpos);
+    newWorld->renderWorld(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
     //std::cout << "Finished render loop" << renderLoop << "\n";
   }
   newWorld->saveWorld();
@@ -152,7 +160,7 @@ void del()
   while(!glfwWindowShouldClose(window))
   {
     //std::cout << "finished delete scan\n";
-    newWorld->delScan(&mainCharacter->xpos,&mainCharacter->ypos,&mainCharacter->zpos);
+    newWorld->delScan(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
   }
   std::cout << "exiting delete thread \n";
 }

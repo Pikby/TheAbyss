@@ -25,9 +25,9 @@ Client::Client(int Fd,uchar Id,World* world,ClientList* par)
   parent->sendInitAll(this);
   parent->retClients(this);
   sendThread = std::thread(&Client::sendMessages,this);
-  //recvThread = std::thread(&Client::recvMessages,this);
+  recvThread = std::thread(&Client::recvMessages,this);
   sendThread.detach();
-  //recvThread.detach();
+  recvThread.detach();
 }
 
 int Client::getFD()
@@ -70,7 +70,6 @@ void Client::sendMessages()
 {
   while(open)
   {
-    recvMessages();
     queueMutex.lock();
     if(msgQueue.empty())
     {
@@ -127,7 +126,7 @@ void Client::errorDisconnect()
 
 void Client::recvMessages()
 {
-  //while(open)
+  while(open)
   {
     int buf[4];
 
@@ -183,7 +182,6 @@ void Client::recvMessages()
 void Client::sendPositionAll(float x, float y,float z)
 {
   setPos(glm::vec3(x,y,z));
-
   std::shared_ptr<Message> tmp(new Message(91,id,0,0,*(int*)&x,*(int*)&y,*(int*)&z,NULL));
   parent->messageAll(tmp);
 }

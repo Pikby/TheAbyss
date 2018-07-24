@@ -44,7 +44,7 @@ void Messenger::setupSockets(std::string ipAddress,std::string port)
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
 
-  if (getaddrinfo(ipAddress.c_str(),port, &hints, &result) != 0)
+  if (getaddrinfo(ipAddress.c_str(),port.c_str(), &hints, &result) != 0)
   {
     error << "getaddrinfo failed" << std::endl;
     WSACleanup();

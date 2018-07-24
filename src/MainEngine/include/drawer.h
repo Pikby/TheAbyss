@@ -1,5 +1,6 @@
 #include "bsp.h"
 #include <list>
+#include <map>
 #include "../../Objects/include/objects.h"
 #include "../../headers/camera.h"
 
@@ -76,6 +77,7 @@ private:
   void calculateMinandMaxPoints(glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
 public:
   std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> chunksToDraw;
+  std::map<uchar, std::shared_ptr<Player>> playerList;
   glm::vec3 viewMin;
   glm::vec3 viewMax;
   float directionalShadowResolution;
@@ -95,6 +97,7 @@ public:
   void addCube(Cube newCube);
   std::shared_ptr<Object> getObject(int id) {return objList[id];}
   void drawObjects();
+  void drawPlayers();
   void drawFinal();
   void updateCameraMatrices(Camera* cam);
   void addLight(glm::vec3 pos,

@@ -29,6 +29,7 @@ World::World(int numbBuildThreads,int width,int height)
 
   ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
 
+  //Settings::set("unlockCamera","0");
   Settings::print();
   try
   {
@@ -61,13 +62,20 @@ World::World(int numbBuildThreads,int width,int height)
 
 void World::movePlayer(float x, float y, float z, uchar id)
 {
-  //std::cout << "Moving player" << x << y << z << '\n';
-  std::shared_ptr<Object> tmp = playerList[id];
+
+  //std::cout << "Moving player : " << (int) id  << x << y << z <<  '\n';
+  if(drawer.playerList.count(id) != 1)
+  {
+    std::cout << "ERROR: Attempting to move player that doesnt exist\n";
+    return;
+  }
+  std::shared_ptr<Object> tmp = drawer.playerList[id];
   if(tmp != NULL)
   {
-    //std::cout << "Moving player" << x << y << z << '\n';
-    playerList[id]->setPosition(glm::vec3(x,y,z));
+    tmp->setPosition(glm::vec3(x,y,z));
+    tmp->updateModelMat();
   }
+
 }
 
 
@@ -75,14 +83,16 @@ void World::addPlayer(float x, float y, float z, uchar id)
 {
   std::cout << "Adding player at" << x << ":" << y << ":" << z << ":"<< (int) id << "\n";
   std::shared_ptr<Player> temp(new Player(glm::vec3(x,y,z)));
-  playerList[id] = temp;
+  drawer.playerList[id] = temp;
 }
 
 
 void World::removePlayer(uchar id)
 {
+
   std::cout << "Removing PLayer\n";
-  playerList.erase(id);
+  drawer.playerList.erase(id);
+
 }
 
 void World::calculateViewableChunks()
@@ -284,7 +294,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   }
 }
 
-void World::renderWorld(float* mainx, float* mainy, float* mainz)
+void World::renderWorld(float mainx, float mainy, float mainz)
 {
 
   for(int x =0;x<horzRenderDistance*2;x++)
@@ -301,9 +311,9 @@ void World::renderWorld(float* mainx, float* mainy, float* mainz)
 
         if((curx*curx)/horzSquared + (cury*cury)/vertSquared + (curz*curz)/horzSquared > 1) continue;
         //std::cout << "requesting chunk\n";
-        int xchunk = round(*mainx);
-        int ychunk = round(*mainy);
-        int zchunk = round(*mainz);
+        int xchunk = round(mainx);
+        int ychunk = round(mainy);
+        int zchunk = round(mainz);
         xchunk/= CHUNKSIZE;
         ychunk/= CHUNKSIZE;
         zchunk/= CHUNKSIZE;
@@ -367,7 +377,7 @@ void World::delChunk(int x, int y, int z)
 }
 
 
-void World::delScan(float* mainx, float* mainy, float* mainz)
+void World::delScan(float mainx, float mainy, float mainz)
 {
   /*
     Scans through the same list as the draw function
@@ -378,9 +388,9 @@ void World::delScan(float* mainx, float* mainy, float* mainz)
   auto list = BSPmap.getFullList();
   for(auto itr = list.begin();itr != list.end();++itr)
   {
-    int x = round(*mainx);
-    int y = round(*mainy);
-    int z = round(*mainz);
+    int x = round(mainx);
+    int y = round(mainy);
+    int z = round(mainz);
 
     x/= CHUNKSIZE;
     y/= CHUNKSIZE;
