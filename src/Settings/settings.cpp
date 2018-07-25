@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "../headers/parser.h"
 #include "settings.h"
 Parser Settings::definitions("../assets/settings.ini");
 

@@ -19,6 +19,7 @@ struct Message
   IntOrFloat y;
   IntOrFloat z;
   int length;
+  Message(){};
   Message(uchar a, uchar b, uchar c, uchar d, int xpos, int ypos, int zpos,int len)
   {
     opcode = a;

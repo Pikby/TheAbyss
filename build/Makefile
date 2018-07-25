@@ -36,7 +36,7 @@ TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEng
 COBJECTLIST = csettings.o cdrawer.o ctextureloading.o cmain.o cworld.o cmessenger.o cobjects.o cthreads.o \
 							cbsp.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cinputhandling.o \
 							citems.o
-SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o
+SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o scommands.o
 
 OFLAGS = g++ -c $(CFLAGSLINUX) -O3
 # Main Engine
@@ -64,6 +64,8 @@ sitems.o: ../serversrc/Inventory/items.cpp
 sclients.o: ../serversrc/MainEngine/clients.cpp
 	$(OFLAGS) ../serversrc/MainEngine/clients.cpp -o sclients.o
 
+scommands.o: ../serversrc/MainEngine/commands.cpp
+	$(OFLAGS) ../serversrc/MainEngine/commands.cpp -o scommands.o
 # Client
 
 ME = ../src/MainEngine

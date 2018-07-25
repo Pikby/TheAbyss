@@ -1,64 +1,66 @@
+#pragma once
 #include <list>
 #include <memory>
-#include "perlinnoise.h"
-#include "world.h"
-#include "items.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
+#include <vector>
+#include <mutex>
+#include <atomic>
+#include "../headers/3darray.h"
 
-enum renderType {OPAQUE,TRANSLUCENT,TRANSPARENT};
+typedef unsigned char uchar;
+#define CHUNKSIZE 32
+
 //Class which holds the data for each individual chunk
+class BSPNode;
+
 class BSP
 {
 private:
-  unsigned char worldMap[CHUNKSIZE*CHUNKSIZE*CHUNKSIZE];
   std::string worldName;
-public:
-  long int xCoord;
-  long int yCoord;
-  long int zCoord;
 
-  BSP(int x, int y, int z,std::string worldName);
-  BSP();
-  ~BSP();
+  Array3D<uchar, CHUNKSIZE> worldArray;
+
+public:
+  static bool geometryChanged;
+  int xCoord,yCoord,zCoord;
+  std::shared_ptr<std::string> getCompressedChunk();
+  BSP(int x,int y,int z,const std::string &wName);
+  BSP(int x,int y,int z,const std::string &wName, const std::string &val);
+  BSP(){};
   void generateTerrain();
   void addBlock(int x, int y, int z,char id);
   bool blockExists(int x,int y,int z);
-  int blockVisibleType(int x, int y, int z);
-  int getBlock(int x, int y, int z);
+  uchar getBlock(int x, int y, int z);
   void delBlock(int x, int y, int z);
   void saveChunk();
-  std::shared_ptr<std::string> compressChunk();
+  std::string compressChunk();
   glm::vec3 offset(float x, float y,float z);
-  void build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
-                       std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
 };
 
 class BSPNode
 {
+  private:
+  std::mutex BSPMutex;
   public:
+  static int totalChunks;
   BSP curBSP;
-  BSPNode(int x, int y, int z,std::string worldName);
+  BSPNode(int x,int y,int z,const std::string &wName);
+  BSPNode(int x,int y,int z,const std::string &wName,const std::string &val);
   ~BSPNode();
   void saveChunk();
   bool blockExists(int x, int y, int z);
   int blockVisibleType(int x, int y, int z);
-  void build();
   void generateTerrain();
   std::shared_ptr<std::string> getCompressedChunk();
   void delBlock(int x, int y, int z);
   void addBlock(int x, int y, int z, int id);
-  //next and prev node for the linked list of all nodes
-  std::shared_ptr<BSPNode>  nextNode;
-  std::shared_ptr<BSPNode>  prevNode;
+  void disconnect();
 
   //references to the 6 cardinal neighbours of the chunk
-  std::shared_ptr<BSPNode>  leftChunk;
-  std::shared_ptr<BSPNode>  rightChunk;
-  std::shared_ptr<BSPNode>  frontChunk;
-  std::shared_ptr<BSPNode>  backChunk;
-  std::shared_ptr<BSPNode>  topChunk;
-  std::shared_ptr<BSPNode>  bottomChunk;
+  std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;
 
   //Flags for use inbetween pointers
-  bool toDelete;
-  bool isGenerated;
+  std::atomic<bool> toRender,toBuild,toDelete,isGenerated,inUse;
 };

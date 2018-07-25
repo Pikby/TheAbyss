@@ -30,17 +30,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
   if(chunkExists(chunkx,chunky,chunkz)) return;
 
   std::shared_ptr<BSPNode>  tempChunk(new BSPNode(chunkx,chunky,chunkz,worldName));
-  BSPmap[chunkx][chunky][chunkz] = tempChunk;
-  if(frontNode == NULL)
-  {
-    frontNode = tempChunk;
-  }
-  else
-  {
-    tempChunk->nextNode = frontNode;
-    frontNode->prevNode = tempChunk;
-    frontNode = tempChunk;
-  }
+  BSPmap.add(chunkx,chunky,chunkz,tempChunk);
   /*
     At this point the chunk is in both the linked list as well as the unorderedmap
     now it will attempt to find any nearby chunks and store a refrence to it
@@ -91,17 +81,7 @@ void World::generateChunk(int chunkx, int chunky, int chunkz)
 
 std::shared_ptr<BSPNode>  World::getChunk(int x, int y, int z)
 {
-  if(BSPmap.count(x) == 1)
-   {
-     if(BSPmap[x].count(y) == 1)
-     {
-       if(BSPmap[x][y].count(z) == 1)
-       {
-         return BSPmap[x][y][z];
-       }
-     }
-   }
-  return NULL;
+  return BSPmap.get(x,y,z);
 }
 
 void World::delChunk(int x, int y, int z)
@@ -109,24 +89,6 @@ void World::delChunk(int x, int y, int z)
   std::shared_ptr<BSPNode>  tempChunk = getChunk(x,y,z);
   if(tempChunk != NULL)
   {
-    BSPmap[x][y].erase(z);
-    if(BSPmap[x][y].empty())
-    {
-      BSPmap[x].erase(y);
-      if(BSPmap[x].empty())
-      {
-        BSPmap.erase(x);
-      }
-    }
-
-    /*
-    Essentially marks the chunk for death
-    Removes all connected pointers besides the linked list
-    The Node however must be destroyed in the draw string
-    since that is the sole string using opengl functions;
-    othereise the vao wont get freed causing a memory leak
-    */
-    tempChunk->toDelete = true;
     if(tempChunk->leftChunk != NULL) tempChunk->leftChunk->rightChunk = NULL;
     if(tempChunk->rightChunk != NULL) tempChunk->rightChunk->leftChunk = NULL;
     if(tempChunk->frontChunk != NULL) tempChunk->frontChunk->backChunk = NULL;
@@ -140,27 +102,17 @@ void World::delChunk(int x, int y, int z)
 
 void World::saveWorld()
 {
-    std::shared_ptr<BSPNode>  curNode = frontNode;
-    while(curNode != NULL)
-    {
-      curNode->saveChunk();
-      curNode = curNode->nextNode;
-    }
+  std::cout << "saving World\n";
+  auto list = BSPmap.getFullList();
+  for(auto itr = list.begin();itr != list.end();++itr)
+  {
+    (*itr)->saveChunk();
+  }
 }
 
 bool World::chunkExists(int x ,int y, int z)
 {
-  if(BSPmap.count(x) == 1)
-   {
-     if(BSPmap[x].count(y) == 1)
-     {
-       if(BSPmap[x][y].count(z) == 1)
-       {
-         return true;
-       }
-     }
-   }
-  return false;
+  return BSPmap.exists(x,y,z);
 }
 
 //If there is an entity, returns it id and position,
@@ -188,94 +140,86 @@ glm::vec4 World::rayCast(glm::vec3 pos, glm::vec3 front, int max)
   return glm::vec4(0,0,0,-1);
 }
 
+glm::ivec3 inline World::toLocalCoords(glm::ivec3 in)
+{
+  glm::ivec3 out;
+  out.x = in.x >= 0 ? in.x % CHUNKSIZE : CHUNKSIZE + (in.x % CHUNKSIZE);
+  out.y = in.y >= 0 ? in.y % CHUNKSIZE : CHUNKSIZE + (in.y % CHUNKSIZE);
+  out.z = in.z >= 0 ? in.z % CHUNKSIZE : CHUNKSIZE + (in.z % CHUNKSIZE);
+  if(out.x == CHUNKSIZE) out.x = 0;
+  if(out.y == CHUNKSIZE) out.y = 0;
+  if(out.z == CHUNKSIZE) out.z = 0;
+
+  return out;
+}
+
+glm::ivec3 inline World::toChunkCoords(glm::ivec3 in)
+{
+  glm::ivec3 out;
+  out.x = floor((float)in.x/(float)CHUNKSIZE);
+  out.y = floor((float)in.y/(float)CHUNKSIZE);
+  out.z = floor((float)in.z/(float)CHUNKSIZE);
+  return out;
+}
+
+
+
 bool World::blockExists(int x, int y, int z)
 {
   /*
   Finds which ever chunk holds the block and then calls the blockExists
   function on that chunk with the localized coordinates
   */
-
-
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
-
-  if(xlocal == CHUNKSIZE)xlocal = 0;
-  if(ylocal == CHUNKSIZE)ylocal = 0;
-  if(zlocal == CHUNKSIZE)zlocal = 0;
-
-  int xchunk = floor((float)x/(float)CHUNKSIZE);
-  int ychunk = floor((float)y/(float)CHUNKSIZE);
-  int zchunk = floor((float)z/(float)CHUNKSIZE);
+  glm::ivec3 pos(x,y,z);
+  glm::ivec3 local = toLocalCoords(pos);
+  glm::ivec3 chunk = toChunkCoords(pos);
 
   std::shared_ptr<BSPNode>  tempChunk;
-  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
+  if(tempChunk = getChunk(chunk.x,chunk.y,chunk.z))
   {
 
-    if(tempChunk->blockExists(xlocal,ylocal, zlocal))
+    if(tempChunk->blockExists(local.x,local.y,local.z))
     {
       return true;
     }
   }
   return false;
 }
+
 void World::addBlock(int x, int y, int z, int id)
 {
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
+  glm::ivec3 pos(x,y,z);
+  glm::ivec3 local = toLocalCoords(pos);
+  glm::ivec3 chunk = toChunkCoords(pos);
 
-  if(xlocal == CHUNKSIZE) xlocal = 0;
-  if(ylocal == CHUNKSIZE) ylocal = 0;
-  if(zlocal == CHUNKSIZE) zlocal = 0;
-
-  int xchunk = floor((float)x/(float)CHUNKSIZE);
-  int ychunk = floor((float)y/(float)CHUNKSIZE);
-  int zchunk = floor((float)z/(float)CHUNKSIZE);
-
-  std::shared_ptr<BSPNode>  tempChunk;
-  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
+  std::shared_ptr<BSPNode> tempChunk = getChunk(chunk.x,chunk.y,chunk.z);
+  if(tempChunk != NULL)
   {
-    tempChunk->addBlock(xlocal,ylocal,zlocal,id);
+    tempChunk->addBlock(local.x,local.y,local.z,id);
   }
+
 }
+
 
 void World::delBlock(int x, int y, int z)
 {
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
+  glm::ivec3 pos(x,y,z);
+  glm::ivec3 local = toLocalCoords(pos);
+  glm::ivec3 chunk = toChunkCoords(pos);
 
-  if(xlocal == CHUNKSIZE) xlocal = 0;
-  if(ylocal == CHUNKSIZE) ylocal = 0;
-  if(zlocal == CHUNKSIZE) zlocal = 0;
-
-  int xchunk = floor((float)x/(float)CHUNKSIZE);
-  int ychunk = floor((float)y/(float)CHUNKSIZE);
-  int zchunk = floor((float)z/(float)CHUNKSIZE);
-
-  std::shared_ptr<BSPNode>  tempChunk;
-  if(tempChunk = getChunk(xchunk,ychunk,zchunk))
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(chunk.x,chunk.y,chunk.z);
+  if(tempChunk != NULL)
   {
-    std::cout << "Deleting block" << x << ":" << y << ":" << z << "\n";
-    tempChunk->delBlock(xlocal,ylocal,zlocal);
+    tempChunk->delBlock(local.x,local.y,local.z);
   }
 }
 
+
 void World::updateBlock(int x, int y, int z)
 {
-  int xlocal = x >= 0 ? x % CHUNKSIZE : CHUNKSIZE + (x % CHUNKSIZE);
-  int ylocal = y >= 0 ? y % CHUNKSIZE : CHUNKSIZE + (y % CHUNKSIZE);
-  int zlocal = z >= 0 ? z % CHUNKSIZE : CHUNKSIZE + (z % CHUNKSIZE);
-
-  if(xlocal == CHUNKSIZE) xlocal = 0;
-  if(ylocal == CHUNKSIZE) ylocal = 0;
-  if(zlocal == CHUNKSIZE) zlocal = 0;
-
-  int xchunk = floor((float)x/(float)CHUNKSIZE);
-  int ychunk = floor((float)y/(float)CHUNKSIZE);
-  int zchunk = floor((float)z/(float)CHUNKSIZE);
-  std::shared_ptr<BSPNode>  tempChunk = getChunk(xchunk,ychunk,zchunk);
+  glm::ivec3 pos(x,y,z);
+  glm::ivec3 chunk = toChunkCoords(pos);
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(chunk.x,chunk.y,chunk.z);
 
 }
 

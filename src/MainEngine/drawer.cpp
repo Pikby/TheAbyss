@@ -354,7 +354,7 @@ void Drawer::drawFinal()
   glViewport(0,0,200,200);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, dirLight.depthMap[0]);
-  renderQuad();
+  // /renderQuad();
   glViewport(0,0,screenWidth,screenHeight);
   Shader* shader = &blockShader;
   shader->use();

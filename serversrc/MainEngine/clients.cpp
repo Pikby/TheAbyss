@@ -6,9 +6,13 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-Client::Client(int Fd,uchar Id,World* world,ClientList* par)
+std::thread Server::serverCommands;
+std::mutex Server::clientMutex;
+std::shared_ptr<Client> Server::clients[4];
+World* Server::curWorld;
+
+Client::Client(int Fd,uchar Id,World* world)
 {
-  parent = par;
   curWorld = world;
   fd = Fd;
   id = Id;
@@ -22,8 +26,8 @@ Client::Client(int Fd,uchar Id,World* world,ClientList* par)
       std::cout << "ERROR: failed to send id message." << std::endl;
   }
 
-  parent->sendInitAll(this);
-  parent->retClients(this);
+  Server::sendInitAll(this);
+  Server::retClients(this);
   sendThread = std::thread(&Client::sendMessages,this);
   recvThread = std::thread(&Client::recvMessages,this);
   sendThread.detach();
@@ -55,7 +59,7 @@ inline void Client::sendMessage(const void *buffer,int length)
   {
     if(fatalError || !open) return;
     int curSent = send(fd,buf+totalSent,length-totalSent,0);
-    if(curSent < 0)
+    if(curSent == -1)
     {
       std::cout << "ERROR: sending message to Client:" << id << "\n";
       errorDisconnect();
@@ -63,6 +67,23 @@ inline void Client::sendMessage(const void *buffer,int length)
     }
     totalSent += curSent;
 
+  }
+}
+inline void Client::recvMessage(void *buffer, int length)
+{
+  char* buf = (char*)buffer;
+  int totalReceived = 0;
+  while(totalReceived < length)
+  {
+    if(fatalError || !open) return;
+    int curReceived = recv(fd,buf+totalReceived,length-totalReceived,0);
+    if(curReceived == -1)
+    {
+      std::cout << "Error: receiving Message from client:" << id << "\n";
+      errorDisconnect();
+      return;
+    }
+    totalReceived += curReceived;
   }
 }
 
@@ -112,7 +133,7 @@ void Client::sendMessages()
 void Client::disconnect()
 {
   open = false;
-  parent->remove(id);
+  Server::remove(id);
   std::cout << "Client disconnectting safely\n";
 }
 
@@ -120,7 +141,7 @@ void Client::errorDisconnect()
 {
   open = false;
   fatalError = true;
-  parent->remove(id);
+  Server::remove(id);
   std::cout << "Client disconnectting due to error\n";
 }
 
@@ -129,21 +150,9 @@ void Client::recvMessages()
   while(open)
   {
     int buf[4];
-
-    int totalReceived = 0;
     int sizeOfMessage = 4*sizeof(int);
-    while(totalReceived < sizeOfMessage)
-    {
-      if(fatalError || !open) return;
-      int curReceived = recv(fd,((char*)buf)+totalReceived,sizeOfMessage-totalReceived,0);
-      if(curReceived == -1)
-      {
-        std::cout << "Error receiving Message\n";
-        errorDisconnect();
-        return;
-      }
-      totalReceived += curReceived;
-    }
+    recvMessage(buf,sizeOfMessage);
+    if(fatalError) break;
     uchar opcode = (buf[0] >> 24) & 0xFF;
     uchar ext1 = (buf[0] >> 16) & 0xFF;
     uchar ext2 = (buf[0] >> 8) & 0xFF;
@@ -183,13 +192,13 @@ void Client::sendPositionAll(float x, float y,float z)
 {
   setPos(glm::vec3(x,y,z));
   std::shared_ptr<Message> tmp(new Message(91,id,0,0,*(int*)&x,*(int*)&y,*(int*)&z,NULL));
-  parent->messageAll(tmp);
+  Server::messageAll(tmp);
 }
 
 void Client::sendAddBlockAll(int x, int y, int z, uchar id)
 {
   std::shared_ptr<Message> tmp(new Message(2,id,0,0,x,y,z,NULL));
-  parent->messageAll(tmp);
+  Server::messageAll(tmp);
 }
 
 void Client::sendChunk(int x,int y,int z)
@@ -206,12 +215,12 @@ void Client::sendChunkAll(int x,int y,int z)
   curWorld->generateChunk(x,y,z);
   std::shared_ptr<std::string> msg = curWorld->getChunk(x,y,z)->getCompressedChunk();
   std::shared_ptr<Message> tmp(new Message(0,0,0,0,x,y,z,msg));
-  parent->messageAll(tmp);
+  Server::messageAll(tmp);
 }
 void Client::sendDelBlockAll(int x, int y, int z)
 {
   std::shared_ptr<Message> tmp(new Message(1,0,0,0,x,y,z,NULL));
-  parent->messageAll(tmp);
+  Server::messageAll(tmp);
 }
 
 void Client::sendExit()
@@ -224,12 +233,24 @@ void Client::sendExit()
   }
 }
 
-ClientList::ClientList(World* temp)
+void Server::handleServerCommands()
 {
-  curWorld = temp;
+    std::string line;
+    while(std::getline(std::cin,line))
+    {
+      parseCommand(line);
+    }
 }
 
-void ClientList::add(int fd)
+void Server::initServer(World* temp)
+{
+  curWorld = temp;
+  serverCommands = std::thread(Server::handleServerCommands);
+  serverCommands.detach();
+}
+
+
+void Server::add(int fd)
 {
   clientMutex.lock();
   for(int i = 0;i<MAX_CLIENTS;i++)
@@ -238,7 +259,7 @@ void ClientList::add(int fd)
     {
       std::cout << "Adding client " << i << '\n';
       clientMutex.unlock();
-      std::shared_ptr<Client> tmp(new Client(fd,i,curWorld,this));
+      std::shared_ptr<Client> tmp(new Client(fd,i,curWorld));
       clientMutex.lock();
       clients[i] = tmp;
       clientMutex.unlock();
@@ -246,7 +267,7 @@ void ClientList::add(int fd)
     }
   }
 }
-void ClientList::remove(int id)
+void Server::remove(int id)
 {
   std::cout << clients[id].use_count() << "\n";
   clientMutex.lock();
@@ -256,7 +277,7 @@ void ClientList::remove(int id)
   messageAll(tmp);
 }
 
-void ClientList::sendInitAll(Client* target)
+void Server::sendInitAll(Client* target)
 {
   clientMutex.lock();
   std::shared_ptr<Message> msg = target->getInfo();
@@ -273,7 +294,7 @@ void ClientList::sendInitAll(Client* target)
   clientMutex.unlock();
 }
 
-void ClientList::retClients(Client* target)
+void Server::retClients(Client* target)
 {
   clientMutex.lock();
   for(int i =0;i<MAX_CLIENTS;i++)
@@ -289,7 +310,7 @@ void ClientList::retClients(Client* target)
   clientMutex.unlock();
 }
 
-void ClientList::messageAll(std::shared_ptr<Message> msg)
+void Server::messageAll(std::shared_ptr<Message> msg)
 {
   clientMutex.lock();
   for(int i=0;i<MAX_CLIENTS;i++)

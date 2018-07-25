@@ -225,8 +225,17 @@ void receive()
 {
   while(!glfwWindowShouldClose(window))
   {
-    Message msg = newWorld->messenger.receiveAndDecodeMessage();
-    //std::cout << std::dec <<  "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
+    Message msg;
+    try
+    {
+      msg = newWorld->messenger.receiveAndDecodeMessage();
+    }
+    catch(...)
+    {
+      std::cout << "ERROR: RECEIVE MESSAGE, ERRNO: " << errno << "\n";
+      return;
+    }
+
 
     switch(msg.opcode)
     {
@@ -259,6 +268,16 @@ void receive()
         break;
       case(99):
         newWorld->removePlayer(msg.ext1);
+        break;
+      case(100):
+        {
+          char* buf = new char[msg.length];
+          newWorld->messenger.receiveMessage(buf,msg.length);
+          std::string line = "[Server]: ";
+          line.append(buf);
+          mainCharacter->addChatLine(line);
+          delete[] buf;
+        }
         break;
       case(0xFF):
         std::cout << "Received exit message\n";

@@ -12,6 +12,7 @@
   #include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
   #include <unistd.h> /* Needed for close() */
 #endif
+#include <errno.h>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -121,7 +122,14 @@ void Messenger::requestChunk(int x, int y, int z)
   request[1] = x;
   request[2] = y;
   request[3] = z;
-  sendMessage(request,sizeof(request));
+  try
+  {
+    sendMessage(request,sizeof(request));
+  }
+  catch(...)
+  {
+    std::cout << "ERROR: REQUESTING CHUNK, ERRNO: " << errno << "\n";
+  }
 }
 
 
@@ -144,7 +152,14 @@ void Messenger::requestAddBlock(int x, int y, int z, uchar id)
   request[1] = x;
   request[2] = y;
   request[3] = z;
-  sendMessage(request,sizeof(request));
+  try
+  {
+    sendMessage(request,sizeof(request));
+  }
+  catch(...)
+  {
+    std::cout << "ERROR: REQUESTING BLOCK, ERRNO: " << errno << "\n";
+  }
 }
 
 void Messenger::createDelBlockRequest(int x, int y, int z)
@@ -160,7 +175,15 @@ void Messenger::requestDelBlock(int x, int y, int z)
   request[1] = x;
   request[2] = y;
   request[3] = z;
-  sendMessage(request,sizeof(request));
+
+  try
+  {
+    sendMessage(request,sizeof(request));
+  }
+  catch(...)
+  {
+    std::cout << "ERROR: REQUESTING BLOCK DELETION, ERRNO: " << errno << "\n";
+  }
 }
 
 void Messenger::requestMove(float x, float y, float z)
@@ -170,7 +193,15 @@ void Messenger::requestMove(float x, float y, float z)
   request[1] = *(int*)&x;
   request[2] = *(int*)&y;
   request[3] = *(int*)&z;
-  sendMessage(request, sizeof(request));
+
+  try
+  {
+    sendMessage(request, sizeof(request));
+  }
+  catch(...)
+  {
+    std::cout << "ERROR: REQUESTING BLOCK DELETION, ERRNO: " << errno << "\n";
+  }
 }
 
 
@@ -190,9 +221,10 @@ void Messenger::receiveMessage(void *buffer,int length)
   while(totalReceived<length)
   {
     int curReceived = recv(fd,buf+totalReceived,length-totalReceived,0);
-    if(curReceived < 0)
+    if(curReceived == -1)
     {
-      std::cout << "ERROR: receiving message." << std::endl;
+      throw -1;
+      return;
     }
     totalReceived += curReceived;
   }
@@ -205,9 +237,10 @@ void Messenger::sendMessage(void* buffer, int length)
   while(totalSent<length)
   {
     int curSent = send(fd,buf+totalSent,length-totalSent,0);
-    if( curSent< -1)
+    if( curSent == -1)
     {
-      std::cout << "ERROR: sending message.\n";
+      throw -1;
+      return;
     }
     totalSent += curSent;
   }
@@ -220,5 +253,5 @@ void Messenger::createChunkRequest(int x, int y, int z)
     Message tmp = {0,0,0,0,x,y,z,0};
     messageQueue.push(tmp);
     requestMap.add(x,y,z,true);
-}
+  }
 }

@@ -80,6 +80,7 @@ MainChar::MainChar(float x, float y, float z, World* world )
   deltax = 0;
   deltay = 0;
   deltaz = 0;
+  chatSize = 0.05;
   moveSpeed = 0.1f;
   curWorld = world;
   mainCam = Camera(glm::vec3(xpos,ypos,zpos));
@@ -87,7 +88,8 @@ MainChar::MainChar(float x, float y, float z, World* world )
   screenWidth = curWorld->drawer.screenWidth;
   screenHeight = curWorld->drawer.screenHeight;
   gui = GUIRenderer(screenWidth,screenHeight);
-  std::cout << screenWidth << "\n" << screenHeight <<"\n";
+  addChatLine("TEST1");
+  addChatLine("TEST2");
 
   glGenVertexArrays(1, &oVAO);
   glGenBuffers(1, &oVBO);
@@ -237,11 +239,9 @@ void MainChar::drawHud()
   int bottomRighty = actionMain.bottomRight.y;
   int width = actionMain.width;
 
-  gui.drawRectangle(topLeftx,topLefty,topLeftx+width,bottomRighty);
-  gui.drawRectangle(topLeftx+width,topLefty,bottomRightx,topLefty+width);
-
   gui.drawRectangle(screenWidth/2+3,screenHeight/2+3,screenWidth/2-3,screenHeight/2-3);
   showFPS();
+  drawChat();
 }
 
 void MainChar::draw()
@@ -278,4 +278,14 @@ void MainChar::showFPS()
 
   gui.renderText(fps,0,screenHeight*.9,1);
   lastFrameTime = glfwGetTime();
+}
+
+void MainChar::drawChat()
+{
+  float chatPos = chatSize;
+  for(auto itr = chatLog.begin(); itr != chatLog.end();++itr)
+  {
+    gui.renderText((*itr),0,screenHeight*chatPos,0.5);
+    chatPos += chatSize/2;
+  }
 }

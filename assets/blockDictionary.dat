@@ -2,22 +2,26 @@
 128
 
 {
-  Air
-  0,0,0,0,0,0
-  2
+  id : 0
+  name : Air
+  textureIds : 0,0,0,0,0,0
+  opacity : transparent
 }
 {
-  Dirt
-  1,1,1,1,1,1
-  0
+  id : 1
+  name : Dirt
+  textureIds : 1,1,1,1,1,1
+  opacity : opaque
 }
 {
-  Grass
-  0,1,1,1,1,1
-  0
+  id : 2
+  name : Grass
+  textureIds : 0,1,1,1,1,1
+  opacity : opaque
 }
 {
-  Water
-  2,2,2,2,2,2
-  1
+  id : 3
+  name : Water
+  textureIds : 2,2,2,2,2,2
+  opacity : translucent
 }

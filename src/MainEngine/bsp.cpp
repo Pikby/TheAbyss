@@ -13,21 +13,6 @@
 
 int BSPNode::totalChunks = 0;
 bool BSP::geometryChanged = true;
-
-
-BSPNode::BSPNode(int x,int y,int z,const std::string &wName)
-{
-  //std::cout << totalChunks << "\n";
-
-  curBSP = BSP(x,y,z,wName);
-  totalChunks++;
-  isGenerated = false;
-  inUse = false;
-  toRender = false;
-  toBuild = false;
-  toDelete = false;
-}
-
 BSPNode::~BSPNode()
 {
   totalChunks--;
@@ -87,10 +72,6 @@ void BSPNode::drawTranslucent()
   inUse = false;
 }
 
-void BSPNode::saveChunk()
-{
-  curBSP.saveChunk();
-}
 
 void BSPNode::del()
 {
@@ -137,9 +118,6 @@ int BSPNode::blockVisibleType(int x, int y, int z)
 
 BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
 {
-
-
-
   xCoord = x;
   yCoord = y;
   zCoord = z;
@@ -184,126 +162,6 @@ BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
   tIndices = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
 }
 
-BSP::BSP(int x, int y, int z,const std::string &wName)
-{
-    xCoord = x;
-    yCoord = y;
-    zCoord = z;
-    worldName = wName;
-    //Intialize Buffers
-
-    using namespace std;
-    //The directoy to the chunk to be saved
-    string directory = "saves/" + worldName + "/chunks/";
-    string chunkName = to_string(x) + '_' + to_string(y) + '_' + to_string(z) + ".dat";
-    string chunkPath = directory+chunkName;
-
-    //Max size of a chunk
-    int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
-    ifstream ichunk(chunkPath,ios::binary);
-
-    //Checks if the file exists
-    if(!ichunk.is_open())
-    {
-      /*
-      generateTerrain();
-      ichunk.close();
-      ofstream ochunk(chunkPath,ios::binary);
-
-      string compressed = compressChunk();
-      ochunk << compressed;
-      ochunk.close();
-      */
-    }
-    else
-    {
-      int i = 0;
-      char curId=0;
-      unsigned short curLength=0;
-      while(i<numbOfBlocks)
-      {
-
-        ichunk.read((char*) &curId,sizeof(curId));
-        ichunk.read((char*) &curLength,sizeof(curLength));
-
-        for(int j = 0; j<curLength; j++)
-        {
-          worldArray[i+j] = curId;
-        }
-        i+= curLength;
-      }
-      ichunk.close();
-    }
-    oVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-    oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-    tVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-    tIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-
-    oVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-    oIndices  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-    tVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-    tIndices = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-}
-
-inline std::string BSP::compressChunk()
-{
-    using namespace std;
-    ostringstream chunk(ios::binary);
-    unsigned int curTotal = 1;
-    int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
-    char lastId = worldArray[0];
-    for(int i = 1; i<numbOfBlocks;i++)
-    {
-      if(lastId == worldArray[i])
-      {
-        curTotal++;
-      }
-      else
-      {
-        chunk.write((char*) &lastId,sizeof(lastId));
-        chunk.write((char*) &curTotal,sizeof(curTotal));
-        curTotal = 1;
-        lastId = worldArray[i];
-      }
-    }
-    chunk.write((char*) &lastId,sizeof(lastId));
-    chunk.write((char*) &curTotal,sizeof(curTotal));
-    return chunk.str();
-
-}
-
-inline void BSP::saveChunk()
-{
-  using namespace std;
-  //The directoy to the chunk to be saved
-  string directory = "saves/" + worldName + "/chunks/";
-  string chunkName = to_string(xCoord) + '_' + to_string(yCoord) + '_' + to_string(zCoord) + ".dat";
-  string chunkPath = directory+chunkName;
-
-  //Max size of a chunk
-  int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
-  ofstream ochunk(chunkPath,ios::binary);
-  unsigned int curTotal = 1;
-  char lastId = worldArray[0];
-
-  for(int i = 1; i<numbOfBlocks;i++)
-  {
-    if(lastId == worldArray[i])
-    {
-      curTotal++;
-    }
-    else
-    {
-      ochunk.write((char*) &lastId,sizeof(lastId));
-      ochunk.write((char*) &curTotal,sizeof(curTotal));
-      curTotal = 1;
-      lastId = worldArray[i];
-    }
-  }
-  ochunk.write((char*) &lastId,sizeof(lastId));
-  ochunk.write((char*) &curTotal,sizeof(curTotal));
-  ochunk.close();
-}
 
 void BSP::freeGL()
 {

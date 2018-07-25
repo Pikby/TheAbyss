@@ -3,7 +3,7 @@
 #include <fstream>
 #include "include/items.h"
 
-Block* ItemDatabase::blockDictionary;
+Block ItemDatabase::blockDictionary[256];
 /*
 int Item::mouse1(glm::vec3 pos, glm::vec3 front)
 {
@@ -39,81 +39,78 @@ bool ItemDatabase::loadItemDictionary(const char* file)
   return false;
 }
 
-bool ItemDatabase::loadBlockDictionary(const char* file)
+Block ItemDatabase::parseBlock(std::vector<std::string> lines)
 {
-  /*
-  Loads the dictionary in such a format
-  TODO: work on improving and discribing that format
-
-
-  */
-  blockDictionary = new Block[256];
-  int id = 0;
   using namespace std;
-  string line;
-  ifstream dictionaryf (file);
-
-  if(dictionaryf.is_open())
+  std::map<std::string,std::string> dictionary;
+  for(auto itr = lines.begin(); itr != lines.end(); ++itr)
   {
-    std::cout << "Loading dictionary\n";
-    getline(dictionaryf,line);
-    int atlasWidth = stoi(line);
-    getline(dictionaryf,line);
-    int atlasHeight = stoi(line);
+    std::string line = *itr;
+    int colonPos = line.find(':');
+    if(colonPos == std::string::npos) continue;
 
-    int curBlock=0;
-    while(getline(dictionaryf,line))
-    {
-      if(line != "{") continue;
-      getline(dictionaryf,line);
-      string name = line;
-      getline(dictionaryf,line);
-
-      int texNumb;
-      int texArray[12];
-      stringstream ss;
-      ss << line;
-      for(int x = 0;x<12;x++)
-      {
-        ss >> texNumb;
-        texArray[x] = texNumb;
-        if(ss.peek() == ',') ss.ignore();
-      }
-      getline(dictionaryf,line);
-      int visibleType = stoi(line);
-      blockDictionary[curBlock] = Block(name,id++,texArray,visibleType);
-      curBlock++;
-    }
-    for(int i = 0; i< 4;i++)
-    {
-      blockDictionary[i].print();
-    }
-
-    return true;
+    string key = line.substr(0,colonPos-1);
+    string value = line.substr(colonPos+1,line.length());
+    key.erase( std::remove_if( key.begin(), key.end(), ::isspace ), key.end() );
+    value.erase( std::remove_if( value.begin(), value.end(), ::isspace ), value.end() );
+    dictionary[key] = value;
   }
-  else
+  Block newBlock;
+  newBlock.id = std::stoi(dictionary["id"]);
+  newBlock.name = dictionary["name"];
+  string textures = dictionary["textureIds"];
+  stringstream ss;
+  ss << textures;
+  for(int i = 0;i<6;i++)
   {
-    std::cout <<"ERROR: block dictionary not found\n";
+    int texNumb;
+    ss >> texNumb;
+    newBlock.texArray[i] = texNumb;
+    if(ss.peek() == ',') ss.ignore();
+  }
+
+  string opacity = dictionary["opacity"];
+  if(opacity == "translucent") newBlock.visibleType = TRANSLUCENT;
+  else if(opacity == "opaque") newBlock.visibleType = OPAQUE;
+  else if(opacity == "transparent") newBlock.visibleType = TRANSPARENT;
+
+  return newBlock;
+}
+
+bool ItemDatabase::loadBlockDictionary(const char* filePath)
+{
+  using namespace std;
+  ifstream file(filePath);
+
+  if(!file.is_open())
+  {
+    std::cout << "Error opening dicionary at: " << filePath << "\n";
     return false;
   }
 
-
-}
-/*
-Block::Block(std::string newName,int newId, int* array, int newVisibleType,
-            int newWidth,int newHeight,int newDepth, int newAtlasWidth, int newAtlasHeight)
-{
-  visibleType = newVisibleType;
-  name = newName;
-  id = newId;
-  for(int x=0;x<12;x++)
+  string line;
+  while(getline(file,line))
   {
-    texArray[x] = array[x];
+
+    int brace = line.find('{');
+    if(brace != std::string::npos)
+    {
+      vector<string> blockLines;
+      while(getline(file,line))
+      {
+        int brace = line.find('}');
+        if(brace != std::string::npos) break;
+
+        blockLines.push_back(line);
+      }
+      Block newBlock = parseBlock(blockLines);
+      blockDictionary[newBlock.id] = newBlock;
+    }
   }
-  width = newWidth;
-  height = newHeight;
-  depth = newDepth;
-  atlasWidth = newAtlasWidth;
-  atlasHeight = newAtlasHeight;
+
+  for(int i = 0; i< 4;i++)
+  {
+    blockDictionary[i].print();
+  }
+  std::cout << "done lul\n";
 }
-*/

@@ -69,7 +69,6 @@ public:
   static bool geometryChanged;
   int xCoord,yCoord,zCoord;
 
-  BSP(int x,int y,int z,const std::string &wName);
   BSP(int x,int y,int z,const std::string &wName, const std::string &val);
   BSP(){};
   void generateTerrain();
@@ -80,8 +79,6 @@ public:
   int blockVisibleType(int x, int y, int z);
   uchar getBlock(int x, int y, int z);
   void delBlock(int x, int y, int z);
-  void saveChunk();
-  std::string compressChunk();
   glm::vec3 offset(float x, float y,float z);
 
   void build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
@@ -98,7 +95,6 @@ class BSPNode
   public:
   static int totalChunks;
   BSP curBSP;
-  BSPNode(int x,int y,int z,const std::string &wName);
   BSPNode(int x,int y,int z,const std::string &wName,const std::string &val);
   ~BSPNode();
   void saveChunk();

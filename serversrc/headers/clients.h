@@ -32,7 +32,7 @@ struct Message
   }
 };
 
-class ClientList;
+class Server;
 class Client
 {
   private:
@@ -46,11 +46,10 @@ class Client
     std::thread sendThread;
     std::thread recvThread;
     World* curWorld;
-    ClientList* parent;
   public:
     std::mutex queueMutex;
     std::queue<std::shared_ptr<Message>> msgQueue;
-    Client(int Fd,uchar Id,World* world,ClientList* par);
+    Client(int Fd,uchar Id,World* world);
     int getFD();
     void setPos(glm::vec3 newPos);
     std::shared_ptr<Message> getInfo();
@@ -66,20 +65,26 @@ class Client
     void disconnect();
     void errorDisconnect();
     inline void sendMessage(const void *buffer,int length);
+    inline void recvMessage(void*buffer,int length);
 };
 
 #define MAX_CLIENTS 4
-class ClientList
+class Server
 {
   private:
-    std::mutex clientMutex;
-    std::shared_ptr<Client> clients[MAX_CLIENTS];
-    World* curWorld;
+
+    static std::thread serverCommands;
+    static std::mutex clientMutex;
+    static std::shared_ptr<Client> clients[MAX_CLIENTS];
+    static World* curWorld;
   public:
-    ClientList(World* temp);
-    void add(int fd);
-    void remove(int id);
-    void messageAll(std::shared_ptr<Message> msg);
-    void retClients(Client* target);
-    void sendInitAll(Client* target);
+    static void initServer(World* temp);
+    static void handleServerCommands();
+    static void add(int fd);
+    static void remove(int id);
+    static void messageAll(std::shared_ptr<Message> msg);
+    static void retClients(Client* target);
+    static void sendInitAll(Client* target);
+    static void parseCommand(std::string command);
+    static void say(const std::string &message);
 };

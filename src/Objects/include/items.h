@@ -2,6 +2,11 @@
 enum Type {NONE,MELEEWEAPON,RANGEDWEAPON};
 #include <string>
 #include <glm/glm.hpp>
+#include <vector>
+#include <fstream>
+#include <iostream>
+#include <algorithm>
+#include <map>
 typedef unsigned char uchar;
 
 class Block;
@@ -19,13 +24,16 @@ class Item
 
 class ItemDatabase
 {
+private:
+  static Block parseBlock(std::vector<std::string> lines);
 public:
-  static Block* blockDictionary;
+  static Block blockDictionary[256];
   static Item* itemDictionary;
   static bool loadBlockDictionary(const char* file);
   static bool loadItemDictionary(const char* file);
 };
 
+enum Opacity {OPAQUE,TRANSLUCENT,TRANSPARENT};
 #define BLOCKRES 128
 
 class Block
@@ -53,6 +61,11 @@ public:
     std::cout << name << "\n"
               << id << "\n"
               << visibleType << "\n";
+    for(int i =0;i<6;i++)
+    {
+      std::cout << (int) texArray[i] << ",";
+    }
+    std::cout << "\n";
   }
 
   uchar getTop()

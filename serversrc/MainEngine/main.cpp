@@ -13,39 +13,18 @@
 
 
 #define PORT 3030
-
+World curWorld;
 
 // method to be called by a thread each time a client connects
 //  handles the naming/message recieving of the clients
 
 
-// method to be called by a thread in main
-//  handles any input from the console on the server
-void handleServerCommands()
-{
-    char line[256];
-    while(std::cin.getline(line, 256))
-    {
-        // quit the application if the user types quit
-        if (strcmp(line, "quit") == 0)
-        {
-            std::cout << "Exiting the application..." << std::endl;
-            exit(0);
-        }
-        // otherwise, just print the message
-        char buffer[265];
-        strcpy(buffer, "server : ");
-        strcat(buffer, line);
-        //sendmessages(buffer, 265, -1);
-    }
-}
 
 // entry point
 int main(int argc, char* argv[])
 {
     // create a thread to handle server input
-    std::thread serverinput(handleServerCommands);
-    serverinput.detach();
+
     // a socket descriptor for listening for connections
     int listenfd;
 
@@ -77,8 +56,8 @@ int main(int argc, char* argv[])
     }
     std::cout << "Listening for connections..." << std::endl;
     // keep accepting connections as long as the server is still runninng
-    World curWorld;
-    ClientList clientList(&curWorld);
+
+    Server::initServer(&curWorld);
     while (true)
     {
         // look for new connections on the listening socket
@@ -91,7 +70,7 @@ int main(int argc, char* argv[])
             std::cout << "ERROR: failed to connect to client." << std::endl;
             return 1;
         }
-        clientList.add(connfd);
+        Server::add(connfd);
     }
 
     return 0;

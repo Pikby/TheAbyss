@@ -18,13 +18,13 @@ private:
   ActionBar actionMain;
   World* curWorld;
   GUIRenderer gui;
-  int* inventory;
-  Item** dictionary;
   //Rendering objects
-  GLuint VBO, VAO, EBO;
-  GLuint glTexture;
+  uint VBO, VAO, EBO;
+  uint glTexture;
   Shader mainCharShader;
   int screenWidth, screenHeight;
+  std::deque<std::string> chatLog;
+  float chatSize;
 
   //Character attributes
   float gravity;
@@ -58,5 +58,7 @@ public:
   //Hud functions
   void calculateHud();
   void drawHud();
+  void drawChat();
   void showFPS();
+  void addChatLine(std::string line){chatLog.push_front(line);}
 };
