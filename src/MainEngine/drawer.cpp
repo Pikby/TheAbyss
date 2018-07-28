@@ -480,7 +480,7 @@ void Drawer::drawTerrain(Shader* shader, const glm::mat4 &clipMat, bool useHSR)
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, glTexture);
 
-  useHSR = true;
+  useHSR = false;
   if(chunksToDraw->empty()) return;
   for(auto it = chunksToDraw->cbegin();it != chunksToDraw->cend();++it)
   {

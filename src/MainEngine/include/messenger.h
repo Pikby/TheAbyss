@@ -62,6 +62,6 @@ public:
   void requestMove(float x, float y, float z);
   void requestExit();
   void receiveMessage(void *buffer,int length);
-  void sendMessage( void* buffer,int length);
+  void sendMessage(const void* buffer,int length);
   void createChunkRequest(int x, int y, int z);
 };

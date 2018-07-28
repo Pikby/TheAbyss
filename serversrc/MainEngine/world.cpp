@@ -19,7 +19,6 @@ World::World()
   boost::filesystem::create_directory("saves/"+worldName+"/chunks");
 
 
-  frontNode = NULL;
   totalChunks = 0;
 
 }

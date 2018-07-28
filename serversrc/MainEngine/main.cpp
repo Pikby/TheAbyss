@@ -10,7 +10,7 @@
 #include <bits/stdc++.h>
 #include "../headers/clients.h"
 #include "../headers/world.h"
-
+#include "../headers/server.h"
 
 #define PORT 3030
 World curWorld;

@@ -17,10 +17,8 @@ class MainChar;
 class World
 {
   private:
-    std::shared_ptr<BSPNode> frontNode;
-    std::shared_ptr<BSPNode> frontDelNode;
-    glm::ivec3 inline toChunkCoords(glm::ivec3 in);
-    glm::ivec3 inline toLocalCoords(glm::ivec3 in);
+  glm::ivec3 inline toChunkCoords(glm::ivec3 in);
+  glm::ivec3 inline toLocalCoords(glm::ivec3 in);
   public:
   ~World(){saveWorld();}
   Map3D<std::shared_ptr<BSPNode>> BSPmap;

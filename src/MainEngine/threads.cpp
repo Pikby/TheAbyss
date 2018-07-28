@@ -45,25 +45,15 @@ GLFWwindow* createWindow(int width, int height)
   if(error != 0)
   {
     std::cout << "OPENGL ERRORa" << error << ":" << std::hex << error << "\n";
-    //glfwSetWindowShouldClose(window, true);
-    //return;
   }
   return window;
 }
 
 void initWorld(int numbBuildThreads, int width,  int height)
 {
-  //glfwMakeContextCurrent(window);
   newWorld = new World(numbBuildThreads,width,height);
   mainCharacter = new MainChar(0,50,0,newWorld);
   initializeInputs(mainCharacter);
-
-  //newWorld->requestChunk(0,0,0);
-  /*
-  for(int x =0;x<20;x++)
-    for(int y =0;y<20;y++)
-      for(int z=0;z<20;z++)newWorld->requestChunk(x-10,y-10,z-10);
-      */
 }
 
 void closeGame()
@@ -150,16 +140,27 @@ void render()
     newWorld->renderWorld(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
     //std::cout << "Finished render loop" << renderLoop << "\n";
   }
-  newWorld->saveWorld();
   std::cout << "exiting render thread \n";
 
 }
 
 void del()
 {
+  double lastFrame = 0;
+  double currentFrame = 0;
+  double ticksPerSecond = 0.2f;
+  double tickRate = 1.0f/ticksPerSecond;
   while(!glfwWindowShouldClose(window))
   {
-    //std::cout << "finished delete scan\n";
+    lastFrame = currentFrame;
+    currentFrame = glfwGetTime();
+    //std::cout << currentFrame << ':' << lastFrame << "\n";
+    double deltaFrame = currentFrame-lastFrame;
+
+    int waitTime = (tickRate-deltaFrame)*1000;
+    //std::cout << deltaFrame << ":" << waitTime ;
+    std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+    currentFrame = glfwGetTime();
     newWorld->delScan(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
   }
   std::cout << "exiting delete thread \n";
@@ -281,6 +282,7 @@ void receive()
         break;
       case(0xFF):
         std::cout << "Received exit message\n";
+        glfwSetWindowShouldClose(window, true);
         break;
       default:
         std::cout << "Receiving unknown opcode " << (int)msg.opcode << "\n";

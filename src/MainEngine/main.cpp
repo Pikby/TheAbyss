@@ -9,7 +9,7 @@
 int main()
 {
   glfwInit();
-  glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwWindowHint(GLFW_SAMPLES, 2);
   const int numbBuildThreads = 1;
   int winWidth = std::stoi(Settings::get("windowWidth"));
   int winHeight = std::stoi(Settings::get("windowHeight"));
@@ -54,7 +54,15 @@ int main()
   glFrontFace(GL_CCW);
 
 
-  initWorld(numbBuildThreads,winWidth,winHeight);
+  try
+  {
+      initWorld(numbBuildThreads,winWidth,winHeight);
+  }
+  catch(const char* err)
+  {
+    std::cout << err << "\n";
+    return -1;
+  }
   std::cout << "staring main\n";
 
   std::thread renderThread(render);

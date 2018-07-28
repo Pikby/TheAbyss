@@ -71,7 +71,6 @@ public:
 
   BSP(int x,int y,int z,const std::string &wName, const std::string &val);
   BSP(){};
-  void generateTerrain();
   void render();
   void addBlock(int x, int y, int z,char id);
   void freeGL();
@@ -85,7 +84,7 @@ public:
                        std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk);
   void drawOpaque();
   void drawTranslucent();
-
+  void swapBuffers();
 };
 
 class BSPNode

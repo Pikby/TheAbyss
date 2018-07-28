@@ -25,15 +25,14 @@ inline int pack4chars(char a, char b, char c, char d)
 
 void Messenger::setupSockets(std::string ipAddress,std::string port)
 {
-  std::ofstream error("outputlog.txt");
-  #ifdef _WIN32
-  error << "Doing windows shit\n";
+
+#ifdef _WIN32
   WSADATA wsa_data;
   int initResult;
   initResult = WSAStartup(MAKEWORD(2,2), &wsa_data);
   if (initResult != 0)
   {
-      error << "WSAStartup failed, ERROR CODE: " << initResult << std::endl;
+      throw "WSAStartup failed, ERROR CODE: ";
       return;
   }
 
@@ -47,7 +46,7 @@ void Messenger::setupSockets(std::string ipAddress,std::string port)
 
   if (getaddrinfo(ipAddress.c_str(),port.c_str(), &hints, &result) != 0)
   {
-    error << "getaddrinfo failed" << std::endl;
+    throw "getaddrinfo failed";
     WSACleanup();
     return;
   }
@@ -59,27 +58,25 @@ void Messenger::setupSockets(std::string ipAddress,std::string port)
   // error check to make sure it is a valid socket
   if (fd == INVALID_SOCKET)
   {
-      error << "Error at socket(): " << WSAGetLastError() << std::endl;
+      throw "Error at socket(): " + WSAGetLastError();
       freeaddrinfo(result);
       WSACleanup();
       return;
   }
   if(connect(fd, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
   {
-    error << "Error connecting to server\n";
+    throw "Error connecting to server\n";
     closesocket(fd);
     fd = INVALID_SOCKET;
+    return;
   }
-
-
-  #else
-  error << "Doing linux shit\n";
+#else
   fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (fd < 0) {
-      error << "ERROR: failed to create socket." << std::endl;
+  if (fd < 0)
+  {
+      throw "ERROR: failed to create socket.";
       return;
   }
-  error << "Successfully created socket." << std::endl;
 
   sockaddr_in serveraddress;
   serveraddress.sin_family = AF_INET;
@@ -91,11 +88,11 @@ void Messenger::setupSockets(std::string ipAddress,std::string port)
   // connect to the server
   if (connect(fd, (sockaddr*) &serveraddress, sizeof(serveraddress)) < 0)
   {
-      error << "ERROR: failed to connect to server." << std::endl;
+      throw "ERROR: failed to connect to server.";
       return;
   }
   #endif
-  error << "Successfully connected to server" << std::endl;
+  std::cout << "Successfully connected to server" << std::endl;
 
 
 }
@@ -230,7 +227,7 @@ void Messenger::receiveMessage(void *buffer,int length)
   }
 }
 
-void Messenger::sendMessage(void* buffer, int length)
+void Messenger::sendMessage(const void* buffer, int length)
 {
   char* buf = (char*)buffer;
   int totalSent = 0;

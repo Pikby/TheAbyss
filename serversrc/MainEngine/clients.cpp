@@ -2,14 +2,12 @@
 #include "../headers/clients.h"
 #include "../headers/world.h"
 #include "../headers/bsp.h"
+#include "../headers/server.h"
 #include <iostream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-std::thread Server::serverCommands;
-std::mutex Server::clientMutex;
-std::shared_ptr<Client> Server::clients[4];
-World* Server::curWorld;
+
 
 Client::Client(int Fd,uchar Id,World* world)
 {
@@ -21,12 +19,14 @@ Client::Client(int Fd,uchar Id,World* world)
   zpos = 10;
   open = true;
   fatalError = false;
-  if (send(fd, &id, sizeof(id), 0) == -1)
-  {
-      std::cout << "ERROR: failed to send id message." << std::endl;
-  }
-
+  char name[24];
+  recvMessage(name,24);
+  userName = std::string(name);
+  sendMessage(&id,sizeof(id));
+  std::cout << userName << " Connected\n";
   Server::sendInitAll(this);
+  //std::shared_ptr<Message> tmp(new Message(100,0,0,0,0,0,0,std::make_shared<std::string>(userName + " has connected")));
+  //Server::messageAll(tmp);
   Server::retClients(this);
   sendThread = std::thread(&Client::sendMessages,this);
   recvThread = std::thread(&Client::recvMessages,this);
@@ -69,6 +69,7 @@ inline void Client::sendMessage(const void *buffer,int length)
 
   }
 }
+
 inline void Client::recvMessage(void *buffer, int length)
 {
   char* buf = (char*)buffer;
@@ -91,15 +92,12 @@ void Client::sendMessages()
 {
   while(open)
   {
-    queueMutex.lock();
     if(msgQueue.empty())
     {
-      queueMutex.unlock();
       continue;
     }
     if(!open) return;
     std::shared_ptr<Message> m = msgQueue.front();
-    queueMutex.unlock();
     int arr[5];
     arr[0] = ((m->opcode << 24) | (m->ext1 << 16) | (m->ext2 << 8) | m->ext3);
     arr[1] = m->x;
@@ -115,10 +113,7 @@ void Client::sendMessages()
     {
       sendMessage(m->data->data(), arr[4]);
     }
-    queueMutex.lock();
-    msgQueue.front() = NULL;
     msgQueue.pop();
-    queueMutex.unlock();
 
   }
 
@@ -164,7 +159,6 @@ void Client::recvMessages()
     switch(opcode)
     {
       case (0):
-        //curWorld->sendChunk(x,y,z,fd);
         sendChunk(x,y,z);
         break;
       case (1):
@@ -206,9 +200,7 @@ void Client::sendChunk(int x,int y,int z)
   curWorld->generateChunk(x,y,z);
   std::shared_ptr<std::string> msg = curWorld->getChunk(x,y,z)->getCompressedChunk();
   std::shared_ptr<Message> tmp(new Message(0,0,0,0,x,y,z,msg));
-  queueMutex.lock();
   msgQueue.push(tmp);
-  queueMutex.unlock();
 }
 void Client::sendChunkAll(int x,int y,int z)
 {
@@ -231,98 +223,4 @@ void Client::sendExit()
   {
       std::cout << "ERROR: failed to send exit message." << std::endl;
   }
-}
-
-void Server::handleServerCommands()
-{
-    std::string line;
-    while(std::getline(std::cin,line))
-    {
-      parseCommand(line);
-    }
-}
-
-void Server::initServer(World* temp)
-{
-  curWorld = temp;
-  serverCommands = std::thread(Server::handleServerCommands);
-  serverCommands.detach();
-}
-
-
-void Server::add(int fd)
-{
-  clientMutex.lock();
-  for(int i = 0;i<MAX_CLIENTS;i++)
-  {
-    if(clients[i] == NULL)
-    {
-      std::cout << "Adding client " << i << '\n';
-      clientMutex.unlock();
-      std::shared_ptr<Client> tmp(new Client(fd,i,curWorld));
-      clientMutex.lock();
-      clients[i] = tmp;
-      clientMutex.unlock();
-      break;
-    }
-  }
-}
-void Server::remove(int id)
-{
-  std::cout << clients[id].use_count() << "\n";
-  clientMutex.lock();
-  clients[id] = NULL;
-  clientMutex.unlock();
-  std::shared_ptr<Message> tmp(new Message(99,id,0,0,0,0,0,NULL));
-  messageAll(tmp);
-}
-
-void Server::sendInitAll(Client* target)
-{
-  clientMutex.lock();
-  std::shared_ptr<Message> msg = target->getInfo();
-  for(int i =0;i<MAX_CLIENTS;i++)
-  {
-    std::shared_ptr<Client> curClient = clients[i];
-    if(curClient != NULL && curClient.get() != target)
-    {
-      curClient->queueMutex.lock();
-      curClient->msgQueue.push(msg);
-      curClient->queueMutex.unlock();
-    }
-  }
-  clientMutex.unlock();
-}
-
-void Server::retClients(Client* target)
-{
-  clientMutex.lock();
-  for(int i =0;i<MAX_CLIENTS;i++)
-  {
-    std::shared_ptr<Client> curClient = clients[i];
-    if(curClient != NULL && curClient.get() != target)
-    {
-      target->queueMutex.lock();
-      target->msgQueue.push(curClient->getInfo());
-      target->queueMutex.unlock();
-    }
-  }
-  clientMutex.unlock();
-}
-
-void Server::messageAll(std::shared_ptr<Message> msg)
-{
-  clientMutex.lock();
-  for(int i=0;i<MAX_CLIENTS;i++)
-  {
-
-    std::shared_ptr<Client> curClient = clients[i];
-    if(curClient != NULL)
-    {
-      curClient->queueMutex.lock();
-      curClient->msgQueue.push(msg);
-      curClient->queueMutex.unlock();
-    }
-  }
-   clientMutex.unlock();
 }

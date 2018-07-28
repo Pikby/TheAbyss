@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <atomic>
 #include <memory>
@@ -6,7 +7,7 @@
 #include <mutex>
 #include <string>
 #include <glm/glm.hpp>
-
+#include "threadSafeQueue.h"
 typedef unsigned char uchar;
 class World;
 struct Message
@@ -38,6 +39,7 @@ class Client
   private:
     int fd;
     uchar id;
+    std::string userName;
     bool fatalError;
     std::atomic_bool open;
     std::atomic<float> xpos;
@@ -47,8 +49,7 @@ class Client
     std::thread recvThread;
     World* curWorld;
   public:
-    std::mutex queueMutex;
-    std::queue<std::shared_ptr<Message>> msgQueue;
+    TSafeQueue<std::shared_ptr<Message>> msgQueue;
     Client(int Fd,uchar Id,World* world);
     int getFD();
     void setPos(glm::vec3 newPos);
@@ -66,25 +67,4 @@ class Client
     void errorDisconnect();
     inline void sendMessage(const void *buffer,int length);
     inline void recvMessage(void*buffer,int length);
-};
-
-#define MAX_CLIENTS 4
-class Server
-{
-  private:
-
-    static std::thread serverCommands;
-    static std::mutex clientMutex;
-    static std::shared_ptr<Client> clients[MAX_CLIENTS];
-    static World* curWorld;
-  public:
-    static void initServer(World* temp);
-    static void handleServerCommands();
-    static void add(int fd);
-    static void remove(int id);
-    static void messageAll(std::shared_ptr<Message> msg);
-    static void retClients(Client* target);
-    static void sendInitAll(Client* target);
-    static void parseCommand(std::string command);
-    static void say(const std::string &message);
 };

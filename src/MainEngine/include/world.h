@@ -34,8 +34,6 @@ public:
   Messenger messenger;
   Drawer drawer;
   Map3D<std::shared_ptr<BSPNode>> BSPmap;
-  std::mutex playerListMutex;
-
   char mainId;
 
   TSafeQueue<std::shared_ptr<BSPNode>>* buildQueue;
@@ -82,8 +80,6 @@ public:
   void updateBlock(int x, int y, int z);
   void delScan(float mainx, float mainy, float mainz);
   void generateChunkFromString(int chunkx, int chunky, int chunkz,const std::string &val);
-  void saveWorld();
-  void loadChunk(std::string);
 
 };
 

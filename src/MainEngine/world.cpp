@@ -40,19 +40,33 @@ World::World(int numbBuildThreads,int width,int height)
   }
   catch(...)
   {
-    std::cout << "bad settings lul\n";
+    std::ofstream error("errorlog.txt");
+    error << "Bad settings\n";
   }
   worldName = Settings::get("worldName");
   std::string ipAddress = Settings::get("ipAddress");
   std::string port = Settings::get("port");
+  std::string userName = Settings::get("userName");
   boost::filesystem::create_directory("saves");
   boost::filesystem::create_directory("saves/"+worldName);
   boost::filesystem::create_directory("saves/"+worldName+"/chunks");
 
   drawnChunks = 0;
 
-  messenger.setupSockets(ipAddress,port);
-  messenger.receiveMessage(&mainId,sizeof(mainId));
+  try
+  {
+    messenger.setupSockets(ipAddress,port);
+    messenger.sendMessage(userName.c_str(),24);
+    messenger.receiveMessage(&mainId,sizeof(mainId));
+  }catch(const char* err)
+  {
+    std::ofstream error("errorlog.txt");
+    error << err;
+  }
+  std::cout << "Done\n";
+
+
+
   drawer.setupShadersAndTextures(width,height);
   drawer.setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
   drawer.updateViewProjection(45.0f,0.1f,(horzRenderDistance)*CHUNKSIZE);
@@ -323,19 +337,6 @@ void World::delScan(float mainx, float mainy, float mainz)
       delChunk(chunkx,chunky,chunkz);
     }
   }
-
-}
-
-void World::saveWorld()
-{
-  /*
-    std::shared_ptr<BSPNode>  curNode = drawer.frontNode;
-    while(curNode != NULL)
-    {
-      curNode->saveChunk();
-      curNode = curNode->nextNode;
-    }
-    */
 }
 
 bool World::chunkExists(int x ,int y, int z)

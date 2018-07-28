@@ -33,11 +33,6 @@ BSPNode::BSPNode(int x,int y, int z,const std::string &wName,const std::string &
   BSPMutex.unlock();
 }
 
-void BSPNode::generateTerrain()
-{
-  curBSP.generateTerrain();
-}
-
 void BSPNode::build()
 {
   BSPMutex.lock();
@@ -53,8 +48,13 @@ void BSPNode::drawOpaque()
 {
   if(toRender == true)
   {
-     curBSP.render();
-     toRender = false;
+    if(BSPMutex.try_lock())
+    {
+      curBSP.swapBuffers();
+      curBSP.render();
+      toRender = false;
+      BSPMutex.unlock();
+    }
   }
   curBSP.drawOpaque();
 }
@@ -175,6 +175,19 @@ void BSP::freeGL()
   glDeleteBuffers(1,&tVBO);
   glDeleteBuffers(1,&tEBO);
   glDeleteVertexArrays(1,&tVAO);
+}
+
+void BSP::swapBuffers()
+{
+  oVertices = oVerticesBuffer;
+  oIndices = oIndicesBuffer;
+  tVertices = tVerticesBuffer;
+  tIndices = tIndicesBuffer;
+
+  oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
+  tVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
+  tIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
 }
 
 inline int pack4chars(char a, char b, char c, char d)
@@ -741,17 +754,6 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
        }
      }
    }
-
-  oVertices = oVerticesBuffer;
-  oIndices = oIndicesBuffer;
-  tVertices = tVerticesBuffer;
-  tIndices = tIndicesBuffer;
-
-  oVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-  oIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
-  tVerticesBuffer = std::shared_ptr<std::vector<GLfloat>> (new std::vector<GLfloat>);
-  tIndicesBuffer  = std::shared_ptr<std::vector<GLuint>> (new std::vector<GLuint>);
-
 }
 
 inline void BSP::render()
