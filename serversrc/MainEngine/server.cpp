@@ -1,4 +1,5 @@
 #include "../headers/server.h"
+#include "../headers/bsp.h"
 #include <time.h>
 #include <chrono>
 uint Server::ticksPerSecond;
@@ -48,6 +49,7 @@ void Server::handleServerCommands()
 
 void Server::initServer(World* temp)
 {
+  BSP::initTerrainGenEngine();
   serverLogicOn = true;
   ticksPerSecond = 2;
   numberOfClients = 0;

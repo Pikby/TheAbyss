@@ -1,42 +1,47 @@
 #include "../headers/bsp.h"
+#include "FastNoiseSIMD.h"
 #include "../headers/FastNoise.h"
 
-int seed=1337;
 //Perlin noise object
-FastNoise perlin;
+FastNoise BSP::noise2d;
+FastNoiseSIMD* BSP::noise3d;
+
+void BSP::initTerrainGenEngine()
+{
+  std::cout << "Initalizing terrain gen algorithm\n";
+  int seed=10000;
+  noise3d = FastNoiseSIMD::NewFastNoiseSIMD(seed);
+  noise3d->SetNoiseType(FastNoiseSIMD::PerlinFractal);
+  std::cout << "SIMD level detected as" << noise3d->GetSIMDLevel() << "\n";
+  noise2d.SetSeed(seed);
+  noise2d.SetFractalOctaves(6);
+  noise2d.SetFrequency(0.01);
+  noise2d.SetFractalLacunarity(6);
+  noise2d.SetFractalGain(5);
+}
+
 void BSP::generateTerrain()
 {
-  perlin.SetSeed(seed);
-  perlin.SetFractalOctaves(8);
-  perlin.SetFrequency(0.01);
-  perlin.SetFractalLacunarity(8);
-  perlin.SetFractalGain(5);
-  double freq = 128;
-  int oct = 8;
-  for(int x=0;x<CHUNKSIZE;x++)
+  float* caveSet = noise3d->GetPerlinSet(xCoord*CHUNKSIZE,zCoord*CHUNKSIZE,yCoord*CHUNKSIZE,CHUNKSIZE,CHUNKSIZE,CHUNKSIZE);
+  float* heightMap = noise3d->GetPerlinSet(xCoord*CHUNKSIZE,zCoord*CHUNKSIZE,0,CHUNKSIZE,CHUNKSIZE,1);
+
+  for(uint index = 0;index<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;index++)
   {
-    for(int z=0;z<CHUNKSIZE;z++)
+    int curHeight = index % 32;
+    int height = CHUNKSIZE+200*heightMap[index/32];
+    int realy = curHeight + yCoord*CHUNKSIZE;
+
+    if(caveSet[index] < 0)
     {
-      //Generates a height map for the surface
-      int height = CHUNKSIZE+200*perlin.GetPerlin(x+xCoord*CHUNKSIZE,z+zCoord*CHUNKSIZE);
-      for(int y=0;y<CHUNKSIZE;y++)
-      {
-        int realx = xCoord*CHUNKSIZE+x;
-        int realy = yCoord*CHUNKSIZE+y;
-        int realz = zCoord*CHUNKSIZE+z;
 
-
-        if(realy < height)
-        {
-          if(realy == height - 1) addBlock(x,y,z,2);
-          else addBlock(x,y,z,1);
-        }
-        else if(realy<120)
-        {
-          //addBlock(x,y,z,3);
-        }
-
-      }
     }
+    else if(realy < height)
+    {
+      if(realy == height - 1) worldArray[index] = 2;
+      else worldArray[index] = 1;
+    }
+
   }
+  FastNoiseSIMD::FreeNoiseSet(caveSet);
+  FastNoiseSIMD::FreeNoiseSet(heightMap);
 }

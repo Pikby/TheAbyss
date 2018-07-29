@@ -69,7 +69,7 @@ public:
   static bool geometryChanged;
   int xCoord,yCoord,zCoord;
 
-  BSP(int x,int y,int z,const std::string &wName, const std::string &val);
+  BSP(int x,int y,int z,const std::string &wName, char* data);
   BSP(){};
   void render();
   void addBlock(int x, int y, int z,char id);
@@ -94,7 +94,7 @@ class BSPNode
   public:
   static int totalChunks;
   BSP curBSP;
-  BSPNode(int x,int y,int z,const std::string &wName,const std::string &val);
+  BSPNode(int x,int y,int z,const std::string &wName,char* val);
   ~BSPNode();
   void saveChunk();
   bool blockExists(int x, int y, int z);

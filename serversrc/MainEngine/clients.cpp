@@ -159,7 +159,10 @@ void Client::recvMessages()
     switch(opcode)
     {
       case (0):
-        sendChunk(x,y,z);
+      {
+        std::thread chunkThread(&Client::sendChunk,this,x,y,z);
+        chunkThread.detach();
+      }
         break;
       case (1):
         curWorld->delBlock(x,y,z);

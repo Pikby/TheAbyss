@@ -106,18 +106,16 @@ void Map3D<T>::del(int x, int y, int z)
 template <class T>
 std::shared_ptr<std::list<T>> Map3D<T>::findAll(glm::ivec3 min,glm::ivec3 max)
 {
+  std::lock_guard<std::mutex> lock(mapMutex);
   std::shared_ptr<std::list<T>> partList(new std::list<T>);
   for(auto itx = map3D.lower_bound(min.x); itx->first <= max.x && itx !=map3D.end();++itx)
   {
-
     for(auto ity = itx->second.lower_bound(min.y);ity->first <= max.y && ity != itx->second.end();++ity)
     {
-
       for(auto itz = ity->second.lower_bound(min.z); itz->first <= max.z && itz != ity->second.end();++itz)
       {
         partList->push_back(itz->second.data);
       }
-
     }
   }
   return partList;

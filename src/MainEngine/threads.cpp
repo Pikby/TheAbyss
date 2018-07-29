@@ -244,8 +244,10 @@ void receive()
         {
           char* buf = new char[msg.length];
           newWorld->messenger.receiveMessage(buf,msg.length);
-          newWorld->generateChunkFromString(msg.x.i,msg.y.i,msg.z.i,std::string(buf,msg.length));
-          delete[] buf;
+          std::thread chunkThread(&World::generateChunkFromString,newWorld,msg.x.i,msg.y.i,msg.z.i,buf);
+          //newWorld->generateChunkFromString(msg.x.i,msg.y.i,msg.z.i,std::string(buf,msg.length));
+          chunkThread.detach();
+          //delete[] buf;
         }
         break;
       case(1):

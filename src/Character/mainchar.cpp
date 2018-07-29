@@ -165,7 +165,7 @@ void MainChar::moveBackward()
 
 void MainChar::setPosition(float x, float y, float z)
 {
-  if(sqrt(pow(x-xpos,2)+pow(y-ypos,2)+pow(z-zpos,2) < 50)) return;
+  if(sqrt(pow(x-xpos,2)+pow(y-ypos,2)+pow(z-zpos,2) < 32*32)) return;
   xpos = x;
   ypos = y;
   zpos = z;

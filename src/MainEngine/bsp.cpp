@@ -15,14 +15,14 @@ int BSPNode::totalChunks = 0;
 bool BSP::geometryChanged = true;
 BSPNode::~BSPNode()
 {
-  totalChunks--;
+  //totalChunks--;
 }
 
-BSPNode::BSPNode(int x,int y, int z,const std::string &wName,const std::string &val)
+BSPNode::BSPNode(int x,int y, int z,const std::string &wName,char *val)
 {
   //std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
   //std::cout << "curNumber of chunks: " << totalChunks << "\n";
-  totalChunks++;
+  //totalChunks++;
   BSPMutex.lock();
   curBSP = BSP(x,y,z,wName,val);
   isGenerated = false;
@@ -90,7 +90,6 @@ void BSPNode::disconnect()
   if(backChunk != NULL) backChunk->frontChunk = NULL;
   if(topChunk != NULL) topChunk->bottomChunk = NULL;
   if(bottomChunk != NULL) bottomChunk->topChunk = NULL;
-
   BSPMutex.unlock();
 
 }
@@ -116,8 +115,17 @@ int BSPNode::blockVisibleType(int x, int y, int z)
 }
 
 
-BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
+BSP::BSP(int x, int y, int z,const std::string &wName,char* data)
 {
+  oVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+  oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+  tVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+  tIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+
+  oVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+  oIndices  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+  tVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
+  tIndices = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
   xCoord = x;
   yCoord = y;
   zCoord = z;
@@ -128,7 +136,6 @@ BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
   int i = 0;
   char curId = 0;
   unsigned short curLength = 0;
-  const char* data = val.c_str();
   unsigned int index=0;
 
   while(i<numbOfBlocks)
@@ -146,20 +153,14 @@ BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
       if(i+j>numbOfBlocks)
       {
         std::cout << "ERROR CORRUPTED CHUNK AT " << x << ":" << y << ":" << z <<"\n";
+        return;
       }
       worldArray[i+j] = curId;
     }
     i+= curLength;
   }
-  oVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-  tVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  tIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+  delete[] data;
 
-  oVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  oIndices  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-  tVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  tIndices = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
 }
 
 

@@ -124,7 +124,7 @@ void World::calculateViewableChunks()
 }
 
 
-void World::generateChunkFromString(int chunkx, int chunky, int chunkz,const std::string &value)
+void World::generateChunkFromString(int chunkx, int chunky, int chunkz,char* value)
 {
   //std::cout << "Generating chunk" << chunkx << ":" << chunky << ":" << chunkz << "\n";
   if(chunkExists(chunkx,chunky,chunkz))

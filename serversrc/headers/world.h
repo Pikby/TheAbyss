@@ -1,6 +1,5 @@
 #pragma once
 #define CHUNKSIZE 32
-#include "../headers/FastNoise.h"
 #include "../headers/3dmap.h"
 #include <unordered_map>
 #include <glm/glm.hpp>
@@ -25,9 +24,6 @@ class World
   unsigned int totalChunks;
   //global texture atlas
   //The seed of the world, for generation
-  int seed;
-  //Perlin noise object
-  FastNoise perlin;
   //The name of the world, for saving and loading
   std::string worldName;
   bool blockExists(int x, int y, int z);

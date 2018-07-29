@@ -1,4 +1,5 @@
 # the compiler: gcc for C program, define as g++ for C++
+default: linux
 CC = g++
 WCC = /mnt/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static.posix-g++
 WPATH = /mnt/WorkSpace/MXE/mxe/usr/i686-w64-mingw32.static.posix-g++
@@ -34,13 +35,33 @@ TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEng
 
 
 COBJECTLIST = csettings.o cdrawer.o ctextureloading.o cmain.o cworld.o cmessenger.o cobjects.o cthreads.o \
-							cbsp.o cgui.o cmainchar.o cFastNoise.o cbspterraingen.o cinputhandling.o \
+							cbsp.o cgui.o cmainchar.o cinputhandling.o \
 							citems.o
-SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o scommands.o sserver.o
+SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o scommands.o sserver.o $(FASTNOISEOBJECTS)
+
+
+FASTNOISEOBJECTS = FastNoiseSIMD.o FastNoiseSIMD_avx2.o FastNoiseSIMD_internal.o FastNoiseSIMD_sse2.o FastNoiseSIMD_sse41.o
+NP =  ../serversrc/TerrainGeneration
+NFLAGS = g++ -std=c++17 -march=core-avx2 -c
+
+FastNoiseSIMD.o: $(NP)/FastNoiseSIMD.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD.cpp -o FastNoiseSIMD.o
+
+FastNoiseSIMD_avx2.o: $(NP)/FastNoiseSIMD_avx2.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD_avx2.cpp -o FastNoiseSIMD_avx2.o
+
+FastNoiseSIMD_internal.o: $(NP)/FastNoiseSIMD_internal.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD_internal.cpp -o FastNoiseSIMD_internal.o
+
+FastNoiseSIMD_sse2.o: $(NP)/FastNoiseSIMD_sse2.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD_sse2.cpp -o FastNoiseSIMD_sse2.o
+
+FastNoiseSIMD_sse41.o: $(NP)/FastNoiseSIMD_sse41.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD_sse41.cpp -o FastNoiseSIMD_sse41.o
 
 OFLAGS = g++ -c $(CFLAGSLINUX) -O3
 # Main Engine
-default: linux
+
 
 # Server
 smain.o: ../serversrc/MainEngine/main.cpp
@@ -54,6 +75,7 @@ sbsp.o: ../serversrc/MainEngine/bsp.cpp
 
 sbspterraingen.o: ../serversrc/TerrainGeneration/bspterraingen.cpp
 	$(OFLAGS) ../serversrc/TerrainGeneration/bspterraingen.cpp -o sbspterraingen.o
+
 
 sFastNoise.o: ../serversrc/TerrainGeneration/FastNoise.cpp
 	$(OFLAGS) ../serversrc/TerrainGeneration/FastNoise.cpp -o sFastNoise.o
@@ -69,6 +91,9 @@ scommands.o: ../serversrc/MainEngine/commands.cpp
 
 sserver.o: ../serversrc/MainEngine/server.cpp
 	$(OFLAGS) ../serversrc/MainEngine/server.cpp -o sserver.o
+
+sFastNoiseInter.o:../serversrc/TerrainGeneration/FastNoiseSIMD_internal.cpp
+	$(OFLAGS) ../serversrc/TerrainGeneration/FastNoiseSIMD_internal.cpp -o sFastNoiseInter.o
 # Client
 
 ME = ../src/MainEngine
@@ -100,8 +125,8 @@ cmainchar.o: $(CH)/mainchar.cpp
 
 # Terrain Gen
 TG = ../src/TerrainGeneration
-cFastNoise.o: $(TG)/FastNoise.cpp
-	$(OFLAGS) $(TG)/FastNoise.cpp -o cFastNoise.o
+cFastNoise.o: $(TG)/FastNoiseSIMD.cpp
+	$(OFLAGS) $(TG)/FastNoiseSIMD.cpp -o cFastNoiseSIMD.o
 
 cbspterraingen.o: $(TG)/bspterraingen.cpp
 	$(OFLAGS) $(TG)/bspterraingen.cpp -o cbspterraingen.o

@@ -58,6 +58,7 @@ int main(int argc, char* argv[])
     // keep accepting connections as long as the server is still runninng
 
     Server::initServer(&curWorld);
+
     while (true)
     {
         // look for new connections on the listening socket

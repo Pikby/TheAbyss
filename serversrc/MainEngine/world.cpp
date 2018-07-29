@@ -5,22 +5,11 @@
 World::World()
 {
 
-  seed = 1737;
-
-  perlin.SetSeed(seed);
-  perlin.SetFractalOctaves(8);
-  perlin.SetFrequency(0.01);
-  perlin.SetFractalLacunarity(8);
-  perlin.SetFractalGain(5);
   worldName = "server";
-
   boost::filesystem::create_directory("saves");
   boost::filesystem::create_directory("saves/"+worldName);
   boost::filesystem::create_directory("saves/"+worldName+"/chunks");
-
-
   totalChunks = 0;
-
 }
 
 

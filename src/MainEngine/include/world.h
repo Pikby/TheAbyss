@@ -79,7 +79,7 @@ public:
   void addBlock(int x, int y, int z, int id);
   void updateBlock(int x, int y, int z);
   void delScan(float mainx, float mainy, float mainz);
-  void generateChunkFromString(int chunkx, int chunky, int chunkz,const std::string &val);
+  void generateChunkFromString(int chunkx, int chunky, int chunkz,char* val);
 
 };
 

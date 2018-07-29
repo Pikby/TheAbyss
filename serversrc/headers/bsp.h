@@ -7,7 +7,10 @@
 #include <vector>
 #include <mutex>
 #include <atomic>
+
 #include "../headers/3darray.h"
+#include "../TerrainGeneration/FastNoiseSIMD.h"
+#include "FastNoise.h"
 
 typedef unsigned char uchar;
 #define CHUNKSIZE 32
@@ -21,15 +24,18 @@ private:
   std::string worldName;
 
   Array3D<uchar, CHUNKSIZE> worldArray;
-
+  static FastNoise noise2d;
+  static FastNoiseSIMD* noise3d;
 public:
   static bool geometryChanged;
   int xCoord,yCoord,zCoord;
   std::shared_ptr<std::string> getCompressedChunk();
   BSP(int x,int y,int z,const std::string &wName);
-  BSP(int x,int y,int z,const std::string &wName, const std::string &val);
+  BSP(int x,int y,int z,const std::string &wName, char* data);
   BSP(){};
   void generateTerrain();
+  bool loadFromFile();
+  static void initTerrainGenEngine();
   void addBlock(int x, int y, int z,char id);
   bool blockExists(int x,int y,int z);
   uchar getBlock(int x, int y, int z);
@@ -62,5 +68,5 @@ class BSPNode
   std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;
 
   //Flags for use inbetween pointers
-  std::atomic<bool> toRender,toBuild,toDelete,isGenerated,inUse;
+  std::atomic<bool> toRender,toBuild,toDelete;
 };

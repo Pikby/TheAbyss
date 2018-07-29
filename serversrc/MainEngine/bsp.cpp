@@ -20,9 +20,8 @@ BSPNode::BSPNode(int x,int y,int z,const std::string &wName)
   //std::cout << totalChunks << "\n";
 
   curBSP = BSP(x,y,z,wName);
+  curBSP.loadFromFile();
   totalChunks++;
-  isGenerated = false;
-  inUse = false;
   toRender = false;
   toBuild = false;
   toDelete = false;
@@ -33,20 +32,6 @@ BSPNode::~BSPNode()
   totalChunks--;
 }
 
-BSPNode::BSPNode(int x,int y, int z,const std::string &wName,const std::string &val)
-{
-  //std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
-  //std::cout << "curNumber of chunks: " << totalChunks << "\n";
-  totalChunks++;
-  BSPMutex.lock();
-  curBSP = BSP(x,y,z,wName,val);
-  isGenerated = false;
-  inUse = false;
-  toRender = false;
-  toBuild = false;
-  toDelete = false;
-  BSPMutex.unlock();
-}
 
 void BSPNode::generateTerrain()
 {
@@ -96,45 +81,6 @@ std::shared_ptr<std::string> BSPNode::getCompressedChunk()
   return curBSP.getCompressedChunk();
 }
 
-BSP::BSP(int x, int y, int z,const std::string &wName,const std::string &val)
-{
-
-
-
-  xCoord = x;
-  yCoord = y;
-  zCoord = z;
-  using namespace std;
-  worldName = wName;
-
-  const int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
-  int i = 0;
-  char curId = 0;
-  unsigned short curLength = 0;
-  const char* data = val.c_str();
-  unsigned int index=0;
-
-  while(i<numbOfBlocks)
-  {
-    curId = data[index];
-    curLength = 0;
-    index++;
-    for(int j=0;j<sizeof(curLength);j++)
-    {
-      curLength += ((uchar) data[index] << (j*8));
-      index++;
-    }
-    for(int j = 0; j<curLength; j++)
-    {
-      if(i+j>numbOfBlocks)
-      {
-        std::cout << "ERROR CORRUPTED CHUNK AT " << x << ":" << y << ":" << z <<"\n";
-      }
-      worldArray[i+j] = curId;
-    }
-    i+= curLength;
-  }
-}
 
 BSP::BSP(int x, int y, int z,const std::string &wName)
 {
@@ -143,49 +89,48 @@ BSP::BSP(int x, int y, int z,const std::string &wName)
     zCoord = z;
     worldName = wName;
     //Intialize Buffers
+}
 
-    using namespace std;
-    //The directoy to the chunk to be saved
-    string directory = "saves/" + worldName + "/chunks/";
-    string chunkName = to_string(x) + '_' + to_string(y) + '_' + to_string(z) + ".dat";
-    string chunkPath = directory+chunkName;
+bool BSP::loadFromFile()
+{
+  using namespace std;
+  //The directoy to the chunk to be saved
+  string directory = "saves/" + worldName + "/chunks/";
+  string chunkName = to_string(xCoord) + '_' + to_string(yCoord) + '_' + to_string(zCoord) + ".dat";
+  string chunkPath = directory+chunkName;
 
-    //Max size of a chunk
-    int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
-    ifstream ichunk(chunkPath,ios::binary);
+  //Max size of a chunk
+  int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
+  ifstream ichunk(chunkPath,ios::binary);
 
-    //Checks if the file exists
-    if(!ichunk.is_open())
+  //Checks if the file exists
+  if(ichunk.is_open())
+  {
+    int i = 0;
+    char curId=0;
+    unsigned short curLength=0;
+    while(i<numbOfBlocks)
     {
 
-      generateTerrain();
-      ichunk.close();
-      ofstream ochunk(chunkPath,ios::binary);
+      ichunk.read((char*) &curId,sizeof(curId));
+      ichunk.read((char*) &curLength,sizeof(curLength));
 
-      string compressed = *getCompressedChunk();
-      ochunk << compressed;
-      ochunk.close();
-
-    }
-    else
-    {
-      int i = 0;
-      char curId=0;
-      unsigned short curLength=0;
-      while(i<numbOfBlocks)
+      for(int j = 0; j<curLength; j++)
       {
-
-        ichunk.read((char*) &curId,sizeof(curId));
-        ichunk.read((char*) &curLength,sizeof(curLength));
-
-        for(int j = 0; j<curLength; j++)
-        {
-          worldArray[i+j] = curId;
-        }
-        i+= curLength;
+        worldArray[i+j] = curId;
       }
-      ichunk.close();
+      i+= curLength;
     }
+    ichunk.close();
+    return true;
+  }
+  else
+  {
+    generateTerrain();
+    return false;
+  }
+
+
 }
 
 std::shared_ptr<std::string> BSP::getCompressedChunk()
@@ -193,7 +138,7 @@ std::shared_ptr<std::string> BSP::getCompressedChunk()
     using namespace std;
     ostringstream chunk(ios::binary);
     unsigned short curTotal = 1;
-    int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
+    const int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
     char lastId = worldArray[0];
     for(int i = 1; i<numbOfBlocks;i++)
     {
@@ -266,7 +211,7 @@ void BSP::addBlock(int x, int y, int z, char id)
   worldArray.set(x,y,z,id);
 }
 
-inline void BSP::delBlock(int x, int y, int z)
+void BSP::delBlock(int x, int y, int z)
 {
   worldArray.set(x,y,z,0);
 

@@ -10,11 +10,11 @@ class Array3D
     }
     T &get(int x,int y, int z)
     {
-      return array[x+y*N+z*N*N];
+      return array[x*N*N+z*N+y];
     }
     void set(int x,int y, int z, T value)
     {
-      array[x+y*N+z*N*N] = value;
+      array[x*N*N+z*N+y] = value;
     }
     T &operator[](int i)
     {
