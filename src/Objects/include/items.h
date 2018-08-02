@@ -1,5 +1,6 @@
 #pragma once
 enum Type {NONE,MELEEWEAPON,RANGEDWEAPON};
+enum RenderType{OPAQUE = 0, TRANSLUCENT = 1, TRANSPARENT = 2};
 #include <string>
 #include <glm/glm.hpp>
 #include <vector>
@@ -33,18 +34,19 @@ public:
   static bool loadItemDictionary(const char* file);
 };
 
-enum Opacity {OPAQUE,TRANSLUCENT,TRANSPARENT};
+
 #define BLOCKRES 128
 
 class Block
 {
 public:
+
   std::string name;
   int id;
   uchar texArray[6];
-  int visibleType;
+  RenderType visibleType;
 
-  Block(std::string newName, int newId, int* array,int newVisibleType)
+  Block(std::string newName, int newId, int* array,RenderType newVisibleType)
   {
     visibleType = newVisibleType;
     name = newName;

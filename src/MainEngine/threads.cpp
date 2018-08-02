@@ -133,12 +133,22 @@ void draw()
 
 void render()
 {
-  int renderLoop = 0;
+  double lastFrame = 0;
+  double currentFrame = 0;
+  double ticksPerSecond = 27000;
+  double tickRate = 1.0f/ticksPerSecond;
   while(!glfwWindowShouldClose(window))
   {
-    //std::cout << "finished render loop\n";
+    lastFrame = currentFrame;
+    currentFrame = glfwGetTime();
+    //std::cout << currentFrame << ':' << lastFrame << "\n";
+    double deltaFrame = currentFrame-lastFrame;
+
+    int waitTime = (tickRate-deltaFrame)*1000;
+    //std::cout << deltaFrame << ":" << waitTime ;
+    //std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+    currentFrame = glfwGetTime();
     newWorld->renderWorld(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
-    //std::cout << "Finished render loop" << renderLoop << "\n";
   }
   std::cout << "exiting render thread \n";
 
@@ -194,11 +204,12 @@ void send()
   while(!glfwWindowShouldClose(window))
   {
     //newWorld->messageQueue.waitForData();
+
     if(newWorld->messenger.messageQueue.empty()) continue;
+    //std::cout << newWorld->messenger.messageQueue.size() << "\n";
     Message msg = newWorld->messenger.messageQueue.front();
     newWorld->messenger.messageQueue.pop();
     uchar opcode = msg.opcode;
-    //std::cout << std::dec <<  "Opcode is: " << (int)msg.opcode << ":" << (int)msg.ext1 << "\n";
     switch(opcode)
     {
       case(0):
@@ -244,10 +255,10 @@ void receive()
         {
           char* buf = new char[msg.length];
           newWorld->messenger.receiveMessage(buf,msg.length);
-          std::thread chunkThread(&World::generateChunkFromString,newWorld,msg.x.i,msg.y.i,msg.z.i,buf);
-          //newWorld->generateChunkFromString(msg.x.i,msg.y.i,msg.z.i,std::string(buf,msg.length));
-          chunkThread.detach();
-          //delete[] buf;
+          //std::thread chunkThread(&World::generateChunkFromString,newWorld,msg.x.i,msg.y.i,msg.z.i,buf);
+          //chunkThread.detach();
+
+          newWorld->generateChunkFromString(msg.x.i,msg.y.i,msg.z.i,buf);
         }
         break;
       case(1):

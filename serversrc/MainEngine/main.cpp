@@ -8,9 +8,9 @@
 #include <string>
 #include <unistd.h>
 #include <bits/stdc++.h>
-#include "../headers/clients.h"
-#include "../headers/world.h"
-#include "../headers/server.h"
+#include "include/clients.h"
+#include "include/world.h"
+#include "include/server.h"
 
 #define PORT 3030
 World curWorld;

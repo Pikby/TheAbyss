@@ -18,15 +18,13 @@ BSPNode::~BSPNode()
   //totalChunks--;
 }
 
-BSPNode::BSPNode(int x,int y, int z,const std::string &wName,char *val)
+BSPNode::BSPNode(int x,int y, int z,const std::string &wName,const char *val)
 {
   //std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
   //std::cout << "curNumber of chunks: " << totalChunks << "\n";
   //totalChunks++;
   BSPMutex.lock();
   curBSP = BSP(x,y,z,wName,val);
-  isGenerated = false;
-  inUse = false;
   toRender = false;
   toBuild = false;
   toDelete = false;
@@ -36,11 +34,9 @@ BSPNode::BSPNode(int x,int y, int z,const std::string &wName,char *val)
 void BSPNode::build()
 {
   BSPMutex.lock();
-  inUse = true;
   curBSP.build(rightChunk,leftChunk,topChunk,bottomChunk,frontChunk,backChunk);
   toRender = true;
   toBuild = false;
-  inUse = false;
   BSPMutex.unlock();
 }
 
@@ -62,14 +58,12 @@ void BSPNode::drawOpaque()
 void BSPNode::drawTranslucent()
 {
 
-  inUse = true;
   if(toRender == true)
   {
      curBSP.render();
      toRender = false;
   }
   curBSP.drawTranslucent();
-  inUse = false;
 }
 
 
@@ -115,7 +109,7 @@ int BSPNode::blockVisibleType(int x, int y, int z)
 }
 
 
-BSP::BSP(int x, int y, int z,const std::string &wName,char* data)
+BSP::BSP(int x, int y, int z,const std::string &wName,const char* data)
 {
   oVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
   oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
@@ -196,82 +190,59 @@ inline int pack4chars(char a, char b, char c, char d)
   return ((a << 24) | (b << 16) | (c << 8) | d);
 }
 
-inline int BSP::addVertex(int renderType,const glm::vec3 &pos,Faces face, TextureSides top, TextureSides right)
+inline int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face, TextureSides top, TextureSides right)
 {
-  if(renderType == 0)
+  std::shared_ptr<std::vector<float>> curBuffer;
+  if(renderType == OPAQUE)
   {
-    int numbVert = oVerticesBuffer->size()/4;
-    //Adds position vector
-    oVerticesBuffer->push_back(pos.x);
-    oVerticesBuffer->push_back(pos.y);
-    oVerticesBuffer->push_back(pos.z);
-
-    char normandtex = face | top | right;
-    char texId = curBlockid;
-    char xtextcount = xdist;
-    char ytextcount = ydist;
-
-    //std::cout << "Norm is" << face << "\n";
-    int package = pack4chars(normandtex,texId,xtextcount,ytextcount);
-    oVerticesBuffer->push_back(*(float*)&package);
-    /*
-    //Adds normal vector
-    oVerticesBuffer->push_back(norm.x);
-    oVerticesBuffer->push_back(norm.y);
-    oVerticesBuffer->push_back(norm.z);
-
-    //Adds the textureCoordinate
-    oVerticesBuffer->push_back(texX);
-    oVerticesBuffer->push_back(texY);
-    //Returns the location of the vertice
-    */
-    return numbVert;
+    curBuffer = oVerticesBuffer;
   }
-  /*
-  else if(renderType == 1)
+  else if(renderType == TRANSLUCENT)
   {
-    int numbVert = tVerticesBuffer->size()/8;
-    //Adds position vector
-    tVerticesBuffer->push_back(pos.x);
-    tVerticesBuffer->push_back(pos.y);
-    tVerticesBuffer->push_back(pos.z);
-
-    //Adds normal vector
-    tVerticesBuffer->push_back(norm.x);
-    tVerticesBuffer->push_back(norm.y);
-    tVerticesBuffer->push_back(norm.z);
-
-    //Adds the textureCoordinate
-    tVerticesBuffer->push_back(texX);
-    tVerticesBuffer->push_back(texY);
-    //Returns the location of the vertice
-    return numbVert;
+    curBuffer = tVerticesBuffer;
   }
-  */
+
+  int numbVert = oVerticesBuffer->size()/4;
+  //Adds position vector
+  curBuffer->push_back(pos.x);
+  curBuffer->push_back(pos.y);
+  curBuffer->push_back(pos.z);
+
+  //Add the normal and texture ids
+  char normandtex = face | top | right;
+  char texId = curBlockid;
+  char xtextcount = xdist;
+  char ytextcount = ydist;
+
+  //std::cout << "Norm is" << face << "\n";
+  int package = pack4chars(normandtex,texId,xtextcount,ytextcount);
+  curBuffer->push_back(*(float*)&package);
+
+  return numbVert;
+
+
 }
 
-inline void BSP::addIndices(int renderType,int index1, int index2, int index3, int index4)
+inline void BSP::addIndices(RenderType renderType,int index1, int index2, int index3, int index4)
 {
-  if(renderType == 0)
+  std::shared_ptr<std::vector<uint>> curBuffer;
+  if(renderType == OPAQUE)
   {
-    oIndicesBuffer->push_back(index1);
-    oIndicesBuffer->push_back(index2);
-    oIndicesBuffer->push_back(index3);
-
-    oIndicesBuffer->push_back(index2);
-    oIndicesBuffer->push_back(index4);
-    oIndicesBuffer->push_back(index3);
+    curBuffer = oIndicesBuffer;
   }
-  else if(renderType == 1)
+  else if(renderType == TRANSLUCENT)
   {
-    tIndicesBuffer->push_back(index1);
-    tIndicesBuffer->push_back(index2);
-    tIndicesBuffer->push_back(index3);
-
-    tIndicesBuffer->push_back(index2);
-    tIndicesBuffer->push_back(index4);
-    tIndicesBuffer->push_back(index3);
+    curBuffer = tIndicesBuffer;
   }
+  //Add the First triangle of the square
+  curBuffer->push_back(index1);
+  curBuffer->push_back(index2);
+  curBuffer->push_back(index3);
+
+  //Add the second triangle of the square
+  curBuffer->push_back(index2);
+  curBuffer->push_back(index4);
+  curBuffer->push_back(index3);
 }
 
 
@@ -280,7 +251,7 @@ inline bool BSP::blockExists(int x, int y, int z)
   return worldArray.get(x,y,z) == 0 ? false : true;
 }
 
-inline int BSP::blockVisibleType(int x, int y, int z)
+RenderType BSP::blockVisibleType(int x, int y, int z)
 {
   return ItemDatabase::blockDictionary[getBlock(x,y,z)].visibleType;
 }
@@ -293,28 +264,12 @@ void BSP::addBlock(int x, int y, int z, char id)
 inline void BSP::delBlock(int x, int y, int z)
 {
   worldArray.set(x,y,z,0);
-
 }
 
 inline uchar BSP::getBlock(int x, int y, int z)
 {
   return worldArray.get(x,y,z);
 }
-
-inline glm::vec3 BSP::offset(float x, float y, float z)
-{
-  /*
-  glm::vec3 newVec;
-  long long int id = x*y*z+seed*32;
-  newVec.x = id % (12355 % 1000-500)/(float)500 + x;
-  newVec.y = id % (23413 % 1000-500)/(float)500 + y;
-  newVec.z = id % (14351 % 1000-500)/(float)500 + z;
-  */
-  return glm::vec3(x,y,z);
-
-}
-
-
 
 void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
                        std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk)
@@ -323,7 +278,6 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
   oIndicesBuffer->clear();
   tVerticesBuffer->clear();
   tIndicesBuffer->clear();
-
   Array3D<BlockFace,32> arrayFaces;
   for(int x = 0; x<CHUNKSIZE;x++)
   {
@@ -333,7 +287,7 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
       {
 
          if(!blockExists(x,y,z)) continue;
-         int renderType = blockVisibleType(x,y,z);
+         RenderType renderType = blockVisibleType(x,y,z);
 
          float realX = x+CHUNKSIZE*xCoord;
          float realY = y+CHUNKSIZE*yCoord;
@@ -409,24 +363,24 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          else if(renderType == blockVisibleType(x,y,z-1)) frontNeigh = true;
 
          BlockFace& curFace = arrayFaces.get(x,y,z);
-         if(!frontNeigh) curFace.setFace(FRONTF);
-         if(!backNeigh) curFace.setFace(BACKF);
-         if(!topNeigh) curFace.setFace(TOPF);
+         if(!frontNeigh)  curFace.setFace(FRONTF);
+         if(!backNeigh)   curFace.setFace(BACKF);
+         if(!topNeigh)    curFace.setFace(TOPF);
          if(!bottomNeigh) curFace.setFace(BOTTOMF);
-         if(!leftNeigh) curFace.setFace(LEFTF);
-         if(!rightNeigh) curFace.setFace(RIGHTF);
+         if(!leftNeigh)   curFace.setFace(LEFTF);
+         if(!rightNeigh)  curFace.setFace(RIGHTF);
 
        }
      }
    }
-
    for(int x = 0; x<CHUNKSIZE;x++)
    {
      for(int z = 0;z<CHUNKSIZE;z++)
      {
        for(int y = 0;y<CHUNKSIZE;y++)
        {
-         int renderType = blockVisibleType(x,y,z);
+         const float offset = 0.003f;
+         RenderType renderType = blockVisibleType(x,y,z);
          float realX = x+CHUNKSIZE*xCoord;
          float realY = y+CHUNKSIZE*yCoord;
          float realZ = z+CHUNKSIZE*zCoord;
@@ -476,10 +430,10 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
            }
 
 
-           bottomleft = glm::vec3(realX+right,realY+1.0f,realZ);
-           bottomright = glm::vec3(realX+right,realY+1.0f,realZ+top);
-           topleft = glm::vec3(realX,realY+1.0f,realZ);
-           topright = glm::vec3(realX,realY+1.0f,realZ+top);
+           bottomleft  = glm::vec3(realX+right+offset,realY+1.0f,realZ-offset);
+           bottomright = glm::vec3(realX+right+offset,realY+1.0f,realZ+top+offset);
+           topleft     = glm::vec3(realX-offset,realY+1.0f,realZ-offset);
+           topright    = glm::vec3(realX-offset,realY+1.0f,realZ+top+offset);
 
            normVec = TOPF;
            xdist = right;
@@ -530,10 +484,10 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
              else break;
            }
 
-           topleft = glm::vec3(realX,realY,realZ);
-           bottomleft = glm::vec3(realX+right,realY,realZ);
-           topright = glm::vec3(realX,realY,realZ+top);
-           bottomright = glm::vec3(realX+right,realY,realZ+top);
+           topleft     = glm::vec3(realX-offset,realY,realZ-offset);
+           bottomleft  = glm::vec3(realX+right+offset,realY,realZ-offset);
+           topright    = glm::vec3(realX-offset,realY,realZ+top+offset);
+           bottomright = glm::vec3(realX+right+offset,realY,realZ+top+offset);
            normVec = BOTTOMF;
            curBlockid = tempBlock.getBottom();
            xdist = right;
@@ -578,10 +532,10 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
              }
              else break;
            }
-           topleft = glm::vec3(realX+1.0f,realY,realZ);
-           bottomleft = glm::vec3(realX+1.0f,realY+top,realZ);
-           topright = glm::vec3(realX+1.0f,realY,realZ+right);
-           bottomright = glm::vec3(realX+1.0f,realY+top,realZ +right);
+           topleft     = glm::vec3(realX+1.0f,realY-offset,realZ-offset);
+           bottomleft  = glm::vec3(realX+1.0f,realY+top+offset,realZ-offset);
+           topright    = glm::vec3(realX+1.0f,realY-offset,realZ+right+offset);
+           bottomright = glm::vec3(realX+1.0f,realY+top+offset,realZ +right+offset);
            normVec = RIGHTF;
            xdist = top;
            ydist = right;
@@ -596,8 +550,8 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(curFace.getFace(LEFTF))
          {
-           char top = 1;
-           char right = 1;
+           float top = 1;
+           float right = 1;
            arrayFaces.get(x,y,z).delFace(LEFTF);
 
            while(z+right < CHUNKSIZE && getBlock(x,y,z+right) == blockId
@@ -628,13 +582,13 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
            }
 
 
-           topleft = glm::vec3(realX,realY,realZ);
-           bottomleft = glm::vec3(realX,realY+top,realZ);
-           topright = glm::vec3(realX,realY,realZ+right);
-           bottomright = glm::vec3(realX,realY+top,realZ +right);
+           topleft     = glm::vec3(realX,realY-offset,realZ-offset);
+           bottomleft  = glm::vec3(realX,realY+top+offset,realZ-offset);
+           topright    = glm::vec3(realX,realY-offset,realZ+right+offset);
+           bottomright = glm::vec3(realX,realY+top+offset,realZ +right+offset);
            normVec = LEFTF;
-           xdist = top;
-           ydist = right;
+           xdist   = top;
+           ydist   = right;
            curBlockid = tempBlock.getLeft();
            int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
            int index3 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
@@ -681,10 +635,10 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
              else break;
            }
 
-           topleft = glm::vec3(realX,realY,realZ+1.0f);
-           bottomleft = glm::vec3(realX+right,realY,realZ+1.0f);
-           topright = glm::vec3(realX,realY+top,realZ+1.0f);
-           bottomright = glm::vec3(realX+right,realY+top,realZ+1.0f);
+           topleft     = glm::vec3(realX-offset,realY-offset,realZ+1.0f);
+           bottomleft  = glm::vec3(realX+right+offset,realY-offset,realZ+1.0f);
+           topright    = glm::vec3(realX-offset,realY+top+offset,realZ+1.0f);
+           bottomright = glm::vec3(realX+right+offset,realY+top+offset,realZ+1.0f);
 
            curBlockid = tempBlock.getBack();
            normVec = BACKF;
@@ -735,10 +689,10 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
             xdist = right;
             ydist = top;
-            topleft = glm::vec3(realX,realY,realZ);
-            bottomleft = glm::vec3(realX+right,realY,realZ);
-            topright = glm::vec3(realX,realY+top,realZ);
-            bottomright = glm::vec3(realX+right,realY+top,realZ);
+            topleft     = glm::vec3(realX-offset,realY-offset,realZ);
+            bottomleft  = glm::vec3(realX+right+offset,realY-offset,realZ);
+            topright    = glm::vec3(realX-offset,realY+top+offset,realZ);
+            bottomright = glm::vec3(realX+right+offset,realY+top+offset,realZ);
 
             curBlockid = tempBlock.getBack();
             normVec = FRONTF;
@@ -756,71 +710,53 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
      }
    }
 }
+inline void BSP::setupBufferObjects(RenderType type)
+{
+  std::shared_ptr<std::vector<float>> curVert;
+  std::shared_ptr<std::vector<uint>> curInd;
+  if(type == OPAQUE)
+  {
+    curVert = oVertices;
+    curInd = oIndices;
+  }
+  else if(type == TRANSLUCENT)
+  {
+    curVert = tVertices;
+    curInd = tIndices;
+  }
+  if(curInd->size() != 0)
+  {
+    glDeleteBuffers(1, &oVBO);
+    glDeleteBuffers(1, &oEBO);
+    glDeleteVertexArrays(1, &oVAO);
+
+    glGenVertexArrays(1, &oVAO);
+    glGenBuffers(1, &oEBO);
+    glGenBuffers(1, &oVBO);
+    glBindVertexArray(oVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER,oVBO);
+    glBufferData(GL_ARRAY_BUFFER, curVert->size()*sizeof(float),&curVert->front(), GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,oEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, curInd->size()*sizeof(uint),&curInd->front(), GL_DYNAMIC_DRAW);
+
+    int vertexSize = 4*sizeof(float);
+    glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE,vertexSize, (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    geometryChanged = true;
+  }
+}
 
 inline void BSP::render()
 {
-  if(oIndices->size() != 0)
-  {
-  glDeleteBuffers(1, &oVBO);
-  glDeleteBuffers(1, &oEBO);
-  glDeleteVertexArrays(1, &oVAO);
-
-
-  glGenVertexArrays(1, &oVAO);
-  glGenBuffers(1, &oEBO);
-  glGenBuffers(1, &oVBO);
-  glBindVertexArray(oVAO);
-
-  glBindBuffer(GL_ARRAY_BUFFER,oVBO);
-  glBufferData(GL_ARRAY_BUFFER, oVertices->size()*sizeof(float),&oVertices->front(), GL_STATIC_DRAW);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,oEBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, oIndices->size()*sizeof(uint),&oIndices->front(), GL_STATIC_DRAW);
-
-  int vertexSize = 4*sizeof(float);
-  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE,vertexSize, (void*)0);
-  glEnableVertexAttribArray(0);
-
-  glVertexAttribPointer(1,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(3*sizeof(float)));
-  glEnableVertexAttribArray(1);
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-    geometryChanged = true;
-  }
-
-
-  if(tIndices->size() != 0)
-  {
-  std::cout << "ITS BROKE\n";
-  glDeleteBuffers(1, &tVBO);
-  glDeleteBuffers(1, &tEBO);
-  glDeleteVertexArrays(1, &tVAO);
-
-  glGenVertexArrays(1, &tVAO);
-  glGenBuffers(1, &tEBO);
-  glGenBuffers(1, &tVBO);
-  glBindVertexArray(tVAO);
-
-  glBindBuffer(GL_ARRAY_BUFFER,tVBO);
-  glBufferData(GL_ARRAY_BUFFER, tVertices->size()*sizeof(float),&tVertices->front(), GL_STATIC_DRAW);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,tEBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, tIndices->size()*sizeof(uint),&tIndices->front(), GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
-  glEnableVertexAttribArray(0);
-
-  glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
-  glEnableVertexAttribArray(1);
-
-  glVertexAttribPointer(2,2,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-  glEnableVertexAttribArray(2);
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-  }
-
+  setupBufferObjects(OPAQUE);
 
 }
 
@@ -829,10 +765,20 @@ void BSP::drawOpaque()
 
   if(oIndices->size() != 0)
   {
-    //drawnChunks++;
+
     glBindVertexArray(oVAO);
     glDrawElements(GL_TRIANGLES, oIndices->size(), GL_UNSIGNED_INT,0);
     glBindVertexArray(0);
+    //If it errors, re render it
+    //TODO: find the source of the bug so the chunk building never fails
+    //Cause this is just a bandaid solution lmao
+    int error = glGetError();
+    if(error != 0)
+    {
+      std::cout << "OPENGL ERROR" << error << ": in chunk pos"<< xCoord << ":" << yCoord << ":" << zCoord <<"\n";
+      render();
+    }
+
   }
 }
 

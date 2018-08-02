@@ -7,7 +7,7 @@
 #include <mutex>
 #include <string>
 #include <glm/glm.hpp>
-#include "threadSafeQueue.h"
+#include "../../headers/threadSafeQueue.h"
 typedef unsigned char uchar;
 class World;
 struct Message
@@ -50,6 +50,7 @@ class Client
     World* curWorld;
   public:
     TSafeQueue<std::shared_ptr<Message>> msgQueue;
+    TSafeQueue<std::shared_ptr<Message>> chunkQueue;
     Client(int Fd,uchar Id,World* world);
     int getFD();
     void setPos(glm::vec3 newPos);

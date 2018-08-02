@@ -3,6 +3,9 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <thread>
+#include <chrono>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
@@ -66,9 +69,8 @@ World::World(int numbBuildThreads,int width,int height)
   std::cout << "Done\n";
 
 
-
-  drawer.setupShadersAndTextures(width,height);
   drawer.setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
+  drawer.setupShadersAndTextures(width,height);
   drawer.updateViewProjection(45.0f,0.1f,(horzRenderDistance)*CHUNKSIZE);
 }
 
@@ -109,22 +111,34 @@ void World::removePlayer(uchar id)
 
 }
 
+std::shared_ptr<BSPNode> World::chunkRayCast(const glm::vec3 &pos, const glm::vec3 &front)
+{
+  for(int i =0;i<horzRenderDistance;i++)
+  {
+    glm::vec3 curPos = pos + front*i*CHUNKSIZE;
+    glm::ivec3 chunkPos = toChunkCoords(curPos);
+    glm::ivec3 localPos = toLocalCoords(curPos);
+    auto chunk = getChunk(chunkPos);
+    if(chunk!=NULL)
+    {
+      if(chunk->blockExists(chunkPos))
+      {
+        return chunk;
+      }
+    }
+  }
+  return NULL;
+}
+
 void World::calculateViewableChunks()
 {
   glm::ivec3 min = toChunkCoords(drawer.viewMin);
   glm::ivec3 max = toChunkCoords(drawer.viewMax);
-  //std::cout << std::dec << "Am drawing:" << BSP::totalChunks << "\n";
-  //BSP::totalChunks = 0;
-  double curTime;
-  curTime = glfwGetTime();
   drawer.chunksToDraw = BSPmap.findAll(min,max);
-  double nextTime = glfwGetTime();
-  //std::cout << "finding the list took: " << nextTime -curTime << "\n";
-  //std::cout << "Could be drawing" << drawer.chunksToDraw->size() << "\n";
 }
 
 
-void World::generateChunkFromString(int chunkx, int chunky, int chunkz,char* value)
+void World::generateChunkFromString(int chunkx, int chunky, int chunkz,const char* value)
 {
   //std::cout << "Generating chunk" << chunkx << ":" << chunky << ":" << chunkz << "\n";
   if(chunkExists(chunkx,chunky,chunkz))
@@ -224,9 +238,54 @@ void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
 }
 
 
+void World::findChunkToRequest(const float mainx,const float mainy,const float mainz)
+{
+  int radius,x,y,z;
+  radius = 0;
+  glm::ivec3 org = toChunkCoords(glm::ivec3(mainx,mainy,mainz));
+  std::cout << "Starting search\n";
+  x = 0;
+  y = 0;
+  z = 0;
+  while(radius <= horzRenderDistance)
+  {
+
+    //std::cout << "Checking for chunk at" << org.x+x << ":"<< org.y+y<< ":" << org.z+z<< "\n";
+    if(!chunkExists(org.x+x,org.y+y,org.z+z))
+    {
+      std::cout << "Found missing chunk\n";
+      messenger.createChunkRequest(org.x+x,org.y+y,org.z+z);
+      return;
+    }
+    if(x < radius)
+    {
+      x++;
+    }
+    else if(y < radius)
+    {
+      y++;
+    }
+    else if(z < radius)
+    {
+      z++;
+    }
+    else
+    {
+      radius++;
+      x = 0;
+      y = 0;
+      z = 0;
+    }
+
+  }
+
+}
 void World::renderWorld(float mainx, float mainy, float mainz)
 {
-
+  double lastFrame = 0;
+  double currentFrame = 0;
+  double ticksPerSecond = 500;
+  double tickRate = 1.0f/ticksPerSecond;
   for(int x =0;x<horzRenderDistance*2;x++)
   {
     for(int z=0;z<horzRenderDistance*2;z++)
@@ -240,18 +299,22 @@ void World::renderWorld(float mainx, float mainy, float mainz)
         int curz = (z%2 == 0) ? z/2 : -(z/2+1);
 
         if((curx*curx)/horzSquared + (cury*cury)/vertSquared + (curz*curz)/horzSquared > 1) continue;
-        //std::cout << "requesting chunk\n";
         int xchunk = round(mainx);
         int ychunk = round(mainy);
         int zchunk = round(mainz);
         xchunk/= CHUNKSIZE;
         ychunk/= CHUNKSIZE;
         zchunk/= CHUNKSIZE;
-
-
-
-        //std::cout << std::dec << curx << ":" << cury << ":" << curz << "\n";
-        messenger.createChunkRequest(xchunk+curx,ychunk+cury,zchunk+curz);
+        if(!chunkExists(xchunk+curx,ychunk+cury,zchunk+curz))
+        {
+          messenger.createChunkRequest(xchunk+curx,ychunk+cury,zchunk+curz);
+          lastFrame = currentFrame;
+          currentFrame = glfwGetTime();
+          double deltaFrame = currentFrame-lastFrame;
+          int waitTime = (tickRate-deltaFrame)*1000;
+          std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+          currentFrame = glfwGetTime();
+        }
       }
     }
   }
@@ -259,8 +322,6 @@ void World::renderWorld(float mainx, float mainy, float mainz)
 
 void World::buildWorld(int threadNumb)
 {
-  //Empties the build queue
-  //TODO Break up queue into smaller pieces and use seperate threads to build them
   while(!buildQueue[threadNumb].empty())
   {
     std::shared_ptr<BSPNode> chunk = buildQueue[threadNumb].front();

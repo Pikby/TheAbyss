@@ -1,5 +1,5 @@
-#include "../headers/server.h"
-#include "../headers/bsp.h"
+#include "include/server.h"
+#include "include/bsp.h"
 #include <time.h>
 #include <chrono>
 uint Server::ticksPerSecond;

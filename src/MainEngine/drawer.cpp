@@ -49,6 +49,8 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader.setInt("dirLight.shadow[2]",6);
   blockShader.setInt("dirLight.shadow[3]",7);
   blockShader.setFloat("far_plane",25.0f);
+  blockShader.setFloat("fog_start",CHUNKSIZE*(horzRenderDistance-2));
+  blockShader.setFloat("fog_dist",CHUNKSIZE);
 
   blockShader.setInt("textureAtlasWidth",384);
   blockShader.setInt("textureAtlasHeight",128);
@@ -257,7 +259,7 @@ void Drawer::renderDirectionalShadows()
       glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[x]);
         glClear(GL_DEPTH_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
-        drawTerrain(&dirDepthShader,hsrMat,true);
+        drawTerrain(&dirDepthShader,chunksToDraw);
       glBindFramebuffer(GL_FRAMEBUFFER,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
@@ -350,11 +352,13 @@ void Drawer::drawPlayers()
 
 void Drawer::drawFinal()
 {
+  /*
   debugDepthQuad.use();
   glViewport(0,0,200,200);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, dirLight.depthMap[0]);
   // /renderQuad();
+  */
   glViewport(0,0,screenWidth,screenHeight);
   Shader* shader = &blockShader;
   shader->use();
@@ -366,7 +370,7 @@ void Drawer::drawFinal()
   shader->setVec3("viewPos", viewPos);
   //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
-  drawTerrain(shader,hsrMat);
+  drawTerrain(shader,chunksToDraw);
 
   glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
@@ -381,7 +385,7 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
   camFar  = far  == 0 ? camFar  : far;
   viewProj = glm::perspective(glm::radians(camZoom),
                               (float)screenWidth/(float)screenHeight,
-                              camNear,camFar);
+                              camNear,camFar+5*CHUNKSIZE);
 
   hsrProj = glm::perspective(glm::radians(camZoom+10.0f),float(screenWidth)/(float)screenHeight
                            ,camNear,camFar+CHUNKSIZE*3);
@@ -467,7 +471,7 @@ void Drawer::calculateMinandMaxPoints(glm::vec3* array, int arrsize, glm::vec3* 
 
 }
 
-void Drawer::drawTerrain(Shader* shader, const glm::mat4 &clipMat, bool useHSR)
+void Drawer::drawTerrain(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
 {
   /*
   Iterates through all the chunks and draws them unless they're marked for destruciton
@@ -480,38 +484,14 @@ void Drawer::drawTerrain(Shader* shader, const glm::mat4 &clipMat, bool useHSR)
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, glTexture);
 
-  useHSR = false;
-  if(chunksToDraw->empty()) return;
-  for(auto it = chunksToDraw->cbegin();it != chunksToDraw->cend();++it)
+  if(list->empty()) return;
+  for(auto it = list->cbegin();it != list->cend();++it)
   {
     std::shared_ptr<BSPNode> curNode = (*it);
     if(curNode->toDelete == true)
     {
       curNode->del();
     }
-    else
-    {
-      if(useHSR)
-      {
-        //Do view frustrum clipping
-        int x = curNode->curBSP.xCoord*CHUNKSIZE+CHUNKSIZE/2;
-        int y = curNode->curBSP.yCoord*CHUNKSIZE+CHUNKSIZE/2;
-        int z = curNode->curBSP.zCoord*CHUNKSIZE+CHUNKSIZE/2;
-
-
-        glm::vec4 p1 = glm::vec4(x,y,z,1);
-
-        p1 = clipMat*p1;
-        double w = p1.w;
-
-
-        if(abs(p1.x) < w && abs(p1.y) < w && 0 < p1.z && p1.z < w)
-          curNode->drawOpaque();
-      }
-      else curNode->drawOpaque();
-    }
-
+    else curNode->drawOpaque();
   }
-
-
 }

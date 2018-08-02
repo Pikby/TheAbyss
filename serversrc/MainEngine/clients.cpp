@@ -1,8 +1,8 @@
 
-#include "../headers/clients.h"
-#include "../headers/world.h"
-#include "../headers/bsp.h"
-#include "../headers/server.h"
+#include "include/clients.h"
+#include "include/world.h"
+#include "include/bsp.h"
+#include "include/server.h"
 #include <iostream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -25,8 +25,6 @@ Client::Client(int Fd,uchar Id,World* world)
   sendMessage(&id,sizeof(id));
   std::cout << userName << " Connected\n";
   Server::sendInitAll(this);
-  //std::shared_ptr<Message> tmp(new Message(100,0,0,0,0,0,0,std::make_shared<std::string>(userName + " has connected")));
-  //Server::messageAll(tmp);
   Server::retClients(this);
   sendThread = std::thread(&Client::sendMessages,this);
   recvThread = std::thread(&Client::recvMessages,this);
@@ -92,12 +90,25 @@ void Client::sendMessages()
 {
   while(open)
   {
+    std::shared_ptr<Message> m;
     if(msgQueue.empty())
     {
-      continue;
+      if(chunkQueue.empty())
+      {
+        continue;
+      }
+      else
+      {
+        m = chunkQueue.front();
+        chunkQueue.pop();
+      }
+    }
+    else
+    {
+      m = msgQueue.front();
+      msgQueue.pop();
     }
     if(!open) return;
-    std::shared_ptr<Message> m = msgQueue.front();
     int arr[5];
     arr[0] = ((m->opcode << 24) | (m->ext1 << 16) | (m->ext2 << 8) | m->ext3);
     arr[1] = m->x;
@@ -113,7 +124,7 @@ void Client::sendMessages()
     {
       sendMessage(m->data->data(), arr[4]);
     }
-    msgQueue.pop();
+
 
   }
 
@@ -160,11 +171,15 @@ void Client::recvMessages()
     {
       case (0):
       {
+        /*
         std::thread chunkThread(&Client::sendChunk,this,x,y,z);
         chunkThread.detach();
+        */
+        sendChunk(x,y,z);
       }
         break;
       case (1):
+        std::cout << "deleting block\n";
         curWorld->delBlock(x,y,z);
         sendDelBlockAll(x,y,z);
         break;

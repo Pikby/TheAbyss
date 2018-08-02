@@ -34,125 +34,127 @@ TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEng
 
 
 
-COBJECTLIST = csettings.o cdrawer.o ctextureloading.o cmain.o cworld.o cmessenger.o cobjects.o cthreads.o \
-							cbsp.o cgui.o cmainchar.o cinputhandling.o \
-							citems.o
-SOBJECTLIST = smain.o sworld.o sbsp.o sbspterraingen.o sFastNoise.o sitems.o sclients.o scommands.o sserver.o $(FASTNOISEOBJECTS)
+COBJECTLIST = $(C)settings.o $(C)drawer.o $(C)textureloading.o $(C)main.o $(C)world.o $(C)messenger.o \
+							$(C)objects.o $(C)threads.o \
+							$(C)bsp.o $(C)gui.o $(C)mainchar.o $(C)inputhandling.o \
+							$(C)items.o
+SOBJECTLIST = $(S)main.o $(S)world.o $(S)bsp.o $(S)bspterraingen.o  \
+ 							$(S)items.o $(S)clients.o $(S)commands.o $(S)server.o $(FASTNOISEOBJECTS)
 
-
-FASTNOISEOBJECTS = FastNoiseSIMD.o FastNoiseSIMD_avx2.o FastNoiseSIMD_internal.o FastNoiseSIMD_sse2.o FastNoiseSIMD_sse41.o
-NP =  ../serversrc/TerrainGeneration
+F = ../bin/noise
+FASTNOISEOBJECTS = $(F)/FastNoiseSIMD.o $(F)/FastNoiseSIMD_avx2.o $(F)/FastNoiseSIMD_internal.o \
+									 $(F)/FastNoiseSIMD_sse2.o $(F)/FastNoiseSIMD_sse41.o
+NP =  ../serversrc/TerrainGeneration/FastNoiseSIMD
 NFLAGS = g++ -std=c++17 -march=core-avx2 -c
 
-FastNoiseSIMD.o: $(NP)/FastNoiseSIMD.cpp
-	$(NFLAGS) $(NP)/FastNoiseSIMD.cpp -o FastNoiseSIMD.o
 
-FastNoiseSIMD_avx2.o: $(NP)/FastNoiseSIMD_avx2.cpp
-	$(NFLAGS) $(NP)/FastNoiseSIMD_avx2.cpp -o FastNoiseSIMD_avx2.o
+$(F)/FastNoiseSIMD.o: $(NP)/FastNoiseSIMD.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD.cpp -o $(F)/FastNoiseSIMD.o
 
-FastNoiseSIMD_internal.o: $(NP)/FastNoiseSIMD_internal.cpp
-	$(NFLAGS) $(NP)/FastNoiseSIMD_internal.cpp -o FastNoiseSIMD_internal.o
+$(F)/FastNoiseSIMD_avx2.o: $(NP)/FastNoiseSIMD_avx2.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD_avx2.cpp -o $(F)/FastNoiseSIMD_avx2.o
 
-FastNoiseSIMD_sse2.o: $(NP)/FastNoiseSIMD_sse2.cpp
-	$(NFLAGS) $(NP)/FastNoiseSIMD_sse2.cpp -o FastNoiseSIMD_sse2.o
+$(F)/FastNoiseSIMD_internal.o: $(NP)/FastNoiseSIMD_internal.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD_internal.cpp -o $(F)/FastNoiseSIMD_internal.o
 
-FastNoiseSIMD_sse41.o: $(NP)/FastNoiseSIMD_sse41.cpp
-	$(NFLAGS) $(NP)/FastNoiseSIMD_sse41.cpp -o FastNoiseSIMD_sse41.o
+$(F)/FastNoiseSIMD_sse2.o: $(NP)/FastNoiseSIMD_sse2.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD_sse2.cpp -o $(F)/FastNoiseSIMD_sse2.o
+
+$(F)/FastNoiseSIMD_sse41.o: $(NP)/FastNoiseSIMD_sse41.cpp
+	$(NFLAGS) $(NP)/FastNoiseSIMD_sse41.cpp -o $(F)/FastNoiseSIMD_sse41.o
 
 OFLAGS = g++ -c $(CFLAGSLINUX) -O3
 # Main Engine
 
-
+S = ../bin/server/
 # Server
-smain.o: ../serversrc/MainEngine/main.cpp
-	$(OFLAGS) ../serversrc/MainEngine/main.cpp -o smain.o
+$(S)main.o: ../serversrc/MainEngine/main.cpp
+	$(OFLAGS) ../serversrc/MainEngine/main.cpp -o $(S)main.o
 
-sworld.o: ../serversrc/MainEngine/world.cpp
-	$(OFLAGS) ../serversrc/MainEngine/world.cpp -o sworld.o
+$(S)world.o: ../serversrc/MainEngine/world.cpp
+	$(OFLAGS) ../serversrc/MainEngine/world.cpp -o $(S)world.o
 
-sbsp.o: ../serversrc/MainEngine/bsp.cpp
-	$(OFLAGS) ../serversrc/MainEngine/bsp.cpp -o sbsp.o
+$(S)bsp.o: ../serversrc/MainEngine/bsp.cpp
+	$(OFLAGS) ../serversrc/MainEngine/bsp.cpp -o $(S)bsp.o
 
-sbspterraingen.o: ../serversrc/TerrainGeneration/bspterraingen.cpp
-	$(OFLAGS) ../serversrc/TerrainGeneration/bspterraingen.cpp -o sbspterraingen.o
+$(S)bspterraingen.o: ../serversrc/TerrainGeneration/bspterraingen.cpp
+	$(OFLAGS) ../serversrc/TerrainGeneration/bspterraingen.cpp -o $(S)bspterraingen.o
 
 
-sFastNoise.o: ../serversrc/TerrainGeneration/FastNoise.cpp
-	$(OFLAGS) ../serversrc/TerrainGeneration/FastNoise.cpp -o sFastNoise.o
+$(S)items.o: ../serversrc/Inventory/items.cpp
+	$(OFLAGS) ../serversrc/Inventory/items.cpp -o $(S)items.o
 
-sitems.o: ../serversrc/Inventory/items.cpp
-	$(OFLAGS) ../serversrc/Inventory/items.cpp -o sitems.o
+$(S)clients.o: ../serversrc/MainEngine/clients.cpp
+	$(OFLAGS) ../serversrc/MainEngine/clients.cpp -o $(S)/clients.o
 
-sclients.o: ../serversrc/MainEngine/clients.cpp
-	$(OFLAGS) ../serversrc/MainEngine/clients.cpp -o sclients.o
+$(S)commands.o: ../serversrc/MainEngine/commands.cpp
+	$(OFLAGS) ../serversrc/MainEngine/commands.cpp -o $(S)commands.o
 
-scommands.o: ../serversrc/MainEngine/commands.cpp
-	$(OFLAGS) ../serversrc/MainEngine/commands.cpp -o scommands.o
+$(S)server.o: ../serversrc/MainEngine/server.cpp
+	$(OFLAGS) ../serversrc/MainEngine/server.cpp -o $(S)server.o
 
-sserver.o: ../serversrc/MainEngine/server.cpp
-	$(OFLAGS) ../serversrc/MainEngine/server.cpp -o sserver.o
-
-sFastNoiseInter.o:../serversrc/TerrainGeneration/FastNoiseSIMD_internal.cpp
-	$(OFLAGS) ../serversrc/TerrainGeneration/FastNoiseSIMD_internal.cpp -o sFastNoiseInter.o
+$(S)FastNoiseInter.o:../serversrc/TerrainGeneration/FastNoiseSIMD_internal.cpp
+	$(OFLAGS) ../serversrc/TerrainGeneration/FastNoiseSIMD_internal.cpp -o $(S)FastNoiseInter.o
 # Client
 
+C = ../bin/client/
 ME = ../src/MainEngine
-cmain.o: $(ME)/main.cpp
-	 $(OFLAGS) $(ME)/main.cpp -o cmain.o
+$(C)main.o: $(ME)/main.cpp
+	 $(OFLAGS) $(ME)/main.cpp -o $(C)main.o
 
-cworld.o: $(ME)/world.cpp
-	$(OFLAGS) $(ME)/world.cpp -o cworld.o
+$(C)world.o: $(ME)/world.cpp
+	$(OFLAGS) $(ME)/world.cpp -o $(C)world.o
 
-cthreads.o: $(ME)/threads.cpp
-	$(OFLAGS) $(ME)/threads.cpp -o cthreads.o
+$(C)threads.o: $(ME)/threads.cpp
+	$(OFLAGS) $(ME)/threads.cpp -o $(C)threads.o
 
-cbsp.o: $(ME)/bsp.cpp
-	$(OFLAGS) $(ME)/bsp.cpp -o cbsp.o
+$(C)bsp.o: $(ME)/bsp.cpp
+	$(OFLAGS) $(ME)/bsp.cpp -o $(C)bsp.o
 
-cmessenger.o: $(ME)/messenger.cpp
-	$(OFLAGS) $(ME)/messenger.cpp -o cmessenger.o
+$(C)messenger.o: $(ME)/messenger.cpp
+	$(OFLAGS) $(ME)/messenger.cpp -o $(C)messenger.o
 
-cdrawer.o: $(ME)/drawer.cpp
-	$(OFLAGS) $(ME)/drawer.cpp -o cdrawer.o
+$(C)drawer.o: $(ME)/drawer.cpp
+	$(OFLAGS) $(ME)/drawer.cpp -o $(C)drawer.o
 # Character
 CH = ../src/Character
 
-cgui.o: $(CH)/gui.cpp
-	$(OFLAGS) $(CH)/gui.cpp -o cgui.o
+$(C)gui.o: $(CH)/gui.cpp
+	$(OFLAGS) $(CH)/gui.cpp -o $(C)gui.o
 
-cmainchar.o: $(CH)/mainchar.cpp
-	$(OFLAGS) $(CH)/mainchar.cpp -o cmainchar.o
+$(C)mainchar.o: $(CH)/mainchar.cpp
+	$(OFLAGS) $(CH)/mainchar.cpp -o $(C)mainchar.o
 
 # Terrain Gen
 TG = ../src/TerrainGeneration
-cFastNoise.o: $(TG)/FastNoiseSIMD.cpp
-	$(OFLAGS) $(TG)/FastNoiseSIMD.cpp -o cFastNoiseSIMD.o
+$(C)FastNoise.o: $(TG)/FastNoiseSIMD.cpp
+	$(OFLAGS) $(TG)/FastNoiseSIMD.cpp -o $(C)FastNoiseSIMD.o
 
-cbspterraingen.o: $(TG)/bspterraingen.cpp
-	$(OFLAGS) $(TG)/bspterraingen.cpp -o cbspterraingen.o
+$(C)bspterraingen.o: $(TG)/bspterraingen.cpp
+	$(OFLAGS) $(TG)/bspterraingen.cpp -o $(C)bspterraingen.o
 
 
 #IO
 IO = ../src/InputHandling
-cinputhandling.o: $(IO)/inputhandling.cpp
-	$(OFLAGS) $(IO)/inputhandling.cpp -o cinputhandling.o
+$(C)inputhandling.o: $(IO)/inputhandling.cpp
+	$(OFLAGS) $(IO)/inputhandling.cpp -o $(C)inputhandling.o
 
 #Inventory
 IT = ../src/Objects
-citems.o: $(IT)/items.cpp
-	$(OFLAGS) $(IT)/items.cpp -o citems.o
+$(C)items.o: $(IT)/items.cpp
+	$(OFLAGS) $(IT)/items.cpp -o $(C)items.o
 
-cobjects.o: $(IT)/objects.cpp
-	$(OFLAGS) $(IT)/objects.cpp -o cobjects.o
+$(C)objects.o: $(IT)/objects.cpp
+	$(OFLAGS) $(IT)/objects.cpp -o $(C)objects.o
 
 #TextureObject
 
-ctextureloading.o: ../src/TextureLoading/textureLoading.cpp
-	$(OFLAGS) ../src/TextureLoading/textureLoading.cpp -o ctextureloading.o
+$(C)textureloading.o: ../src/TextureLoading/textureLoading.cpp
+	$(OFLAGS) ../src/TextureLoading/textureLoading.cpp -o $(C)textureloading.o
 
 #SettingsObject
-csettings.o: ../src/Settings/settings.cpp
-	$(OFLAGS) ../src/Settings/settings.cpp -o csettings.o
+$(C)settings.o: ../src/Settings/settings.cpp
+	$(OFLAGS) ../src/Settings/settings.cpp -o $(C)settings.o
 
 linux: $(COBJECTLIST)
 	$(CC) -o linux  $(COBJECTLIST) $(CFLAGSLINUX) -O3
@@ -165,5 +167,11 @@ server: $(SOBJECTLIST)
 	$(CC) -o server $(SOBJECTLIST) $(CFLAGSLINUX) -O3
 
 
-clean:
-	rm *.o
+cleanserver:
+	cd ../bin/server && rm *.o
+
+cleanclient:
+	cd ../bin/client && rm *.o
+
+cleannoise:
+	cd ../bin/noise && rm *.o

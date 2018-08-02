@@ -8,8 +8,8 @@
 
 // GLFW
 #include <GLFW/glfw3.h>
-#include "../headers/bsp.h"
-#include "../headers/items.h"
+#include "include/bsp.h"
+#include "../Inventory/include/items.h"
 
 int BSPNode::totalChunks = 0;
 bool BSP::geometryChanged = true;

@@ -44,9 +44,8 @@ int main()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
-
   //Enable antialiasing
-  glEnable(GL_MULTISAMPLE);
+  //glEnable(GL_MULTISAMPLE);
 
   //Cull face unrenders the back side of polygons
   glEnable(GL_CULL_FACE);

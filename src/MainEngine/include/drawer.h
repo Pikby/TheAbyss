@@ -55,6 +55,7 @@ private:
   glm::mat4 hsrProj;
   glm::mat4 viewMat;
 
+
   glm::vec3 viewPos;
   glm::vec3 viewFront;
   glm::vec3 viewUp;
@@ -118,7 +119,7 @@ public:
     dirLight = {dir,amb,dif,spec};
     renderDirectionalDepthMap();
   }
-  void drawTerrain(Shader* shader, const glm::mat4 &clipMat, bool useHSR = true);
+  void drawTerrain(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);
   void drawPlayers(Shader* shader);
 
 

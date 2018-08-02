@@ -1,6 +1,6 @@
 #pragma once
 #define CHUNKSIZE 32
-#include "../headers/3dmap.h"
+#include "../../headers/3dmap.h"
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include <memory>

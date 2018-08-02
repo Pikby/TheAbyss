@@ -1,5 +1,5 @@
-#include "../headers/clients.h"
-#include "../headers/server.h"
+#include "include/clients.h"
+#include "include/server.h"
 #include <sstream>
 #include <map>
 #include <functional>

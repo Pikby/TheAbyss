@@ -3,8 +3,8 @@
 #include <string>
 #include <atomic>
 #include <mutex>
-#include "../headers/world.h"
-#include "../headers/clients.h"
+#include "world.h"
+#include "clients.h"
 #define MAX_CLIENTS 4
 class Server
 {

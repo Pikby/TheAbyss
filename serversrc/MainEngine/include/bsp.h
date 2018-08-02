@@ -8,9 +8,9 @@
 #include <mutex>
 #include <atomic>
 
-#include "../headers/3darray.h"
-#include "../TerrainGeneration/FastNoiseSIMD.h"
-#include "FastNoise.h"
+#include "../../headers/3darray.h"
+#include "../../TerrainGeneration/FastNoiseSIMD/FastNoiseSIMD.h"
+
 
 typedef unsigned char uchar;
 #define CHUNKSIZE 32
@@ -24,7 +24,6 @@ private:
   std::string worldName;
 
   Array3D<uchar, CHUNKSIZE> worldArray;
-  static FastNoise noise2d;
   static FastNoiseSIMD* noise3d;
 public:
   static bool geometryChanged;

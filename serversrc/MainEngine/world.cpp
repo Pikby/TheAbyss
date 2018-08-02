@@ -1,6 +1,6 @@
 
-#include "../headers/world.h"
-#include "../headers/bsp.h"
+#include "include/world.h"
+#include "include/bsp.h"
 
 World::World()
 {

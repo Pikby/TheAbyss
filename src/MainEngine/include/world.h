@@ -59,7 +59,12 @@ public:
   bool entityExists(glm::vec3 pos);
   bool entityExists(float x, float y, float z);
 
+  std::shared_ptr<BSPNode> getChunk(glm::ivec3 vec)
+  {
+    return getChunk(vec.x,vec.y,vec.z);
+  }
   std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
+  std::shared_ptr<BSPNode> chunkRayCast(const glm::vec3 &pos, const glm::vec3 &front);
   glm::vec4 rayCast(glm::vec3 pos, glm::vec3 front, int max);
 
   void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
@@ -76,10 +81,11 @@ public:
   void delBlock(int x, int y, int z);
   void delChunk(int x, int y, int z);
   void deleteChunksFromQueue();
+  void findChunkToRequest(const float mainx, const float mainy, const float mainz);
   void addBlock(int x, int y, int z, int id);
   void updateBlock(int x, int y, int z);
   void delScan(float mainx, float mainy, float mainz);
-  void generateChunkFromString(int chunkx, int chunky, int chunkz,char* val);
+  void generateChunkFromString(int chunkx, int chunky, int chunkz,const char* val);
 
 };
 

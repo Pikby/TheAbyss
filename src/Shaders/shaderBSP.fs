@@ -38,6 +38,8 @@ uniform sampler2D curTexture;
 uniform vec3 objectColor;
 uniform vec3 viewPos;
 uniform float far_plane;
+uniform float fog_start;
+uniform float fog_dist;
 
 uniform DirLight dirLight;
 uniform PointLight pointLights[20];
@@ -125,9 +127,7 @@ vec3 calcDirectionalLight(float shadow)
   vec3 diffuse = dirLight.diffuse*diff;
   vec3 specular = dirLight.specular*spec;
 
-  //return (ambient + shadow*(diffuse + specular))*texture(curTexture, TexCoord).rgb;
   return (ambient + shadow*(diffuse + specular));
-  //return ((ambient+diffuse+specular)*texture(curTexture, TexCoord.rgb));
 }
 
 /*
@@ -163,7 +163,7 @@ void main()
 
     float shadow = 1;
     vec3 color;
-    shadow += 1-calcDirShadows();
+    //shadow += 1-calcDirShadows();
 
 
     //vec3 result = calcDirectionalLight(1.0f) * objectColor;
@@ -186,7 +186,9 @@ void main()
     *//*
     float maxDistance = dirLight.arrayOfDistances[numbOfCascadedShadows];
     */
-    vec3 finColor = color*objColor*getTexture();
-    //vec3 finColor = objectColor;
+    float fogMod = max((ClipSpaceDepth-fog_start)/fog_dist,0);
+    vec3 fog = fogMod*vec3(1.0f,1.0f,1.0f);
+    vec3 finColor = fog+color*objColor*getTexture();
+    //vec3 finColor = fog+objColor;
     finalcolor = vec4(finColor,1);
 }
