@@ -7,7 +7,7 @@ using namespace std;
 typedef const std::string & Args;
 void Server::quit(Args arguments)
 {
-  std::shared_ptr<Message> tmp(new Message(255,0,0,0,0,0,0,NULL));
+  std::shared_ptr<OutMessage> tmp(new OutMessage(255,0,0,0,0,0,0,NULL));
   messageAll(tmp);
   std::cout << "Waiting for clients to disconnect\n";
   while(numberOfClients > 0)
@@ -45,7 +45,7 @@ std::map<std::string,std::function<void(Args)>> dictionary;
 
 void Server::say(Args arguments)
 {
-  std::shared_ptr<Message> tmp(new Message(100,0,0,0,0,0,0,std::make_shared<std::string>(arguments)));
+  std::shared_ptr<OutMessage> tmp(new OutMessage(100,0,0,0,0,0,0,std::make_shared<std::string>(arguments)));
   messageAll(tmp);
 }
 
@@ -75,7 +75,7 @@ void Server::teleport(Args arguments)
   auto curClient = clients[id];
   if(curClient != NULL)
   {
-    std::shared_ptr<Message> msg(new Message(91,id,0,0,*(int*)&xpos,*(int*)&ypos,*(int*)&zpos,NULL));
+    std::shared_ptr<OutMessage> msg(new OutMessage(91,id,0,0,xpos,ypos,zpos,NULL));
     curClient->setPos(glm::vec3(xpos,ypos,zpos));
     curClient->msgQueue.push(msg);
   }

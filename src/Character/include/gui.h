@@ -1,26 +1,52 @@
 #pragma once
 #include <stack>
 #include "../../headers/shaders.h"
-struct Character
+#include <CEGUI/CEGUI.h>
+#include <CEGUI/RendererModules/OpenGL/GL3Renderer.h>
+#include <CEGUI/DefaultResourceProvider.h>
+#include "../../headers/threadSafeQueue.h"
+class ChatConsole
 {
-    GLuint textureID;
-    glm::ivec2 size;
-    glm::ivec2 bearing;
-    GLuint advance;
-};
+private:
+  bool openChat(const CEGUI::EventArgs &e);
+  void parseText(CEGUI::String msg);
 
+  CEGUI::Window *consoleWindow;
+
+
+  bool isOpen;
+public:
+  std::string curMsg;
+  std::string userName;
+  TSafeQueue<std::string>* incomingMessages;
+  void addChatLine(std::string msg, CEGUI::Colour colour = CEGUI::Colour( 0xFFFFFFFF));
+  void sendCurrentMessage();
+  void createChatWindow();
+  void addCharacterToChat(int c,bool shiftHeld);
+  void removeCharacterFromChat();
+  void update();
+  ChatConsole()
+  {
+    consoleWindow = NULL;
+    isOpen = false;
+    incomingMessages = new TSafeQueue<std::string>;
+  }
+  void open(bool visible);
+
+};
 
 class GUIRenderer
 {
 private:
-  std::map<GLchar, Character> Characters;
-  GLuint VAOgui, VBOgui;
-  Shader guiShader;
+  int width, height;
 public:
-  GUIRenderer(int width, int height);
+  ChatConsole chatConsole;
   GUIRenderer(){};
+  GUIRenderer(int Width, int Height,std::string userName);
+  void switchToGameGUI();
+  void switchToInventoryGUI();
+  void initFreetype();
+  void initResourcePaths();
   void renderText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color = glm::vec3(0,0,0));
-  void drawRectangle(float x1, float y1, float x2, float y2,glm::vec3 color = glm::vec3(0,0,0));
-  void drawRectangle(glm::vec2 a, glm::vec2 b,glm::vec3 color = glm::vec3(0,0,0));
-
+  void addCharacterToChat(int c);
 };

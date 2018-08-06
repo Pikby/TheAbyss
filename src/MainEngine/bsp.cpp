@@ -103,7 +103,7 @@ void BSPNode::addBlock(int x, int y, int z, int id)
   curBSP.addBlock(x,y,z,id);
 }
 
-int BSPNode::blockVisibleType(int x, int y, int z)
+RenderType BSPNode::blockVisibleType(int x, int y, int z)
 {
   return curBSP.blockVisibleType(x, y, z);
 }

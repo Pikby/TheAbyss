@@ -22,9 +22,6 @@ BSPNode::BSPNode(int x,int y,int z,const std::string &wName)
   curBSP = BSP(x,y,z,wName);
   curBSP.loadFromFile();
   totalChunks++;
-  toRender = false;
-  toBuild = false;
-  toDelete = false;
 }
 
 BSPNode::~BSPNode()
@@ -49,7 +46,6 @@ void BSPNode::saveChunk()
 void BSPNode::disconnect()
 {
   BSPMutex.lock();
-  toDelete = true;
   if(leftChunk != NULL) leftChunk->rightChunk = NULL;
   if(rightChunk != NULL) rightChunk->leftChunk = NULL;
   if(frontChunk != NULL) frontChunk->backChunk = NULL;

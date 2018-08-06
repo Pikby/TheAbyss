@@ -104,7 +104,7 @@ class BSPNode
     return blockExists(vec.x,vec.y,vec.z);
   }
   bool blockExists(int x, int y, int z);
-  int blockVisibleType(int x, int y, int z);
+  RenderType blockVisibleType(int x, int y, int z);
   void build();
   void drawOpaque();
   void drawTranslucent();

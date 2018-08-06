@@ -20,6 +20,7 @@ int main()
   glfwSetScrollCallback(newWindow, scroll_callback);
   glfwSetMouseButtonCallback(newWindow, mousekey_callback);
   glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  //glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
   glfwSwapInterval(0);//FPS Capping

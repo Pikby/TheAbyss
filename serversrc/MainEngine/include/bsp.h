@@ -66,6 +66,4 @@ class BSPNode
   //references to the 6 cardinal neighbours of the chunk
   std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;
 
-  //Flags for use inbetween pointers
-  std::atomic<bool> toRender,toBuild,toDelete;
 };

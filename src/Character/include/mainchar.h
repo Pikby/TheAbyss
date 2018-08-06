@@ -5,26 +5,22 @@
 class World;
 
 class Item;
+
+
+enum Menu {WORLDMENU,INVENTORYMENU,OPTIONSMENU};
+enum SubMenu {NOMENU,CHAT};
+
 class MainChar
 {
-  struct ActionBar
-  {
-    glm::vec2 topLeft,bottomRight;
-    int width;
-    unsigned int selected;
-  };
 private:
   //References
-  ActionBar actionMain;
+  std::string userName;
+  Menu curMenu;
+  SubMenu curSubMenu;
   World* curWorld;
   GUIRenderer gui;
-  //Rendering objects
-  uint VBO, VAO, EBO;
-  uint glTexture;
-  Shader mainCharShader;
   int screenWidth, screenHeight;
   std::deque<std::string> chatLog;
-  float chatSize;
 
   //Character attributes
   float gravity;
@@ -32,6 +28,9 @@ private:
   float deltax,deltay,deltaz;
   int reach = 200;
   bool grounded;
+  bool shiftHeld;
+  bool controlHeld;
+
 public:
   Camera mainCam;
 
@@ -41,7 +40,11 @@ public:
   MainChar(float x, float y, float z, World* curWorld );
   //Update movement
   void update();
-
+  void processMouseMovement(float xoffset, float yoffset);
+  void switchInventoryMode();
+  void openChat();
+  void closeChat();
+  void sendMessage();
   //Movement inputs
   void moveLeft();
   void moveRight();
@@ -51,14 +54,18 @@ public:
   void moveUp();
   void jump();
 
+  void handleKeyPress(int key);
+  void handleKeyHold(int key);
+  void handleKeyRelease(int key);
+  void handleMouseClick(int key);
   void addBlock(int id);
   void destroyBlock();
   void setPosition(float x, float y, float z);
   void draw();
   //Hud functions
-  void calculateHud();
-  void drawHud();
-  void drawChat();
-  void showFPS();
-  void addChatLine(std::string line){chatLog.push_front(line);}
+  void addCharacterToChat(int key);
+  void addChatLine(std::string line)
+  {
+    gui.chatConsole.incomingMessages->push(line);
+  }
 };

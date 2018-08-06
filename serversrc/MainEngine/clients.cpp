@@ -43,9 +43,9 @@ void Client::setPos(glm::vec3 newPos)
   zpos = newPos.z;
 }
 
-std::shared_ptr<Message> Client::getInfo()
+std::shared_ptr<OutMessage> Client::getInfo()
 {
-  std::shared_ptr<Message> tmp(new Message(90,id,0,0,*(int*)&xpos,*(int*)&ypos,*(int*)&zpos,NULL));
+  std::shared_ptr<OutMessage> tmp(new OutMessage(90,id,0,0,xpos,ypos,zpos,NULL));
   return tmp;
 }
 
@@ -90,7 +90,7 @@ void Client::sendMessages()
 {
   while(open)
   {
-    std::shared_ptr<Message> m;
+    std::shared_ptr<OutMessage> m;
     if(msgQueue.empty())
     {
       if(chunkQueue.empty())
@@ -111,9 +111,9 @@ void Client::sendMessages()
     if(!open) return;
     int arr[5];
     arr[0] = ((m->opcode << 24) | (m->ext1 << 16) | (m->ext2 << 8) | m->ext3);
-    arr[1] = m->x;
-    arr[2] = m->y;
-    arr[3] = m->z;
+    arr[1] = m->x.i;
+    arr[2] = m->y.i;
+    arr[3] = m->z.i;
     arr[4] = m->data == NULL ? 0 : m->data->length();
 
 
@@ -155,18 +155,19 @@ void Client::recvMessages()
 {
   while(open)
   {
-    int buf[4];
-    int sizeOfMessage = 4*sizeof(int);
+    int buf[5];
+    int sizeOfMessage = 5*sizeof(int);
     recvMessage(buf,sizeOfMessage);
     if(fatalError) break;
     uchar opcode = (buf[0] >> 24) & 0xFF;
     uchar ext1 = (buf[0] >> 16) & 0xFF;
     uchar ext2 = (buf[0] >> 8) & 0xFF;
     uchar ext3 = buf[0] & 0xFF;
-    int x = buf[1];
-    int y = buf[2];
-    int z = buf[3];
-
+    IntOrFloat x,y,z;
+    x.i = buf[1];
+    y.i = buf[2];
+    z.i = buf[3];
+    int length = buf[4];
     switch(opcode)
     {
       case (0):
@@ -175,20 +176,24 @@ void Client::recvMessages()
         std::thread chunkThread(&Client::sendChunk,this,x,y,z);
         chunkThread.detach();
         */
-        sendChunk(x,y,z);
+        sendChunk(x.i,y.i,z.i);
       }
         break;
       case (1):
         std::cout << "deleting block\n";
-        curWorld->delBlock(x,y,z);
-        sendDelBlockAll(x,y,z);
+        curWorld->delBlock(x.i,y.i,z.i);
+        sendDelBlockAll(x.i,y.i,z.i);
         break;
       case (2):
-        curWorld->addBlock(x,y,z,ext1);
-        sendAddBlockAll(x,y,z,ext1);
+        curWorld->addBlock(x.i,y.i,z.i,ext1);
+        sendAddBlockAll(x.i,y.i,z.i,ext1);
         break;
       case (91):
-        sendPositionAll(*(float*)&x,*(float*)&y,*(float*)&z);
+        sendPositionAll(x.f,y.f,z.f);
+        break;
+      case (100):
+        std::cout << "received opcode 100\n";
+        receiveChatMessage(length);
         break;
       case (0xFF):
         disconnect();
@@ -199,17 +204,24 @@ void Client::recvMessages()
   }
 }
 
+void Client::receiveChatMessage(int length)
+{
+  char* msg = new char[length];
+  recvMessage(msg,length);
+  std::cout << userName + " said: " + msg + "\n";
+  delete[] msg;
+}
 
 void Client::sendPositionAll(float x, float y,float z)
 {
   setPos(glm::vec3(x,y,z));
-  std::shared_ptr<Message> tmp(new Message(91,id,0,0,*(int*)&x,*(int*)&y,*(int*)&z,NULL));
+  std::shared_ptr<OutMessage> tmp(new OutMessage(91,id,0,0,x,y,z,NULL));
   Server::messageAll(tmp);
 }
 
 void Client::sendAddBlockAll(int x, int y, int z, uchar id)
 {
-  std::shared_ptr<Message> tmp(new Message(2,id,0,0,x,y,z,NULL));
+  std::shared_ptr<OutMessage> tmp(new OutMessage(2,id,0,0,x,y,z,NULL));
   Server::messageAll(tmp);
 }
 
@@ -217,19 +229,19 @@ void Client::sendChunk(int x,int y,int z)
 {
   curWorld->generateChunk(x,y,z);
   std::shared_ptr<std::string> msg = curWorld->getChunk(x,y,z)->getCompressedChunk();
-  std::shared_ptr<Message> tmp(new Message(0,0,0,0,x,y,z,msg));
+  std::shared_ptr<OutMessage> tmp(new OutMessage(0,0,0,0,x,y,z,msg));
   msgQueue.push(tmp);
 }
 void Client::sendChunkAll(int x,int y,int z)
 {
   curWorld->generateChunk(x,y,z);
   std::shared_ptr<std::string> msg = curWorld->getChunk(x,y,z)->getCompressedChunk();
-  std::shared_ptr<Message> tmp(new Message(0,0,0,0,x,y,z,msg));
+  std::shared_ptr<OutMessage> tmp(new OutMessage(0,0,0,0,x,y,z,msg));
   Server::messageAll(tmp);
 }
 void Client::sendDelBlockAll(int x, int y, int z)
 {
-  std::shared_ptr<Message> tmp(new Message(1,0,0,0,x,y,z,NULL));
+  std::shared_ptr<OutMessage> tmp(new OutMessage(1,0,0,0,x,y,z,NULL));
   Server::messageAll(tmp);
 }
 

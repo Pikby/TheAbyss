@@ -1,6 +1,5 @@
-#include "../headers/bsp.h"
+#include "../MainEngine/include/bsp.h"
 #include "FastNoiseSIMD/FastNoiseSIMD.h"
-#include "../headers/FastNoise.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/ext.hpp>

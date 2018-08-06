@@ -12,24 +12,49 @@ typedef unsigned char uchar;
 
 class Block;
 
+
 class Item
 {
+public:
   std::string name;
-  int type;
+  int id;
   int reach = 3;
   int damage = 0.5;
+  virtual void attack1()
+  {
+    std::cout << "default attack\n";
+  };
+  virtual void attack2(){};
+  virtual void special1(){};
+};
+enum ItemType {LIGHTSOURCE,FOOD,PLACEABLE};
 
-  int mouse1(glm::vec3 pos, glm::vec3 front);
-  int rightClick();
+class LightSource : public Item
+{
+  virtual void attack1()
+  {
+    std::cout << "LightSource attack\n";
+  }
+  virtual void attack2()
+  {
+
+  }
+  virtual void special1()
+  {
+
+  }
 };
 
 class ItemDatabase
 {
 private:
   static Block parseBlock(std::vector<std::string> lines);
+  static Item* parseItem(std::vector<std::string> lines);
+  static std::map<std::string,std::string> compileDictionary(std::vector<std::string> lines);
+  static void initStrToItemDictionary();
 public:
   static Block blockDictionary[256];
-  static Item* itemDictionary;
+  static std::vector<Item*> itemDictionary;
   static bool loadBlockDictionary(const char* file);
   static bool loadItemDictionary(const char* file);
 };

@@ -31,7 +31,7 @@ World::World(int numbBuildThreads,int width,int height)
   numbOfThreads = numbBuildThreads;
 
   ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
-
+  ItemDatabase::loadItemDictionary("../assets/itemDictionary.dat");
   //Settings::set("unlockCamera","0");
   Settings::print();
   try

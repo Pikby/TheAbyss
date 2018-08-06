@@ -4,57 +4,12 @@
 #include "include/items.h"
 
 Block ItemDatabase::blockDictionary[256];
-/*
-int Item::mouse1(glm::vec3 pos, glm::vec3 front)
-{
-  int target = rayCast(pos,front);
-  if(target == NOTHING)
-  {
-    return 0;
-  }
-  else if(target == BLOCK)
-  {
-    switch(Type)
-      case :
-
-  }
-  else
-  {
-
-  }
-
-}
-
-ItemDatabase::ItemDatabase(const char* filePath)
-{
-
-}
-
-*/
-
-
-
-bool ItemDatabase::loadItemDictionary(const char* file)
-{
-  return false;
-}
+std::vector<Item*> ItemDatabase::itemDictionary;
 
 Block ItemDatabase::parseBlock(std::vector<std::string> lines)
 {
   using namespace std;
-  std::map<std::string,std::string> dictionary;
-  for(auto itr = lines.begin(); itr != lines.end(); ++itr)
-  {
-    std::string line = *itr;
-    int colonPos = line.find(':');
-    if(colonPos == std::string::npos) continue;
-
-    string key = line.substr(0,colonPos-1);
-    string value = line.substr(colonPos+1,line.length());
-    key.erase( std::remove_if( key.begin(), key.end(), ::isspace ), key.end() );
-    value.erase( std::remove_if( value.begin(), value.end(), ::isspace ), value.end() );
-    dictionary[key] = value;
-  }
+  map<string,string> dictionary = compileDictionary(lines);
   Block newBlock;
   newBlock.id = std::stoi(dictionary["id"]);
   newBlock.name = dictionary["name"];
@@ -75,6 +30,70 @@ Block ItemDatabase::parseBlock(std::vector<std::string> lines)
   else if(opacity == "transparent") newBlock.visibleType = TRANSPARENT;
 
   return newBlock;
+}
+
+std::map<std::string,std::string> ItemDatabase::compileDictionary(std::vector<std::string> lines)
+{
+  using namespace std;
+  map<string,string> dictionary;
+
+  for(auto itr = lines.begin(); itr != lines.end(); ++itr)
+  {
+    string line = *itr;
+    int colonPos = line.find(':');
+    if(colonPos == std::string::npos) continue;
+
+    string key = line.substr(0,colonPos-1);
+    string value = line.substr(colonPos+1,line.length());
+    key.erase( std::remove_if( key.begin(), key.end(), ::isspace ), key.end() );
+    value.erase( std::remove_if( value.begin(), value.end(), ::isspace ), value.end() );
+    dictionary[key] = value;
+  }
+  return dictionary;
+}
+
+std::map<std::string,ItemType> strToItemDictionary;
+
+void ItemDatabase::initStrToItemDictionary()
+{
+  strToItemDictionary["Placeable"] = PLACEABLE;
+  strToItemDictionary["LightSource"] = LIGHTSOURCE;
+  strToItemDictionary["Food"] = FOOD;
+}
+
+
+Item* ItemDatabase::parseItem(std::vector<std::string> lines)
+{
+
+  using namespace std;
+  map<string,string> dictionary = compileDictionary(lines);
+  Item* newItem;
+  std::string type = dictionary["type"];
+  switch(strToItemDictionary[type])
+  {
+    case LIGHTSOURCE:
+      newItem = new LightSource; break;
+
+
+    default:
+      std::cout << "invalid item type" << type << "\n";
+    return NULL;
+  }
+
+
+  newItem->id = std::stoi(dictionary["id"]);
+  newItem->name = dictionary["name"];
+  if(dictionary.count("range") == 1)
+  {
+    newItem->reach = std::stoi(dictionary["range"]);
+  }
+  if(dictionary.count("damage") == 1)
+  {
+    newItem->damage = std::stoi(dictionary["damage"]);
+  }
+
+  return newItem;
+
 }
 
 bool ItemDatabase::loadBlockDictionary(const char* filePath)
@@ -107,10 +126,38 @@ bool ItemDatabase::loadBlockDictionary(const char* filePath)
       blockDictionary[newBlock.id] = newBlock;
     }
   }
+}
 
-  for(int i = 0; i< 4;i++)
+bool ItemDatabase::loadItemDictionary(const char* filePath)
+{
+  initStrToItemDictionary();
+  itemDictionary.reserve(200);
+  using namespace std;
+  ifstream file(filePath);
+
+  if(!file.is_open())
   {
-    blockDictionary[i].print();
+    std::cout << "Error opening dicitonary at: " << filePath << "\n";
+    return false;
   }
-  std::cout << "done lul\n";
+
+  string line;
+  while(getline(file,line))
+  {
+
+    int brace = line.find('{');
+    if(brace != std::string::npos)
+    {
+      vector<string> itemLines;
+      while(getline(file,line))
+      {
+        int brace = line.find('}');
+        if(brace != std::string::npos) break;
+
+        itemLines.push_back(line);
+      }
+      Item* newItem = parseItem(itemLines);
+      itemDictionary[newItem->id] = newItem;
+    }
+  }
 }

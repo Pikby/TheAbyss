@@ -10,26 +10,78 @@
 #include "../../headers/threadSafeQueue.h"
 typedef unsigned char uchar;
 class World;
-struct Message
+
+union IntOrFloat
+{
+  int i;
+  float f;
+};
+struct InMessage
 {
   uchar opcode;
   uchar ext1;
   uchar ext2;
   uchar ext3;
-  int x;
-  int y;
-  int z;
-  std::shared_ptr<std::string> data;
-  Message(uchar a,uchar b, uchar c, uchar d, int e, int f, int g,std::shared_ptr<std::string> stuff)
+  IntOrFloat x;
+  IntOrFloat y;
+  IntOrFloat z;
+  int length;
+  InMessage(){};
+  InMessage(uchar a, uchar b, uchar c, uchar d, int xpos, int ypos, int zpos,int len)
   {
     opcode = a;
     ext1 = b;
     ext2 = c;
     ext3 = d;
-    x = e;
-    y = f;
-    z = g;
-    data = stuff;
+    x.i = xpos;
+    y.i = ypos;
+    z.i = zpos;
+    length = len;
+  }
+  InMessage(uchar a, uchar b, uchar c, uchar d, float xpos, float ypos, float zpos,int len)
+  {
+    opcode = a;
+    ext1 = b;
+    ext2 = c;
+    ext3 = d;
+    x.f = xpos;
+    y.f = ypos;
+    z.f = zpos;
+    length = len;
+  }
+};
+struct OutMessage
+{
+  uchar opcode;
+  uchar ext1;
+  uchar ext2;
+  uchar ext3;
+  IntOrFloat x;
+  IntOrFloat y;
+  IntOrFloat z;
+  std::shared_ptr<std::string> data;
+  OutMessage();
+  OutMessage(uchar a, uchar b, uchar c, uchar d, int xpos, int ypos, int zpos,std::shared_ptr<std::string> newData)
+  {
+    opcode = a;
+    ext1 = b;
+    ext2 = c;
+    ext3 = d;
+    x.i = xpos;
+    y.i = ypos;
+    z.i = zpos;
+    data = newData;
+  }
+  OutMessage(uchar a, uchar b, uchar c, uchar d, float xpos,float ypos, float zpos,std::shared_ptr<std::string> newData)
+  {
+    opcode = a;
+    ext1 = b;
+    ext2 = c;
+    ext3 = d;
+    x.f = xpos;
+    y.f = ypos;
+    z.f = zpos;
+    data = newData;
   }
 };
 
@@ -49,12 +101,13 @@ class Client
     std::thread recvThread;
     World* curWorld;
   public:
-    TSafeQueue<std::shared_ptr<Message>> msgQueue;
-    TSafeQueue<std::shared_ptr<Message>> chunkQueue;
+    TSafeQueue<std::shared_ptr<OutMessage>> msgQueue;
+    TSafeQueue<std::shared_ptr<OutMessage>> chunkQueue;
     Client(int Fd,uchar Id,World* world);
     int getFD();
     void setPos(glm::vec3 newPos);
-    std::shared_ptr<Message> getInfo();
+    std::shared_ptr<OutMessage> getInfo();
+    void receiveChatMessage(int length);
     void sendMessages();
     void recvMessages();
     void sendChunk(int x,int y,int z);

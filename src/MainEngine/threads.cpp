@@ -1,4 +1,5 @@
 //OpenGL libraries
+#include <CEGUI/CEGUI.h>
 #define GLEW_STATIC
 #define PI 3.14159265
 
@@ -123,8 +124,7 @@ void draw()
     glm::mat4 view = mainCam->getViewMatrix();
     skyBox.draw(&view);
 
-    mainCharacter->drawHud();
-
+    CEGUI::System::getSingleton().renderAllGUIContexts();
     glfwSwapBuffers(window);
 
   }
@@ -207,7 +207,7 @@ void send()
 
     if(newWorld->messenger.messageQueue.empty()) continue;
     //std::cout << newWorld->messenger.messageQueue.size() << "\n";
-    Message msg = newWorld->messenger.messageQueue.front();
+    OutMessage msg = newWorld->messenger.messageQueue.front();
     newWorld->messenger.messageQueue.pop();
     uchar opcode = msg.opcode;
     switch(opcode)
@@ -224,6 +224,10 @@ void send()
       case(91):
         newWorld->messenger.requestMove(msg.x.f,msg.y.f,msg.z.f);
         break;
+      case(100):
+        std::cout << "outputing chat message\n";
+        newWorld->messenger.sendChatMessage(msg.data);
+        break;
       default:
         std::cout << "Sending unknown opcode" << std::dec << (int)msg.opcode << "\n";
 
@@ -237,7 +241,7 @@ void receive()
 {
   while(!glfwWindowShouldClose(window))
   {
-    Message msg;
+    InMessage msg;
     try
     {
       msg = newWorld->messenger.receiveAndDecodeMessage();
@@ -287,7 +291,7 @@ void receive()
         {
           char* buf = new char[msg.length];
           newWorld->messenger.receiveMessage(buf,msg.length);
-          std::string line = "[Server]: ";
+          std::string line = "(Server): ";
           line.append(buf);
           mainCharacter->addChatLine(line);
           delete[] buf;

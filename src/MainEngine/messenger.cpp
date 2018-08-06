@@ -97,7 +97,7 @@ void Messenger::setupSockets(std::string ipAddress,std::string port)
 
 }
 
-Message Messenger::receiveAndDecodeMessage()
+InMessage Messenger::receiveAndDecodeMessage()
 {
   int buf[5];
   receiveMessage(buf,sizeof(int)*5);
@@ -105,20 +105,26 @@ Message Messenger::receiveAndDecodeMessage()
   uchar ext1 = (buf[0] >> 16) & 0xFF;
   uchar ext2 = (buf[0] >> 8) & 0xFF;
   uchar ext3 = buf[0] & 0xFF;
-  Message msg = Message(opcode,ext1,ext2,ext3,buf[1],buf[2],buf[3],buf[4]);
+  InMessage msg = InMessage(opcode,ext1,ext2,ext3,buf[1],buf[2],buf[3],buf[4]);
   return msg;
 
 }
 
-
+void Messenger::createChatMessage(const std::string& msg)
+{
+  std::cout << "making chat Message " + msg + '\n';
+  OutMessage newMsg = OutMessage(100,0,0,0,0,0,0,std::make_shared<std::string> (msg));
+  messageQueue.push(newMsg);
+}
 
 void Messenger::requestChunk(int x, int y, int z)
 {
-  int request[4];
+  int request[5];
   request[0] = 0;
   request[1] = x;
   request[2] = y;
   request[3] = z;
+  request[4] = 0;
   try
   {
     sendMessage(request,sizeof(request));
@@ -129,26 +135,47 @@ void Messenger::requestChunk(int x, int y, int z)
   }
 }
 
+void Messenger::sendChatMessage(std::shared_ptr<std::string> msg)
+{
+  std::cout << "sending chat message\n";
+  int request[5];
+  request[0] = pack4chars(100,0,0,0);
+  request[1] = 0;
+  request[2] = 0;
+  request[3] = 0;
+  request[4] = msg->length();
+  std::cout << *msg << "\n";
+  try
+  {
+    sendMessage(request,sizeof(request));
+    sendMessage(msg->c_str(),msg->length());
+  }
+  catch(...)
+  {
+    std::cout << "ERROR: SENDING MESSAGE, ERRNO: " << errno << "\n";
+  }
 
+}
 void Messenger::createMoveRequest(float x, float y, float z)
 {
-  Message tmp = Message(91,0,0,0,x,y,z,0);
+  OutMessage tmp = OutMessage(91,0,0,0,x,y,z,0);
   messageQueue.push(tmp);
 }
 
 void Messenger::createAddBlockRequest(int x, int y, int z, uchar id)
 {
-  Message tmp = Message(2,id,0,0,x,y,z,0);
+  OutMessage tmp = OutMessage(2,id,0,0,x,y,z,0);
   messageQueue.push(tmp);
 }
 
 void Messenger::requestAddBlock(int x, int y, int z, uchar id)
 {
-  int request[4];
+  int request[5];
   request[0] = pack4chars(2,id,0,0);
   request[1] = x;
   request[2] = y;
   request[3] = z;
+  request[4] = 0;
   try
   {
     sendMessage(request,sizeof(request));
@@ -161,18 +188,18 @@ void Messenger::requestAddBlock(int x, int y, int z, uchar id)
 
 void Messenger::createDelBlockRequest(int x, int y, int z)
 {
-  Message tmp = Message(1,0,0,0,x,y,z,0);
+  OutMessage tmp = OutMessage(1,0,0,0,x,y,z,0);
   messageQueue.push(tmp);
   std::cout << "requesting del block\n";
 }
 void Messenger::requestDelBlock(int x, int y, int z)
 {
-  int request[4];
+  int request[5];
   request[0] = pack4chars(1,0,0,0);
   request[1] = x;
   request[2] = y;
   request[3] = z;
-
+  request[4] = 0;
   try
   {
     sendMessage(request,sizeof(request));
@@ -185,12 +212,12 @@ void Messenger::requestDelBlock(int x, int y, int z)
 
 void Messenger::requestMove(float x, float y, float z)
 {
-  int request[4];
+  int request[5];
   request[0] = pack4chars(91,0,0,0);
   request[1] = *(int*)&x;
   request[2] = *(int*)&y;
   request[3] = *(int*)&z;
-
+  request[4] = 0;
   try
   {
     sendMessage(request, sizeof(request));
@@ -204,7 +231,7 @@ void Messenger::requestMove(float x, float y, float z)
 
 void Messenger::requestExit()
 {
-  int request[4];
+  int request[5];
   request[0] = 0xFFFFFFFF;
   sendMessage(request,sizeof(request));
   std::cout << "exit message Sent\n";
@@ -247,7 +274,7 @@ void Messenger::createChunkRequest(int x, int y, int z)
 {
   if(!requestMap.exists(x,y,z))
   {
-    Message tmp = {0,0,0,0,x,y,z,0};
+    OutMessage tmp = {0,0,0,0,x,y,z,0};
     messageQueue.push(tmp);
     requestMap.add(x,y,z,true);
   }

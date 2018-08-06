@@ -88,7 +88,7 @@ void Server::remove(int id)
   clientMutex.lock();
   clients[id] = NULL;
   clientMutex.unlock();
-  std::shared_ptr<Message> tmp(new Message(99,id,0,0,0,0,0,NULL));
+  std::shared_ptr<OutMessage> tmp(new OutMessage(99,id,0,0,0,0,0,NULL));
   messageAll(tmp);
   numberOfClients--;
 }
@@ -96,7 +96,7 @@ void Server::remove(int id)
 void Server::sendInitAll(Client* target)
 {
   clientMutex.lock();
-  std::shared_ptr<Message> msg = target->getInfo();
+  std::shared_ptr<OutMessage> msg = target->getInfo();
   for(int i =0;i<MAX_CLIENTS;i++)
   {
     std::shared_ptr<Client> curClient = clients[i];
@@ -122,7 +122,7 @@ void Server::retClients(Client* target)
   clientMutex.unlock();
 }
 
-void Server::messageAll(std::shared_ptr<Message> msg)
+void Server::messageAll(std::shared_ptr<OutMessage> msg)
 {
   clientMutex.lock();
   for(int i=0;i<MAX_CLIENTS;i++)

@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include "../MainEngine/include/world.h"
 #include "../headers/shaders.h"
+#include "../Settings/settings.h"
 #include "include/mainchar.h"
 
 #define PI 3.14159265
@@ -26,92 +27,93 @@ float max(float a, float b, float c)
 
 }
 
-float vertices[] = {
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-};
-unsigned int oVAO, oVBO;
-
 MainChar::MainChar(float x, float y, float z, World* world )
 {
-  mainCharShader = Shader("../src/Shaders/entShader.vs","../src/Shaders/entShader.fs");
+  shiftHeld = false;
+  curMenu = WORLDMENU;
+  curSubMenu = NOMENU;
   xpos = x;
   ypos = y;
   zpos = z;
   deltax = 0;
   deltay = 0;
   deltaz = 0;
-  chatSize = 0.05;
   moveSpeed = 0.1f;
   curWorld = world;
   mainCam = Camera(glm::vec3(xpos,ypos,zpos));
-  calculateHud();
   screenWidth = curWorld->drawer.screenWidth;
   screenHeight = curWorld->drawer.screenHeight;
-  gui = GUIRenderer(screenWidth,screenHeight);
-  addChatLine("TEST1");
-  addChatLine("TEST2");
+  userName = Settings::get("userName");
+  gui = GUIRenderer(screenWidth,screenHeight,userName);
 
-  glGenVertexArrays(1, &oVAO);
-  glGenBuffers(1, &oVBO);
-  glBindVertexArray(oVAO);
 
-  glBindBuffer(GL_ARRAY_BUFFER,oVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices),vertices, GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (GLvoid*)0);
-  glEnableVertexAttribArray(0);
-
-  glVertexAttribPointer(1,2,GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
-  glEnableVertexAttribArray(1);
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
+}
+void MainChar::handleKeyHold(int key)
+{
+  switch(curSubMenu)
+  {
+    case NOMENU:
+      switch(key)
+      {
+        case GLFW_KEY_W:			moveForward(); 					break;
+        case GLFW_KEY_Q:		  moveDown();							break;
+        case GLFW_KEY_A:			moveLeft();							break;
+        case GLFW_KEY_D:			moveRight();						break;
+        case GLFW_KEY_S:			moveBackward();					break;
+        case GLFW_KEY_SPACE:	moveUp();								break;
+      }
+      break;
+    case CHAT: break;
+    default: break;
+  }
 }
 
+void MainChar::handleKeyRelease(int key)
+{
+  switch(key)
+  {
+    case GLFW_KEY_LEFT_SHIFT : shiftHeld = false; break;
+    case GLFW_KEY_LEFT_CONTROL : controlHeld = false; break;
+  }
+}
+
+void MainChar::handleKeyPress(int key)
+{
+  //guiRenderer.handleKeyPress(int key);
+  //Universal keys
+  switch(key)
+  {
+    case GLFW_KEY_LEFT_SHIFT:   shiftHeld = true; return; break;
+    case GLFW_KEY_LEFT_CONTROL: controlHeld = true; return; break;
+  }
+
+  switch(curSubMenu)
+  {
+    case NOMENU:
+      switch(key)
+      {
+        case GLFW_KEY_N: std::cout << xpos << ":" << ypos << ":" << zpos << "\n"; break;
+        case GLFW_KEY_E: switchInventoryMode(); break;
+        case GLFW_KEY_T: openChat(); break;
+
+      }
+      break;
+    case CHAT:
+      switch(key)
+      {
+        case GLFW_KEY_ENTER: sendMessage(); break;
+        default: addCharacterToChat(key); break;
+      }
+  }
+}
+
+void MainChar::addCharacterToChat(int key)
+{
+  gui.chatConsole.addCharacterToChat(key,shiftHeld);
+}
 
 void MainChar::update()
 {
-  //std::cout << xpos /10.0f<<":"<<ypos/10.0f<<":"<<zpos/10.0f<<"\n";
   if(!curWorld->blockExists(floor(xpos+deltax),floor(ypos),floor(zpos)))
   {
     xpos = xpos + deltax;
@@ -127,16 +129,11 @@ void MainChar::update()
     ypos = ypos + deltay;
     grounded = false;
   }
-
-
-    deltax /= 5;
-    deltay /= 5;
-    deltaz /= 5;
-
-
+  deltax /= 5;
+  deltay /= 5;
+  deltaz /= 5;
   mainCam.setPosition(xpos,ypos,zpos);
-
-
+  gui.chatConsole.update();
 }
 
 void MainChar::moveRight()
@@ -222,69 +219,65 @@ void MainChar::addBlock(int id)
 
 }
 
-void MainChar::calculateHud()
+void MainChar::processMouseMovement(float xoffset, float yoffset)
 {
-  actionMain.topLeft = glm::vec2(screenWidth*0.05,screenHeight*0.05);
-  actionMain.bottomRight = glm::vec2(screenWidth*0.95,screenHeight*0.15);
-  actionMain.selected = 0;
-  actionMain.width = 2;
-}
-
-void MainChar::drawHud()
-{
-  int topLeftx = actionMain.topLeft.x;
-  int topLefty = actionMain.topLeft.y;
-  int bottomRightx = actionMain.bottomRight.x;
-  int bottomRighty = actionMain.bottomRight.y;
-  int width = actionMain.width;
-
-  gui.drawRectangle(screenWidth/2+3,screenHeight/2+3,screenWidth/2-3,screenHeight/2-3);
-  showFPS();
-  drawChat();
-}
-
-void MainChar::draw()
-{
-  mainCharShader.use();
-  glViewport(0,0,screenWidth,screenHeight);
-  glm::mat4 camProjection = glm::perspective(glm::radians(45.0f),
-                            (float)1920/ (float)1080, 0.1f,
-                            (float)7*CHUNKSIZE*4);
-  glm::mat4 model;
-  model = glm::translate(model,glm::vec3(xpos,ypos,zpos-3));
-  mainCharShader.setMat4("projection",camProjection);
-  mainCharShader.setMat4("view", mainCam.getViewMatrix());
-  mainCharShader.setMat4("model", model);
-
-  glBindVertexArray(oVAO);
-  glDrawArrays(GL_TRIANGLES,0,36);
-  glBindVertexArray(0);
-}
-
-void MainChar::showFPS()
-{
-  static double lastFrameTime = 0;
-  static double curFrameTime  = 0;
-  static double curFPS = 0;
-
-  curFrameTime = glfwGetTime();
-  double smooth = 0.9f;
-
-  double deltaTime = 1.0f/(curFrameTime - lastFrameTime);
-
-  curFPS = curFPS*smooth + deltaTime*(1-smooth);
-  std::string fps = "FPS: " + std::to_string((int)round(curFPS));
-
-  gui.renderText(fps,0,screenHeight*.9,1);
-  lastFrameTime = glfwGetTime();
-}
-
-void MainChar::drawChat()
-{
-  float chatPos = chatSize;
-  for(auto itr = chatLog.begin(); itr != chatLog.end();++itr)
+  switch(curMenu)
   {
-    gui.renderText((*itr),0,screenHeight*chatPos,0.5);
-    chatPos += chatSize/2;
+    case WORLDMENU: mainCam.processMouseMovement(xoffset,yoffset,true); break;
+    case INVENTORYMENU:
+    {
+      CEGUI::GUIContext& context = CEGUI::System::getSingleton().getDefaultGUIContext();
+      context.injectMouseMove(xoffset,-yoffset);
+    }
   }
+
+}
+void MainChar::handleMouseClick(int key)
+{
+  if(curMenu!= WORLDMENU) return;
+  switch(key)
+  {
+    case GLFW_MOUSE_BUTTON_LEFT: destroyBlock() ; break;
+    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(1); break;
+
+  }
+
+}
+
+void MainChar::switchInventoryMode()
+{
+  switch(curMenu)
+  {
+    case WORLDMENU:
+      curMenu = INVENTORYMENU;
+      gui.switchToInventoryGUI();
+      break;
+    case INVENTORYMENU:
+      curMenu = WORLDMENU;
+      gui.switchToGameGUI();
+  }
+}
+
+void MainChar::openChat()
+{
+  curSubMenu = CHAT;
+  gui.chatConsole.open(true);
+}
+
+void MainChar::closeChat()
+{
+  curSubMenu = NOMENU;
+  gui.chatConsole.open(false);
+}
+
+void MainChar::sendMessage()
+{
+  curSubMenu = NOMENU;
+  gui.chatConsole.open(false);
+  if(gui.chatConsole.curMsg != "")
+  {
+    curWorld->messenger.createChatMessage(gui.chatConsole.curMsg);
+    gui.chatConsole.sendCurrentMessage();
+  }
+
 }

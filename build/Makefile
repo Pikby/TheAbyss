@@ -8,7 +8,8 @@ WCC = /mnt/WorkSpace/MXE/mxe/usr/bin/i686-w64-mingw32.static.posix-g++
 CFLAGSLINUX  = -I/usr/local/include/freetype2 -I/usr/include/libpng12 \
 					-lglfw3 -lGLEW -lGL -lm -ldl -lXinerama -lXrandr -lXi \
 					-lXcursor -lX11 -lXxf86vm -lpthread -std=c++17 \
-					-L/usr/local/lib -lfreetype -lstdc++fs -lboost_system -lboost_filesystem
+					-L/usr/local/lib -lfreetype -lstdc++fs -lboost_system -lboost_filesystem \
+					-lCEGUIOpenGLRenderer-0 -lCEGUIBase-0
 
 CFLAGSWINDOWS =-I/usr/local/include/freetype2 -I/usr/include/libpng12  \
 		-mwindows -lmingw32 -lGLEW \

@@ -23,7 +23,7 @@ class Server
     static void handleServerCommands();
     static void add(int fd);
     static void remove(int id);
-    static void messageAll(std::shared_ptr<Message> msg);
+    static void messageAll(std::shared_ptr<OutMessage> msg);
     static void retClients(Client* target);
     static void sendInitAll(Client* target);
     static void parseCommand(std::string command);
