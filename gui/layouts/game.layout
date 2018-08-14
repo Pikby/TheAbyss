@@ -5,6 +5,13 @@
             <Property name="Position" value="{ {0, 0}, {0, 0} }" />
             <Property name="Size" value="{ {0.5, 0}, {0.5, 0} }" />
             <Property name="Text" value="This is the Game UI" />
+            <Property name="Alpha" value= "1" />
+        </Window>
+        <Window type="TaharezLook/Label" name="FPS">
+            <Property name="Position" value="{ {0, 0}, {0, 0} }" />
+            <Property name="Size" value="{ {0.1, 0}, {0.1, 0} }" />
+            <Property name="Text" value="FPS: " />
+            <Property name="Alpha" value= "1" />
         </Window>
     </Window>
 </GUILayout>

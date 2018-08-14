@@ -70,7 +70,7 @@ World::World(int numbBuildThreads,int width,int height)
 
 
   drawer.setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
-  drawer.setupShadersAndTextures(width,height);
+  drawer.setupShadersAndTextures(width,height,&BSPmap);
   drawer.updateViewProjection(45.0f,0.1f,(horzRenderDistance)*CHUNKSIZE);
 }
 
@@ -400,7 +400,7 @@ void World::delScan(float mainx, float mainy, float mainz)
   }
 }
 
-bool World::chunkExists(int x ,int y, int z)
+bool World::chunkExists(int x ,int y, int z) 
 {
   return BSPmap.exists(x,y,z);
 }

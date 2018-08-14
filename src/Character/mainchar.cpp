@@ -31,14 +31,13 @@ MainChar::MainChar(float x, float y, float z, World* world )
 {
   shiftHeld = false;
   curMenu = WORLDMENU;
-  curSubMenu = NOMENU;
   xpos = x;
   ypos = y;
   zpos = z;
   deltax = 0;
   deltay = 0;
   deltaz = 0;
-  moveSpeed = 0.1f;
+  moveSpeed = 1.0f;
   curWorld = world;
   mainCam = Camera(glm::vec3(xpos,ypos,zpos));
   screenWidth = curWorld->drawer.screenWidth;
@@ -50,9 +49,10 @@ MainChar::MainChar(float x, float y, float z, World* world )
 }
 void MainChar::handleKeyHold(int key)
 {
-  switch(curSubMenu)
+  switch(curMenu)
   {
-    case NOMENU:
+    case CHATMENU: break;
+    default:
       switch(key)
       {
         case GLFW_KEY_W:			moveForward(); 					break;
@@ -63,8 +63,6 @@ void MainChar::handleKeyHold(int key)
         case GLFW_KEY_SPACE:	moveUp();								break;
       }
       break;
-    case CHAT: break;
-    default: break;
   }
 }
 
@@ -87,23 +85,24 @@ void MainChar::handleKeyPress(int key)
     case GLFW_KEY_LEFT_CONTROL: controlHeld = true; return; break;
   }
 
-  switch(curSubMenu)
+  switch(curMenu)
   {
-    case NOMENU:
+    case CHATMENU:
+      switch(key)
+      {
+        case GLFW_KEY_ESCAPE: closeChat(); break;
+        case GLFW_KEY_ENTER: sendMessage(); break;
+        default: addCharacterToChat(key); break;
+      }
+    default:
       switch(key)
       {
         case GLFW_KEY_N: std::cout << xpos << ":" << ypos << ":" << zpos << "\n"; break;
         case GLFW_KEY_E: switchInventoryMode(); break;
         case GLFW_KEY_T: openChat(); break;
-
       }
       break;
-    case CHAT:
-      switch(key)
-      {
-        case GLFW_KEY_ENTER: sendMessage(); break;
-        default: addCharacterToChat(key); break;
-      }
+
   }
 }
 
@@ -134,6 +133,14 @@ void MainChar::update()
   deltaz /= 5;
   mainCam.setPosition(xpos,ypos,zpos);
   gui.chatConsole.update();
+
+  static double lastFrame = 0;
+  static double curFrame = 0;
+  curFrame = glfwGetTime();
+  double fps = 1.0f/(curFrame - lastFrame);
+  lastFrame = curFrame;
+  std::string line = "FPS: " + std::to_string(fps);
+  gui.gameWindow->getChild("FPS")->setText(line);
 }
 
 void MainChar::moveRight()
@@ -246,33 +253,33 @@ void MainChar::handleMouseClick(int key)
 
 void MainChar::switchInventoryMode()
 {
-  switch(curMenu)
+  if(curMenu == INVENTORYMENU)
   {
-    case WORLDMENU:
-      curMenu = INVENTORYMENU;
-      gui.switchToInventoryGUI();
-      break;
-    case INVENTORYMENU:
-      curMenu = WORLDMENU;
-      gui.switchToGameGUI();
+    gui.closeInventoryGUI();
+    curMenu = WORLDMENU;
+  }
+  else
+  {
+    gui.openInventoryGUI();
+    curMenu = INVENTORYMENU;
   }
 }
 
 void MainChar::openChat()
 {
-  curSubMenu = CHAT;
+  curMenu = CHATMENU;
   gui.chatConsole.open(true);
 }
 
 void MainChar::closeChat()
 {
-  curSubMenu = NOMENU;
+  curMenu = WORLDMENU;
   gui.chatConsole.open(false);
 }
 
 void MainChar::sendMessage()
 {
-  curSubMenu = NOMENU;
+  curMenu = WORLDMENU;
   gui.chatConsole.open(false);
   if(gui.chatConsole.curMsg != "")
   {

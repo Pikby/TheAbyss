@@ -27,8 +27,8 @@ enum target{BLOCK = 0, NOTHING = -1};
 class World
 {
 private:
-  glm::ivec3 inline toLocalCoords(glm::ivec3 in);
-  glm::ivec3 inline toChunkCoords(glm::ivec3 in);
+  static glm::ivec3 toLocalCoords(glm::ivec3 in);
+  static glm::ivec3 toChunkCoords(glm::ivec3 in);
   inline void checkForUpdates(glm::ivec3 local,std::shared_ptr<BSPNode> chunk);
 public:
   Messenger messenger;

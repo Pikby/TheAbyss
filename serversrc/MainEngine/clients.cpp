@@ -7,7 +7,15 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-
+Client::~Client()
+{
+  msgQueue.emptyQueue();
+  chunkQueue.emptyQueue();
+  if(sendThread.joinable()) sendThread.join();
+  if(chunkThread.joinable()) chunkThread.join();
+  if(recvThread.joinable()) recvThread.join();
+  std::cout << "client destroyed\n";
+}
 
 Client::Client(int Fd,uchar Id,World* world)
 {
@@ -28,8 +36,8 @@ Client::Client(int Fd,uchar Id,World* world)
   Server::retClients(this);
   sendThread = std::thread(&Client::sendMessages,this);
   recvThread = std::thread(&Client::recvMessages,this);
-  sendThread.detach();
-  recvThread.detach();
+  chunkThread = std::thread(&Client::generateAndSendChunks,this);
+
 }
 
 int Client::getFD()
@@ -75,8 +83,9 @@ inline void Client::recvMessage(void *buffer, int length)
   while(totalReceived < length)
   {
     if(fatalError || !open) return;
+
     int curReceived = recv(fd,buf+totalReceived,length-totalReceived,0);
-    if(curReceived == -1)
+    if(curReceived <= 0)
     {
       std::cout << "Error: receiving Message from client:" << id << "\n";
       errorDisconnect();
@@ -85,47 +94,50 @@ inline void Client::recvMessage(void *buffer, int length)
     totalReceived += curReceived;
   }
 }
+void Client::generateAndSendChunks()
+{
+  while(open)
+  {
+    chunkQueue.waitForData();
+    while(!chunkQueue.empty())
+    {
+      glm::ivec3 chunk = chunkQueue.front();
+      chunkQueue.pop();
+      sendChunk(chunk.x,chunk.y,chunk.z);
+    }
+
+  }
+}
 
 void Client::sendMessages()
 {
   while(open)
   {
-    std::shared_ptr<OutMessage> m;
-    if(msgQueue.empty())
+    msgQueue.waitForData();
+    while(!msgQueue.empty())
     {
-      if(chunkQueue.empty())
-      {
-        continue;
-      }
-      else
-      {
-        m = chunkQueue.front();
-        chunkQueue.pop();
-      }
-    }
-    else
-    {
+
+      std::shared_ptr<OutMessage> m;
       m = msgQueue.front();
       msgQueue.pop();
+
+      if(!open) return;
+      int arr[5];
+      arr[0] = ((m->opcode << 24) | (m->ext1 << 16) | (m->ext2 << 8) | m->ext3);
+      arr[1] = m->x.i;
+      arr[2] = m->y.i;
+      arr[3] = m->z.i;
+      arr[4] = m->data == NULL ? 0 : m->data->length();
+
+
+      //std::cout << "Sending Message: " << arr[0] << arr[1] << arr[2] << arr[3] <<arr[4] << "\n";
+      sendMessage(arr,sizeof(arr));
+
+      if(m->data != NULL)
+      {
+        sendMessage(m->data->data(), arr[4]);
+      }
     }
-    if(!open) return;
-    int arr[5];
-    arr[0] = ((m->opcode << 24) | (m->ext1 << 16) | (m->ext2 << 8) | m->ext3);
-    arr[1] = m->x.i;
-    arr[2] = m->y.i;
-    arr[3] = m->z.i;
-    arr[4] = m->data == NULL ? 0 : m->data->length();
-
-
-    //std::cout << "Sending Message: " << arr[0] << arr[1] << arr[2] << arr[3] <<arr[4] << "\n";
-    sendMessage(arr,5*sizeof(int));
-
-    if(m->data != NULL)
-    {
-      sendMessage(m->data->data(), arr[4]);
-    }
-
-
   }
 
   if(fatalError) return;
@@ -138,17 +150,21 @@ void Client::sendMessages()
 
 void Client::disconnect()
 {
+  std::cout << "Client disconnectting safely\n";
   open = false;
   Server::remove(id);
-  std::cout << "Client disconnectting safely\n";
+  msgQueue.emptyQueue();
+  chunkQueue.emptyQueue();
+
 }
 
 void Client::errorDisconnect()
 {
+  std::cout << "Client disconnectting due to error\n";
   open = false;
   fatalError = true;
   Server::remove(id);
-  std::cout << "Client disconnectting due to error\n";
+
 }
 
 void Client::recvMessages()
@@ -158,11 +174,11 @@ void Client::recvMessages()
     int buf[5];
     int sizeOfMessage = 5*sizeof(int);
     recvMessage(buf,sizeOfMessage);
-    if(fatalError) break;
+    if(fatalError || !open) break;
     uchar opcode = (buf[0] >> 24) & 0xFF;
-    uchar ext1 = (buf[0] >> 16) & 0xFF;
-    uchar ext2 = (buf[0] >> 8) & 0xFF;
-    uchar ext3 = buf[0] & 0xFF;
+    uchar ext1   = (buf[0] >> 16) & 0xFF;
+    uchar ext2   = (buf[0] >> 8) & 0xFF;
+    uchar ext3   = buf[0] & 0xFF;
     IntOrFloat x,y,z;
     x.i = buf[1];
     y.i = buf[2];
@@ -172,11 +188,8 @@ void Client::recvMessages()
     {
       case (0):
       {
-        /*
-        std::thread chunkThread(&Client::sendChunk,this,x,y,z);
-        chunkThread.detach();
-        */
-        sendChunk(x.i,y.i,z.i);
+        addChunkToQueue(x.i,y.i,z.i);
+        //sendChunk(x.i,y.i,z.i);
       }
         break;
       case (1):
@@ -192,7 +205,6 @@ void Client::recvMessages()
         sendPositionAll(x.f,y.f,z.f);
         break;
       case (100):
-        std::cout << "received opcode 100\n";
         receiveChatMessage(length);
         break;
       case (0xFF):
@@ -202,14 +214,24 @@ void Client::recvMessages()
         std::cout << "Unknown opcode: " << (int)opcode << "\n";
     }
   }
+  std::cout << "RECEIVE ENDING\n";
 }
 
 void Client::receiveChatMessage(int length)
 {
   char* msg = new char[length];
   recvMessage(msg,length);
-  std::cout << userName + " said: " + msg + "\n";
+  std::string line = '(' + userName + "): " + std::string(msg,length) + "\n";
+  std::cout << line;
+  std::shared_ptr<OutMessage> tmp(new OutMessage(101,id,0,0,0,0,0,std::make_shared<std::string>(line)));
+  Server::messageAll(tmp);
   delete[] msg;
+}
+
+void Client::addChunkToQueue(int x, int y, int z)
+{
+  glm::ivec3 chunk = glm::ivec3(x,y,z);
+  chunkQueue.push(chunk);
 }
 
 void Client::sendPositionAll(float x, float y,float z)

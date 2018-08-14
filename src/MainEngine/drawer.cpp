@@ -4,13 +4,18 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/ext.hpp>
+
 
 #include <limits>
 #include "include/drawer.h"
 #include "../TextureLoading/textureloading.h"
 
-void Drawer::setupShadersAndTextures(int width, int height)
+void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_ptr<BSPNode>>* map)
 {
+  BSPmap = map;
+
+
   const char* texture = "../assets/textures/atlas.png";
   glGenTextures(1, &glTexture);
   glBindTexture(GL_TEXTURE_2D, glTexture);
@@ -18,8 +23,6 @@ void Drawer::setupShadersAndTextures(int width, int height)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-
   //Load and bind the texture from the class
   int texWidth, texHeight, nrChannels;
   unsigned char* image = loadTexture(texture, &texWidth,&texHeight,&nrChannels);
@@ -32,8 +35,8 @@ void Drawer::setupShadersAndTextures(int width, int height)
   screenWidth = width;
   screenHeight = height;
 
-  objShader        = Shader("../src/Shaders/entShader.vs",
-                            "../src/Shaders/entShader.fs");
+  objShader        = Shader("../src/Shaders/EntityShaders/entShader.vs",
+                            "../src/Shaders/EntityShaders/entShader.fs");
   objShader.use();
   objShader.setInt("curTexture",0);
   objShader.setInt("dirLight.shadow",4);
@@ -41,9 +44,16 @@ void Drawer::setupShadersAndTextures(int width, int height)
   objShader.setInt("pointLights[1].shadow",6);
   objShader.setFloat("far_plane",25.0f);
 
-  blockShader = Shader("../src/Shaders/shaderBSP.vs","../src/Shaders/shaderBSP.fs");
+  quadShader = Shader("../src/Shaders/old/debugQuad.vs","../src/Shaders/old/debugQuad.fs");
+  quadShader.use();
+  blockShader.setInt("depthMap",0);
+
+  blockShader = Shader("../src/Shaders/BSPShaders/shaderBSP.fs","../src/Shaders/BSPShaders/shaderBSP.vs");
   blockShader.use();
-  blockShader.setInt("curTexture",0);
+  blockShader.setInt("gPosition", 0);
+  blockShader.setInt("gNormal", 1);
+  blockShader.setInt("gColorSpec", 2);
+  blockShader.setInt("gDepth",3);
   blockShader.setInt("dirLight.shadow[0]",4);
   blockShader.setInt("dirLight.shadow[1]",5);
   blockShader.setInt("dirLight.shadow[2]",6);
@@ -51,16 +61,18 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader.setFloat("far_plane",25.0f);
   blockShader.setFloat("fog_start",CHUNKSIZE*(horzRenderDistance-2));
   blockShader.setFloat("fog_dist",CHUNKSIZE);
-
   blockShader.setInt("textureAtlasWidth",384);
   blockShader.setInt("textureAtlasHeight",128);
   blockShader.setInt("cellWidth",128);
 
-  debugDepthQuad = Shader("../src/Shaders/old/debugQuad.vs", "../src/Shaders/old/debugQuad.fs");
-  debugDepthQuad.use();
-  debugDepthQuad.setInt("depthMap", 0);
-  debugDepthQuad.setFloat("near_plane", -1.0f);
-  debugDepthQuad.setFloat("far_plane", (vertRenderDistance+renderBuffer+1)*CHUNKSIZE*2);
+
+  gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.vs");
+  gBufferShader.use();
+  gBufferShader.setInt("textureAtlasWidth",384);
+  gBufferShader.setInt("textureAtlasHeight",128);
+  gBufferShader.setInt("cellWidth",128);
+  gBufferShader.setInt("curTexture",0);
+
 
   dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
                             "../src/Shaders/dirDepthShader.vs");
@@ -70,6 +82,48 @@ void Drawer::setupShadersAndTextures(int width, int height)
   pointDepthShader = Shader("../src/Shaders/pointDepthShader.fs",
                             "../src/Shaders/pointDepthShader.vs",
                             "../src/Shaders/pointDepthShader.gs");
+
+
+  glGenFramebuffers(1, &gBuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+
+
+  // - position color buffer
+  glGenTextures(1, &gPosition);
+  glBindTexture(GL_TEXTURE_2D, gPosition);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+
+  // - normal color buffer
+  glGenTextures(1, &gNormal);
+  glBindTexture(GL_TEXTURE_2D, gNormal);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+
+  // - color + specular color buffer
+  glGenTextures(1, &gColorSpec);
+  glBindTexture(GL_TEXTURE_2D, gColorSpec);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenWidth, screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColorSpec, 0);
+
+  // - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
+  unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+  glDrawBuffers(3, attachments);
+
+  glGenRenderbuffers(1, &gDepth);
+  glBindRenderbuffer(GL_RENDERBUFFER, gDepth);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screenWidth, screenHeight);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, gDepth);
+
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+      std::cout << "Framebuffer not complete!" << std::endl;
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Drawer::setRenderDistances(int vert, int horz, int buffer)
@@ -81,6 +135,21 @@ void Drawer::setRenderDistances(int vert, int horz, int buffer)
 void Drawer::addCube(Cube newCube)
 {
   objList.push_back(std::make_shared<Cube>(newCube));
+}
+
+void Drawer::renderGBuffer()
+{
+  glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glViewport(0,0,screenWidth,screenHeight);
+  glBindTexture(GL_TEXTURE_2D, glTexture);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+  Shader* shader = &gBufferShader;
+  shader->use();
+  shader->setMat4("view", viewMat);
+  shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+  drawTerrain(shader,chunksToDraw);
+  glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
 
 void Drawer::renderDirectionalDepthMap()
@@ -206,16 +275,25 @@ void renderQuad()
     glBindVertexArray(0);
 }
 
+glm::ivec3 toChunkCoords(glm::ivec3 in)
+{
+  glm::ivec3 out;
+  out.x = floor((float)in.x/(float)CHUNKSIZE);
+  out.y = floor((float)in.y/(float)CHUNKSIZE);
+  out.z = floor((float)in.z/(float)CHUNKSIZE);
+  return out;
+}
+
+
 void Drawer::renderDirectionalShadows()
 {
   const int PI = 3.14159265;
-  double sunAngle = 80;
-  int distToSun = (vertRenderDistance+1)*CHUNKSIZE;
+  int distToSun = (vertRenderDistance)*CHUNKSIZE;
   //Makes sure the light is always at the correct angle above the player
   glm::mat4 lightProjection,lightView, lightSpaceMatrix;
 
   float shadowNear = -1;
-  float shadowFar = distToSun*3;
+  float shadowFar = distToSun*2;
 
   for(int x = 0;x<NUMBOFCASCADEDSHADOWS;x++)
   {
@@ -230,40 +308,43 @@ void Drawer::renderDirectionalShadows()
       lightTarget+=frustrum[i];
     }
     lightTarget /= 8;
-    objList[0]->setPosition(lightTarget);
-    objList[0]->updateModelMat();
-    lightPos = lightTarget - dirLight.direction*distToSun;
-    lightView  = glm::lookAt(lightPos,
-                                      lightTarget,
-                                      glm::vec3(0.0f,1.0f,0.0f));
+    glm::vec3 sunAngle = dirLight.direction;
+    lightPos = lightTarget -(sunAngle*(distToSun));
+    objList[x]->setPosition(lightPos);
+    objList[x]->setColor(glm::vec3(0.5f,0.5f,0.5f));
+    objList[x]->updateModelMat();
+    lightView  = glm::lookAt(lightPos,lightTarget,glm::vec3(0.0f,1.0f,0.0f));
+    glm::vec3 min,max;
+
     for(int i=0;i<8;i++)
     {
       frustrum[i] = glm::vec3(lightView*glm::vec4(frustrum[i],1.0f));
     }
-    glm::vec3 min,max;
+
     calculateMinandMaxPoints(frustrum,8,&min,&max);
-    //std::cout << glm::to_string(min) << ":" << glm::to_string(max) << "\n";
-    lightProjection = glm::ortho(min.x, max.x, min.y,max.y,shadowNear, shadowFar);
-
+    const int buf = 0;
+    int factor = x == 0 ? factor = 1 : factor = x*2;
+    float viewWidth = directionalShadowResolution/factor;
+    lightProjection = glm::ortho(min.x-buf, max.x+buf, min.y-buf,max.y+buf,-1.0f,shadowFar);
     dirLight.lightSpaceMat[x] = lightProjection * lightView;
-
-
-    debugDepthQuad.use();
-    debugDepthQuad.setFloat("near_plane", shadowNear);
-    debugDepthQuad.setFloat("far_plane", shadowFar);
 
     dirDepthShader.use();
     dirDepthShader.setMat4("lightSpaceMatrix",dirLight.lightSpaceMat[x]);
-    int factor = x == 0 ? factor = 1 : factor = x*2;
-    glViewport(0,0,directionalShadowResolution/factor,directionalShadowResolution/factor);
+
+    calculateMinandMaxPoints(frustrum,8,&min,&max);
+    //auto chunkList = BSPmap->findAll(toChunkCoords(min),toChunkCoords(max));
+    auto chunkList = std::make_shared<std::list<std::shared_ptr<BSPNode>>>(BSPmap->getFullList());
+    glViewport(0,0,viewWidth,viewWidth);
       glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[x]);
         glClear(GL_DEPTH_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
-        drawTerrain(&dirDepthShader,chunksToDraw);
+        glCullFace(GL_FRONT);
+        drawTerrain(&dirDepthShader,chunkList);
+        glCullFace(GL_BACK);
       glBindFramebuffer(GL_FRAMEBUFFER,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-    glViewport(0,0,screenWidth,screenHeight);
+  }
+  glViewport(0,0,screenWidth,screenHeight);
 
 
 }
@@ -352,28 +433,41 @@ void Drawer::drawPlayers()
 
 void Drawer::drawFinal()
 {
-  /*
-  debugDepthQuad.use();
-  glViewport(0,0,200,200);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, dirLight.depthMap[0]);
-  // /renderQuad();
-  */
+
   glViewport(0,0,screenWidth,screenHeight);
   Shader* shader = &blockShader;
   shader->use();
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D,gPosition);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D,gNormal);
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D,gColorSpec);
   setLights(shader);
+  shader->setVec3("viewPos", viewPos);
   bindDirectionalShadows(shader);
+  glDisable(GL_DEPTH_TEST);
+  renderQuad();
+  glEnable(GL_DEPTH_TEST);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glBlitFramebuffer(0, 0, screenWidth, screenHeight, 0, 0, screenWidth, screenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+
+  /*
+
 
   shader->setMat4("view", viewMat);
   shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-  shader->setVec3("viewPos", viewPos);
+
   //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
   drawTerrain(shader,chunksToDraw);
 
   glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-
+  */
 
 }
 
@@ -393,6 +487,8 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
   objShader.setMat4("projection",viewProj);
   blockShader.use();
   blockShader.setMat4("projection",viewProj);
+  gBufferShader.use();
+  gBufferShader.setMat4("projection",viewProj);
 }
 
 void Drawer::updateCameraMatrices(Camera* cam)
@@ -450,7 +546,7 @@ void Drawer::calculateFrustrum(glm::vec3* arr,float near, float far)
 }
 
 //Takes array of variable size and the sets the min and max points
-void Drawer::calculateMinandMaxPoints(glm::vec3* array, int arrsize, glm::vec3* finmin, glm::vec3* finmax)
+void Drawer::calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin, glm::vec3* finmax)
 {
 
   glm::vec3 max = glm::vec3(std::numeric_limits<float>::min());

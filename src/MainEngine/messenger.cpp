@@ -18,11 +18,6 @@
 #include <fstream>
 #include "include/messenger.h"
 
-inline int pack4chars(char a, char b, char c, char d)
-{
-  return ((a << 24) | (b << 16) | (c << 8) | d);
-}
-
 void Messenger::setupSockets(std::string ipAddress,std::string port)
 {
 
@@ -112,7 +107,6 @@ InMessage Messenger::receiveAndDecodeMessage()
 
 void Messenger::createChatMessage(const std::string& msg)
 {
-  std::cout << "making chat Message " + msg + '\n';
   OutMessage newMsg = OutMessage(100,0,0,0,0,0,0,std::make_shared<std::string> (msg));
   messageQueue.push(newMsg);
 }
@@ -137,14 +131,12 @@ void Messenger::requestChunk(int x, int y, int z)
 
 void Messenger::sendChatMessage(std::shared_ptr<std::string> msg)
 {
-  std::cout << "sending chat message\n";
   int request[5];
   request[0] = pack4chars(100,0,0,0);
   request[1] = 0;
   request[2] = 0;
   request[3] = 0;
   request[4] = msg->length();
-  std::cout << *msg << "\n";
   try
   {
     sendMessage(request,sizeof(request));
@@ -214,9 +206,9 @@ void Messenger::requestMove(float x, float y, float z)
 {
   int request[5];
   request[0] = pack4chars(91,0,0,0);
-  request[1] = *(int*)&x;
-  request[2] = *(int*)&y;
-  request[3] = *(int*)&z;
+  request[1] = floatBitsToInt(x);
+  request[2] = floatBitsToInt(y);
+  request[3] = floatBitsToInt(z);
   request[4] = 0;
   try
   {

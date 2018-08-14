@@ -9,7 +9,6 @@
 int main()
 {
   glfwInit();
-  glfwWindowHint(GLFW_SAMPLES, 2);
   const int numbBuildThreads = 1;
   int winWidth = std::stoi(Settings::get("windowWidth"));
   int winHeight = std::stoi(Settings::get("windowHeight"));

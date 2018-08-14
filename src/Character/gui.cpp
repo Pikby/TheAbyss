@@ -36,29 +36,46 @@ GUIRenderer::GUIRenderer(int Width, int Height, std::string userName)
   CEGUI::OpenGL3Renderer& myRenderer = CEGUI::OpenGL3Renderer::bootstrapSystem();
   initResourcePaths();
   CEGUI::SchemeManager::getSingleton().createFromFile( "TaharezLook.scheme" );
-  switchToGameGUI();
+
+  System::getSingleton().getDefaultGUIContext().getMouseCursor().hide();
+  createMenuScreens();
+
   CEGUI::System::getSingleton().getDefaultGUIContext().getMouseCursor().setDefaultImage("TaharezLook/MouseArrow");
   WindowManager& wmgr = WindowManager::getSingleton();
   chatConsole.createChatWindow();
 }
 
-void GUIRenderer::switchToGameGUI()
-{
-  using namespace CEGUI;
-  System::getSingleton().getDefaultGUIContext().getMouseCursor().hide();
-  Window* myRoot = WindowManager::getSingleton().loadLayoutFromFile( "game.layout" );
-  System::getSingleton().getDefaultGUIContext().setRootWindow( myRoot );
-}
-
-void GUIRenderer::switchToInventoryGUI()
+void GUIRenderer::openInventoryGUI()
 {
   using namespace CEGUI;
   System::getSingleton().getDefaultGUIContext().getMouseCursor().show();
   System::getSingleton().getDefaultGUIContext().getMouseCursor().setPosition(Vector2f(width/2,height/2));
-  Window* myRoot = WindowManager::getSingleton().loadLayoutFromFile( "inventory.layout" );
-  System::getSingleton().getDefaultGUIContext().setRootWindow( myRoot );
+  invWindow->activate();
+  invWindow->show();
 }
 
+void GUIRenderer::closeInventoryGUI()
+{
+  invWindow->deactivate();
+  invWindow->hide();
+  CEGUI::System::getSingleton().getDefaultGUIContext().getMouseCursor().hide();
+}
+
+void GUIRenderer::createMenuScreens()
+{
+  using namespace CEGUI;
+  gameWindow = WindowManager::getSingleton().loadLayoutFromFile( "game.layout" );
+  System::getSingleton().getDefaultGUIContext().setRootWindow(gameWindow);
+  invWindow = WindowManager::getSingleton().loadLayoutFromFile( "inventory.layout" );
+  invWindow->deactivate();
+  invWindow->hide();
+  System::getSingleton().getDefaultGUIContext().getRootWindow()->addChild( invWindow );
+
+  optionsWindow = WindowManager::getSingleton().loadLayoutFromFile( "options.layout" );
+  optionsWindow->deactivate();
+  optionsWindow->hide();
+  System::getSingleton().getDefaultGUIContext().getRootWindow()->addChild( optionsWindow );
+}
 
 void GUIRenderer::initResourcePaths()
 {
@@ -143,7 +160,6 @@ void ChatConsole::sendCurrentMessage()
   if(curMsg != "")
   {
     std::string line = '(' + userName + "): " + curMsg;
-    addChatLine(line);
     consoleWindow->getChild("Editbox")->setText("");
   }
   curMsg = "";
@@ -163,6 +179,7 @@ void ChatConsole::createChatWindow()
     CEGUI::Logger::getSingleton().logEvent("Error loading chat window layout\n");
   }
 }
+
 
 void ChatConsole::open(bool visible)
 {
@@ -189,4 +206,6 @@ void ChatConsole::update()
     incomingMessages->pop();
     addChatLine(curLine);
   }
+
+
 }

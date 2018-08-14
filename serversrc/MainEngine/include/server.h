@@ -5,11 +5,13 @@
 #include <mutex>
 #include "world.h"
 #include "clients.h"
+#include "../../headers/threadSafeQueue.h"
 #define MAX_CLIENTS 4
 class Server
 {
   private:
     static uint ticksPerSecond;
+    static TSafeQueue<std::shared_ptr<Client>> garbageList;
     static std::atomic<bool> serverLogicOn;
     static std::atomic<uint> numberOfClients;
     static std::thread serverCommands,serverLogic;
@@ -17,6 +19,7 @@ class Server
     static std::shared_ptr<Client> clients[MAX_CLIENTS];
     static World* curWorld;
   public:
+    static void cleanGarbageList();
     static void initServer(World* temp);
     static void initServerCommands();
     static void handleServerLogic();

@@ -43,8 +43,12 @@ public:
   ChatConsole chatConsole;
   GUIRenderer(){};
   GUIRenderer(int Width, int Height,std::string userName);
-  void switchToGameGUI();
-  void switchToInventoryGUI();
+  CEGUI::Window* invWindow;
+  CEGUI::Window* optionsWindow;
+  CEGUI::Window* gameWindow;
+  void createMenuScreens();
+  void openInventoryGUI();
+  void closeInventoryGUI();
   void initFreetype();
   void initResourcePaths();
   void renderText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color = glm::vec3(0,0,0));

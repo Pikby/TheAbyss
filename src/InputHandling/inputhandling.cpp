@@ -50,10 +50,6 @@ void updateInputs()
 	{
 
 		int key = it->first;
-		if(key == GLFW_KEY_ESCAPE)
-		{
-			closeGame();
-		}
 		mainCharacter->handleKeyHold(key);
 	}
 }

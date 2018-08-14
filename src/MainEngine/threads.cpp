@@ -69,7 +69,7 @@ void draw()
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
-  newWorld->drawer.createDirectionalLight(glm::vec3(-0.2f,-1.0f,-0.3f));
+  newWorld->drawer.createDirectionalLight(glm::vec3(-0.1f,-1.0f,-0.1f),glm::vec3(0.4f,0.4f,0.4f));
   SkyBox skyBox;
   Camera* mainCam = &(mainCharacter->mainCam);
 
@@ -80,11 +80,13 @@ void draw()
   player.render();
 
   newWorld->drawer.addCube(glm::vec3(0,50,0));
+    newWorld->drawer.addCube(glm::vec3(0,50,0));
+    newWorld->drawer.addCube(glm::vec3(0,50,0));
+    newWorld->drawer.addCube(glm::vec3(0,50,0));
   //newWorld->addLight(glm::vec3(10,50,10));
   while(!glfwWindowShouldClose(window))
   {
 
-    updateInputs();
     //std::cout << newWorld->drawnChunks << "\n";
     newWorld->drawnChunks = 0;
     newWorld->deleteChunksFromQueue();
@@ -99,16 +101,16 @@ void draw()
     {
       newWorld->calculateViewableChunks();
     }
+    newWorld->drawer.renderGBuffer();
 
-
-    /*
+    newWorld->drawer.renderDirectionalShadows();
     if(BSP::geometryChanged == true)
     {
-      //std::cout << "renderingShadows\n";
-      newWorld->drawer.renderDirectionalShadows();
+
+
       BSP::geometryChanged = false;
     }
-    */
+
 
     newWorld->drawer.drawFinal();
     newWorld->drawer.drawObjects();
@@ -123,7 +125,6 @@ void draw()
 
     glm::mat4 view = mainCam->getViewMatrix();
     skyBox.draw(&view);
-
     CEGUI::System::getSingleton().renderAllGUIContexts();
     glfwSwapBuffers(window);
 
@@ -180,7 +181,7 @@ void logic()
 {
   double lastFrame = 0;
   double currentFrame = 0;
-  double ticksPerSecond = 20;
+  double ticksPerSecond = 60;
   double tickRate = 1.0f/ticksPerSecond;
   while(!glfwWindowShouldClose(window))
   {
@@ -193,6 +194,7 @@ void logic()
     //std::cout << deltaFrame << ":" << waitTime ;
     std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
     currentFrame = glfwGetTime();
+    updateInputs();
 
     //DO the game logic
     newWorld->messenger.createMoveRequest(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
@@ -203,34 +205,33 @@ void send()
 {
   while(!glfwWindowShouldClose(window))
   {
-    //newWorld->messageQueue.waitForData();
-
-    if(newWorld->messenger.messageQueue.empty()) continue;
-    //std::cout << newWorld->messenger.messageQueue.size() << "\n";
-    OutMessage msg = newWorld->messenger.messageQueue.front();
-    newWorld->messenger.messageQueue.pop();
-    uchar opcode = msg.opcode;
-    switch(opcode)
+    newWorld->messenger.messageQueue.waitForData();
+    while(!newWorld->messenger.messageQueue.empty())
     {
-      case(0):
-        newWorld->messenger.requestChunk(msg.x.i,msg.y.i,msg.z.i);
-        break;
-      case(1):
-        newWorld->messenger.requestDelBlock(msg.x.i,msg.y.i,msg.z.i);
-        break;
-      case(2):
-        newWorld->messenger.requestAddBlock(msg.x.i,msg.y.i,msg.z.i,msg.ext1);
-        break;
-      case(91):
-        newWorld->messenger.requestMove(msg.x.f,msg.y.f,msg.z.f);
-        break;
-      case(100):
-        std::cout << "outputing chat message\n";
-        newWorld->messenger.sendChatMessage(msg.data);
-        break;
-      default:
-        std::cout << "Sending unknown opcode" << std::dec << (int)msg.opcode << "\n";
+      OutMessage msg = newWorld->messenger.messageQueue.front();
+      newWorld->messenger.messageQueue.pop();
+      uchar opcode = msg.opcode;
+      switch(opcode)
+      {
+        case(0):
+          newWorld->messenger.requestChunk(msg.x.i,msg.y.i,msg.z.i);
+          break;
+        case(1):
+          newWorld->messenger.requestDelBlock(msg.x.i,msg.y.i,msg.z.i);
+          break;
+        case(2):
+          newWorld->messenger.requestAddBlock(msg.x.i,msg.y.i,msg.z.i,msg.ext1);
+          break;
+        case(91):
+          newWorld->messenger.requestMove(msg.x.f,msg.y.f,msg.z.f);
+          break;
+        case(100):
+          newWorld->messenger.sendChatMessage(msg.data);
+          break;
+        default:
+          std::cout << "Sending unknown opcode" << std::dec << (int)msg.opcode << "\n";
 
+      }
     }
   }
   newWorld->messenger.requestExit();
@@ -297,6 +298,16 @@ void receive()
           delete[] buf;
         }
         break;
+      case(101):
+        {
+          char* buf = new char[msg.length];
+          newWorld->messenger.receiveMessage(buf,msg.length);
+          std::string line = std::string(buf,msg.length);
+          std::cout << line;
+          mainCharacter->addChatLine(line);
+          delete[] buf;
+          break;
+        }
       case(0xFF):
         std::cout << "Received exit message\n";
         glfwSetWindowShouldClose(window, true);

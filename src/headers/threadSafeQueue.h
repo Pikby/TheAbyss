@@ -9,8 +9,9 @@ class TSafeQueue
 private:
   std::queue<T> queue;
   std::mutex queueMutex;
-public:
   std::condition_variable cv;
+
+public:
   bool empty()
   {
     std::lock_guard<std::mutex> lock(queueMutex);
@@ -41,6 +42,13 @@ public:
   {
     std::lock_guard<std::mutex> lock(queueMutex);
     queue.pop();
+  }
+  T getAndPop()
+  {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    T temp = queue.front();
+    queue.pop();
+    return temp;
   }
   void waitForData()
   {

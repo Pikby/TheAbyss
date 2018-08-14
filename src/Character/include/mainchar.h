@@ -7,8 +7,8 @@ class World;
 class Item;
 
 
-enum Menu {WORLDMENU,INVENTORYMENU,OPTIONSMENU};
-enum SubMenu {NOMENU,CHAT};
+enum Menu {WORLDMENU,INVENTORYMENU,OPTIONSMENU,CHATMENU};
+
 
 class MainChar
 {
@@ -16,7 +16,6 @@ private:
   //References
   std::string userName;
   Menu curMenu;
-  SubMenu curSubMenu;
   World* curWorld;
   GUIRenderer gui;
   int screenWidth, screenHeight;
@@ -31,6 +30,8 @@ private:
   bool shiftHeld;
   bool controlHeld;
 
+
+  bool inInventory;
 public:
   Camera mainCam;
 

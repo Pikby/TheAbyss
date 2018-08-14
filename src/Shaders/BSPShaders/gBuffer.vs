@@ -6,7 +6,6 @@ out vec2 TexCells;
 out vec2 TexOrigin;
 out vec3 FinNormal;
 out vec3 FragPos;
-out float ClipSpaceDepth;
 
 
 
@@ -19,7 +18,7 @@ uniform int cellWidth;
 
 void main()
 {
-  
+
   int package = floatBitsToInt(packagef);
   int norm = ((package >> 24) & 0x3F);
   int texCoord = ((package >> 24) & 0xC0);
@@ -86,5 +85,4 @@ void main()
   FragPos = position;
 
   gl_Position = projection*view*vec4(position, 1.0f);
-  ClipSpaceDepth = gl_Position.z;
 }

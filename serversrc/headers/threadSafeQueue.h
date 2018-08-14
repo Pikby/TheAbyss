@@ -11,6 +11,15 @@ private:
   std::mutex queueMutex;
 public:
   std::condition_variable cv;
+  void emptyQueue()
+  {
+
+    std::lock_guard<std::mutex> lock(queueMutex);
+    std::queue<T> empty;
+    std::swap(empty,queue);
+    cv.notify_one();
+
+  }
   bool empty()
   {
     std::lock_guard<std::mutex> lock(queueMutex);

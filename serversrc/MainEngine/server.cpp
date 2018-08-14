@@ -9,6 +9,7 @@ std::thread Server::serverCommands, Server::serverLogic;
 std::mutex Server::clientMutex;
 std::shared_ptr<Client> Server::clients[4];
 World* Server::curWorld;
+TSafeQueue<std::shared_ptr<Client>> Server::garbageList;
 
 void Server::handleServerLogic()
 {
@@ -35,6 +36,14 @@ void Server::handleServerLogic()
     }
     currentFrame = high_resolution_clock::now();
     //Do all game logic here
+    cleanGarbageList();
+  }
+}
+void Server::cleanGarbageList()
+{
+  while(!garbageList.empty())
+  {
+    garbageList.pop();
   }
 }
 
@@ -86,6 +95,7 @@ void Server::remove(int id)
 {
   std::cout << clients[id].use_count() << "\n";
   clientMutex.lock();
+  garbageList.push(clients[id]);
   clients[id] = NULL;
   clientMutex.unlock();
   std::shared_ptr<OutMessage> tmp(new OutMessage(99,id,0,0,0,0,0,NULL));

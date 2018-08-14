@@ -1,4 +1,5 @@
 #pragma once
+typedef unsigned char uchar;
 #include <iostream>
 #include <atomic>
 #include <memory>
@@ -8,83 +9,8 @@
 #include <string>
 #include <glm/glm.hpp>
 #include "../../headers/threadSafeQueue.h"
-typedef unsigned char uchar;
+#include "messages.h"
 class World;
-
-union IntOrFloat
-{
-  int i;
-  float f;
-};
-struct InMessage
-{
-  uchar opcode;
-  uchar ext1;
-  uchar ext2;
-  uchar ext3;
-  IntOrFloat x;
-  IntOrFloat y;
-  IntOrFloat z;
-  int length;
-  InMessage(){};
-  InMessage(uchar a, uchar b, uchar c, uchar d, int xpos, int ypos, int zpos,int len)
-  {
-    opcode = a;
-    ext1 = b;
-    ext2 = c;
-    ext3 = d;
-    x.i = xpos;
-    y.i = ypos;
-    z.i = zpos;
-    length = len;
-  }
-  InMessage(uchar a, uchar b, uchar c, uchar d, float xpos, float ypos, float zpos,int len)
-  {
-    opcode = a;
-    ext1 = b;
-    ext2 = c;
-    ext3 = d;
-    x.f = xpos;
-    y.f = ypos;
-    z.f = zpos;
-    length = len;
-  }
-};
-struct OutMessage
-{
-  uchar opcode;
-  uchar ext1;
-  uchar ext2;
-  uchar ext3;
-  IntOrFloat x;
-  IntOrFloat y;
-  IntOrFloat z;
-  std::shared_ptr<std::string> data;
-  OutMessage();
-  OutMessage(uchar a, uchar b, uchar c, uchar d, int xpos, int ypos, int zpos,std::shared_ptr<std::string> newData)
-  {
-    opcode = a;
-    ext1 = b;
-    ext2 = c;
-    ext3 = d;
-    x.i = xpos;
-    y.i = ypos;
-    z.i = zpos;
-    data = newData;
-  }
-  OutMessage(uchar a, uchar b, uchar c, uchar d, float xpos,float ypos, float zpos,std::shared_ptr<std::string> newData)
-  {
-    opcode = a;
-    ext1 = b;
-    ext2 = c;
-    ext3 = d;
-    x.f = xpos;
-    y.f = ypos;
-    z.f = zpos;
-    data = newData;
-  }
-};
-
 class Server;
 class Client
 {
@@ -92,21 +18,22 @@ class Client
     int fd;
     uchar id;
     std::string userName;
-    bool fatalError;
-    std::atomic_bool open;
-    std::atomic<float> xpos;
-    std::atomic<float> ypos;
-    std::atomic<float> zpos;
+    std::atomic_bool open,fatalError;
+    std::atomic<float> xpos,ypos,zpos;
     std::thread sendThread;
     std::thread recvThread;
+    std::thread chunkThread;
     World* curWorld;
   public:
     TSafeQueue<std::shared_ptr<OutMessage>> msgQueue;
-    TSafeQueue<std::shared_ptr<OutMessage>> chunkQueue;
+    TSafeQueue<glm::ivec3> chunkQueue;
+    ~Client();
     Client(int Fd,uchar Id,World* world);
     int getFD();
     void setPos(glm::vec3 newPos);
     std::shared_ptr<OutMessage> getInfo();
+    void generateAndSendChunks();
+    void addChunkToQueue(int x, int y, int z);
     void receiveChatMessage(int length);
     void sendMessages();
     void recvMessages();
