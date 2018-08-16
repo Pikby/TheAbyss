@@ -40,6 +40,12 @@ class Drawer
 {
 private:
   uint glTexture;
+  uint SSAOTexture;
+  std::vector<glm::vec3> ssaoNoise;
+  std::vector<glm::vec3> ssaoKernel;
+  uint SSAOFBO, SSAOColorBuffer;
+  uint SSAOBlurFBO, SSAOColorBufferBlur;
+  Shader SSAOShader,SSAOBlurShader;
   const char* texture;
 
   int vertRenderDistance, horzRenderDistance,renderBuffer;
@@ -72,7 +78,9 @@ private:
   Shader quadShader;
   void calculateFrustrum(glm::vec3* arr, float near, float far);
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
+  void initializeSSAO();
 public:
+  void renderSSAO();
   std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> chunksToDraw;
   std::map<uchar, std::shared_ptr<Player>> playerList;
   Map3D<std::shared_ptr<BSPNode>>* BSPmap;

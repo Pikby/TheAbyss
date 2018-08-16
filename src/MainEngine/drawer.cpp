@@ -6,7 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/ext.hpp>
 
-
+#include <random>
 #include <limits>
 #include "include/drawer.h"
 #include "../TextureLoading/textureloading.h"
@@ -35,8 +35,8 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   screenWidth = width;
   screenHeight = height;
 
-  objShader        = Shader("../src/Shaders/EntityShaders/entShader.vs",
-                            "../src/Shaders/EntityShaders/entShader.fs");
+  objShader = Shader("../src/Shaders/EntityShaders/entShader.vs",
+                     "../src/Shaders/EntityShaders/entShader.fs");
   objShader.use();
   objShader.setInt("curTexture",0);
   objShader.setInt("dirLight.shadow",4);
@@ -46,14 +46,14 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
 
   quadShader = Shader("../src/Shaders/old/debugQuad.vs","../src/Shaders/old/debugQuad.fs");
   quadShader.use();
-  blockShader.setInt("depthMap",0);
+  //blockShader.setInt("depthMap",0);
 
   blockShader = Shader("../src/Shaders/BSPShaders/shaderBSP.fs","../src/Shaders/BSPShaders/shaderBSP.vs");
   blockShader.use();
   blockShader.setInt("gPosition", 0);
   blockShader.setInt("gNormal", 1);
   blockShader.setInt("gColorSpec", 2);
-  blockShader.setInt("gDepth",3);
+  blockShader.setInt("SSAO",3);
   blockShader.setInt("dirLight.shadow[0]",4);
   blockShader.setInt("dirLight.shadow[1]",5);
   blockShader.setInt("dirLight.shadow[2]",6);
@@ -94,6 +94,8 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
 
   // - normal color buffer
@@ -124,7 +126,12 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
       std::cout << "Framebuffer not complete!" << std::endl;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  initializeSSAO();
+
 }
+
+
 
 void Drawer::setRenderDistances(int vert, int horz, int buffer)
 {
@@ -137,6 +144,110 @@ void Drawer::addCube(Cube newCube)
   objList.push_back(std::make_shared<Cube>(newCube));
 }
 
+float lerp(float a, float b, float f)
+{
+    return a + f * (b - a);
+}
+void Drawer::initializeSSAO()
+{
+  SSAOShader = Shader("../src/Shaders/SSAOShaders/SSAO.fs","../src/Shaders/SSAOShaders/SSAO.vs");
+  SSAOShader.use();
+  SSAOShader.setInt("gPosition",0);
+  SSAOShader.setInt("gNormal",1);
+  SSAOShader.setInt("texNoise",2);
+
+  SSAOBlurShader = Shader("../src/Shaders/SSAOShaders/SSAOBlur.fs","../src/Shaders/SSAOShaders/SSAOBlur.vs");
+  SSAOBlurShader.use();
+  SSAOBlurShader.setInt("ssaoInput",0);
+  std::uniform_real_distribution<float> randomFloats(0.0, 1.0); // random floats between 0.0 - 1.0
+  std::default_random_engine generator;
+  for (unsigned int i = 0; i < 64; ++i)
+  {
+      glm::vec3 sample(
+          randomFloats(generator) * 2.0 - 1.0,
+          randomFloats(generator) * 2.0 - 1.0,
+          randomFloats(generator)
+      );
+      sample  = glm::normalize(sample);
+      sample *= randomFloats(generator);
+      float scale = (float)i / 64.0;
+
+      scale = lerp(0.1f, 1.0f, scale * scale);
+      sample *= scale;
+      ssaoKernel.push_back(sample);
+  }
+  for (unsigned int i = 0; i < 16; i++)
+  {
+      glm::vec3 noise(
+          randomFloats(generator) * 2.0 - 1.0,
+          randomFloats(generator) * 2.0 - 1.0,
+          0.0f);
+      ssaoNoise.push_back(noise);
+  }
+  glGenTextures(1, &SSAOTexture);
+  glBindTexture(GL_TEXTURE_2D, SSAOTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
+  glGenFramebuffers(1, &SSAOFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, SSAOFBO);
+
+  glGenTextures(1, &SSAOColorBuffer);
+  glBindTexture(GL_TEXTURE_2D, SSAOColorBuffer);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOColorBuffer, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+  glGenFramebuffers(1, &SSAOBlurFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, SSAOBlurFBO);
+  glGenTextures(1, &SSAOColorBufferBlur);
+  glBindTexture(GL_TEXTURE_2D, SSAOColorBufferBlur);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOColorBufferBlur,0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void renderQuad();
+void Drawer::renderSSAO()
+{
+  glViewport(0,0,screenWidth,screenHeight);
+  glBindFramebuffer(GL_FRAMEBUFFER, SSAOFBO);
+    glClear(GL_COLOR_BUFFER_BIT);
+    SSAOShader.use();
+    SSAOShader.setMat4("view",viewMat);
+    SSAOShader.setMat4("projection",viewProj);
+    for (unsigned int i = 0; i < 64; ++i)
+       SSAOShader.setVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,gPosition);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D,gNormal);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D,SSAOTexture);
+    renderQuad();
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+  glBindFramebuffer(GL_FRAMEBUFFER, SSAOBlurFBO);
+      glClear(GL_COLOR_BUFFER_BIT);
+      SSAOBlurShader.use();
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, SSAOColorBuffer);
+      renderQuad();
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+}
 void Drawer::renderGBuffer()
 {
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
@@ -179,7 +290,6 @@ void Drawer::renderDirectionalDepthMap()
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
-
 
 }
 
@@ -444,6 +554,8 @@ void Drawer::drawFinal()
   glBindTexture(GL_TEXTURE_2D,gNormal);
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D,gColorSpec);
+  glActiveTexture(GL_TEXTURE3);
+  glBindTexture(GL_TEXTURE_2D,SSAOColorBuffer);
   setLights(shader);
   shader->setVec3("viewPos", viewPos);
   bindDirectionalShadows(shader);

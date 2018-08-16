@@ -103,7 +103,7 @@ void draw()
     }
     newWorld->drawer.renderGBuffer();
 
-    newWorld->drawer.renderDirectionalShadows();
+    //newWorld->drawer.renderDirectionalShadows();
     if(BSP::geometryChanged == true)
     {
 
@@ -111,10 +111,10 @@ void draw()
       BSP::geometryChanged = false;
     }
 
-
+    newWorld->drawer.renderSSAO();
     newWorld->drawer.drawFinal();
-    newWorld->drawer.drawObjects();
-    newWorld->drawer.drawPlayers();
+    //newWorld->drawer.drawObjects();
+    //newWorld->drawer.drawPlayers();
 
     int error = glGetError();
     if(error != 0)
