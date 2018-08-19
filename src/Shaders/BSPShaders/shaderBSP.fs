@@ -49,7 +49,7 @@ vec3 objColor = texture(gColorSpec, TexCoords).rgb;
 vec3 normal = texture(gNormal, TexCoords).rgb;
 vec3 fragPosition = texture(gPosition, TexCoords).rgb;
 float fragDepth = distance(fragPosition,viewPos);
-float AO = texture(SSAO, TexCoords).r;
+float AO = texture(gColorSpec, TexCoords).a;
 
 int findCorrectShadowMap()
 {
@@ -119,9 +119,10 @@ vec3 calcDirectionalLight(float shadow)
   vec3 reflectDir = reflect(-lightDir, normal);
   float spec = pow(max(dot(viewDir, reflectDir), 0.0), 8);
 
+
   vec3 ambient = dirLight.ambient*AO;
-  vec3 diffuse = dirLight.diffuse*diff;
-  vec3 specular = dirLight.specular*spec;
+  vec3 diffuse = dirLight.diffuse*diff*AO;
+  vec3 specular = dirLight.specular*spec*AO;
 
   return (ambient + shadow*(diffuse + specular));
 }

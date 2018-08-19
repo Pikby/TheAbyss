@@ -24,7 +24,7 @@ BSPNode::BSPNode(int x,int y, int z,const std::string &wName,const char *val)
   //std::cout << "curNumber of chunks: " << totalChunks << "\n";
   //totalChunks++;
   BSPMutex.lock();
-  curBSP = BSP(x,y,z,wName,val);
+  curBSP = BSP(x,y,z,wName,val,this);
   toRender = false;
   toBuild = false;
   toDelete = false;
@@ -34,7 +34,7 @@ BSPNode::BSPNode(int x,int y, int z,const std::string &wName,const char *val)
 void BSPNode::build()
 {
   BSPMutex.lock();
-  curBSP.build(rightChunk,leftChunk,topChunk,bottomChunk,frontChunk,backChunk);
+  curBSP.build();
   toRender = true;
   toBuild = false;
   BSPMutex.unlock();
@@ -88,6 +88,37 @@ void BSPNode::disconnect()
 
 }
 
+#define DEFAULTBLOCKMODE TRANSLUCENT;
+//If looking for a block outside of a chunks local coordinates use this;
+RenderType BSPNode::blockVisibleTypeOOB(int x,int y, int z)
+{
+  if(x >= CHUNKSIZE)
+  {
+    return rightChunk != NULL ? rightChunk->blockVisibleTypeOOB(x-CHUNKSIZE,y,z) : DEFAULTBLOCKMODE;
+  }
+  else if(x < 0)
+  {
+    return leftChunk != NULL ? leftChunk->blockVisibleTypeOOB(x+CHUNKSIZE,y,z) : DEFAULTBLOCKMODE;
+  }
+  else if(y >= CHUNKSIZE)
+  {
+    return topChunk != NULL ? topChunk->blockVisibleTypeOOB(x,y-CHUNKSIZE,z) : DEFAULTBLOCKMODE;
+  }
+  else if(y < 0)
+  {
+    return bottomChunk != NULL ? bottomChunk->blockVisibleTypeOOB(x,y+CHUNKSIZE,z) : DEFAULTBLOCKMODE;
+  }
+  else if(z >= CHUNKSIZE)
+  {
+    return backChunk != NULL ? backChunk->blockVisibleTypeOOB(x,y,z-CHUNKSIZE) : DEFAULTBLOCKMODE;
+  }
+  else if(z < 0)
+  {
+    return frontChunk != NULL ? frontChunk->blockVisibleTypeOOB(x,y,z+CHUNKSIZE) : DEFAULTBLOCKMODE;
+  }
+  else return blockVisibleType(x,y,z);
+}
+
 bool BSPNode::blockExists(int x, int y, int z)
 {
   return curBSP.blockExists(x, y, z);
@@ -109,8 +140,9 @@ RenderType BSPNode::blockVisibleType(int x, int y, int z)
 }
 
 
-BSP::BSP(int x, int y, int z,const std::string &wName,const char* data)
+BSP::BSP(int x, int y, int z,const std::string &wName,const char* data, BSPNode* Parent)
 {
+  parent = Parent;
   oVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
   oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
   tVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
@@ -190,7 +222,96 @@ inline int pack4chars(char a, char b, char c, char d)
   return ((a << 24) | (b << 16) | (c << 8) | d);
 }
 
-inline int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face, TextureSides top, TextureSides right)
+
+AmbientOcclusion BSP::getAO(glm::ivec3 pos, Faces face, TextureSides top, TextureSides right)
+{
+  using namespace glm;
+  ivec3 side1, side2;
+  if(top == TOP)
+  {
+    switch(face)
+    {
+      case(TOPF): side1 = ivec3(0,1,1); break;
+      case(BOTTOMF): side1 = ivec3(0,-1,-1); break;
+      case(FRONTF): side1 = ivec3(0,1,-1); break;
+      case(BACKF): side1 = ivec3(0,1,1); break;
+      case(LEFTF): side1 = ivec3(-1,1,0); break;
+      case(RIGHTF): side1 = ivec3(1,1,0); break;
+    }
+  }
+  else
+  {
+
+    switch(face)
+    {
+      case(TOPF): side1 = ivec3(0,1,-1); break;
+      case(BOTTOMF): side1 = ivec3(0,-1,1); break;
+
+      case(FRONTF): side1 = ivec3(0,-1,-1); break;
+      case(BACKF): side1 = ivec3(0,-1,1); break;
+      case(LEFTF): side1 = ivec3(-1,-1,0); break;
+      case(RIGHTF): side1 = ivec3(1,-1,0); break;
+    }
+
+  }
+
+  if(right == RIGHT)
+  {
+    switch(face)
+    {
+      case(TOPF): side2 = ivec3(1,1,0); break;
+      case(BOTTOMF): side2 = ivec3(1,-1,0); break;
+      case(FRONTF): side2 = ivec3(1,0,-1); break;
+      case(BACKF): side2 = ivec3(-1,0,1); break;
+      case(LEFTF): side2 = ivec3(-1,0,-1); break;
+      case(RIGHTF): side2 = ivec3(1,0,1); break;
+    }
+  }
+  else
+  {
+
+    switch(face)
+    {
+      case(TOPF): side2 = ivec3(-1,1,0); break;
+      case(BOTTOMF): side2 = ivec3(-1,-1,0); break;
+      case(FRONTF): side2 = ivec3(-1,0,-1); break;
+      case(BACKF): side2 = ivec3(1,0,1); break;
+      case(LEFTF): side2 = ivec3(-1,0,1); break;
+      case(RIGHTF): side2 = ivec3(1,0,-1); break;
+
+    }
+
+  }
+  glm::ivec3 norm;
+  switch(face)
+  {
+    case (FRONTF):  norm = ivec3(0,0,-1); break;
+    case (BACKF):   norm = ivec3(0,0,1); break;
+    case (TOPF):    norm = ivec3(0,1,0); break;
+    case (BOTTOMF): norm = ivec3(0,-1,0); break;
+    case (RIGHTF):  norm = ivec3(1,0,0); break;
+    case (LEFTF):   norm = ivec3(-1,0,0); break;
+  }
+  ivec3 corner = side1+side2-norm;
+  //std::cout << to_string(side1) << to_string(side2) << to_string(norm) << to_string(corner)<< "\n";
+
+  ivec3 cornerPos = pos + corner;
+  ivec3 side1Pos = pos + side1;
+  ivec3 side2Pos = pos + side2;
+  //std::cout << to_string(pos) <<to_string(side1Pos) << to_string(side2Pos) << to_string(cornerPos) << "\n";
+  bool cornerOpacity = (OPAQUE==parent->blockVisibleTypeOOB(cornerPos.x,cornerPos.y,cornerPos.z));
+  bool side1Opacity = (OPAQUE==parent->blockVisibleTypeOOB(side1Pos.x,side1Pos.y,side1Pos.z));
+  bool side2Opacity = (OPAQUE==parent->blockVisibleTypeOOB(side2Pos.x,side2Pos.y,side2Pos.z));
+
+  if(side1Opacity && side2Opacity)
+  {
+    return FULLCOVER;
+  }
+  //std::cout << (side1Opacity+side2Opacity+cornerOpacity) << "\n";
+  return static_cast<AmbientOcclusion> (side1Opacity+side2Opacity+cornerOpacity);
+}
+
+inline int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face, TextureSides top, TextureSides right, char* AOvalue)
 {
   std::shared_ptr<std::vector<float>> curBuffer;
   if(renderType == OPAQUE)
@@ -208,8 +329,22 @@ inline int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face,
   curBuffer->push_back(pos.y);
   curBuffer->push_back(pos.z);
 
+  AmbientOcclusion ao = getAO(curLocalPos,face,top,right);
+  *AOvalue = ao;
   //Add the normal and texture ids
-  char normandtex = face | top | right;
+  //std::cout << ao << "\n";
+  //ao = NOAO;
+  char compactFace;
+  switch(face)
+  {
+    case (FRONTF):   compactFace = 0; break;
+    case (BACKF):    compactFace = 1; break;
+    case (TOPF):     compactFace = 2; break;
+    case (BOTTOMF):  compactFace = 3; break;
+    case (RIGHTF):   compactFace = 4; break;
+    case (LEFTF):    compactFace = 5; break;
+  }
+  char normandtex = compactFace | (ao << 3)| top | right;
   char texId = curBlockid;
   char xtextcount = xdist;
   char ytextcount = ydist;
@@ -240,8 +375,8 @@ inline void BSP::addIndices(RenderType renderType,int index1, int index2, int in
   curBuffer->push_back(index3);
 
   //Add the second triangle of the square
-  curBuffer->push_back(index2);
   curBuffer->push_back(index4);
+  curBuffer->push_back(index1);
   curBuffer->push_back(index3);
 }
 
@@ -263,6 +398,7 @@ void BSP::addBlock(int x, int y, int z, char id)
 
 inline void BSP::delBlock(int x, int y, int z)
 {
+  std::cout << "destroying block" << x << ":" << y << ":" << z << "\n";
   worldArray.set(x,y,z,0);
 }
 
@@ -271,8 +407,7 @@ inline uchar BSP::getBlock(int x, int y, int z)
   return worldArray.get(x,y,z);
 }
 
-void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>  curLeftChunk,std::shared_ptr<BSPNode>  curTopChunk,
-                       std::shared_ptr<BSPNode>  curBottomChunk,std::shared_ptr<BSPNode>  curFrontChunk,std::shared_ptr<BSPNode>  curBackChunk)
+void BSP::build()
 {
   oVerticesBuffer->clear();
   oIndicesBuffer->clear();
@@ -300,13 +435,14 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          bool frontNeigh = false;
          bool backNeigh = false;
 
-         bool defaultNull = false;
+         bool defaultNull = true;
+
 
          if(x+1 >= CHUNKSIZE)
          {
-           if(curRightChunk != NULL && renderType == curRightChunk->blockVisibleType(0,y,z) )
+           if(parent->rightChunk != NULL)
            {
-             rightNeigh = true;
+             if(renderType == parent->rightChunk->blockVisibleType(0,y,z)) rightNeigh = true;
            }
            else if(defaultNull) rightNeigh = true;
          }
@@ -314,9 +450,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(x-1 < 0)
          {
-           if(curLeftChunk != NULL && renderType == curLeftChunk->blockVisibleType(CHUNKSIZE-1,y,z))
+           if(parent->leftChunk != NULL)
            {
-             leftNeigh = true;
+             if(renderType == parent->leftChunk->blockVisibleType(CHUNKSIZE-1,y,z)) leftNeigh = true;
            }
            else if(defaultNull) leftNeigh = true;
          }
@@ -324,9 +460,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(y+1 >= CHUNKSIZE)
          {
-           if(curTopChunk != NULL && renderType == curTopChunk->blockVisibleType(x,0,z))
+           if(parent->topChunk != NULL)
            {
-              topNeigh = true;
+              if(renderType == parent->topChunk->blockVisibleType(x,0,z)) topNeigh = true;
            }
            else if(defaultNull) topNeigh = true;
          }
@@ -334,9 +470,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(y-1 < 0)
          {
-          if(curBottomChunk != NULL && renderType == curBottomChunk->blockVisibleType(x,CHUNKSIZE-1,z))
+          if(parent->bottomChunk != NULL)
           {
-            bottomNeigh = true;
+            if(renderType == parent->bottomChunk->blockVisibleType(x,CHUNKSIZE-1,z)) bottomNeigh = true;
           }
           else if(defaultNull) bottomNeigh = true;
          }
@@ -344,9 +480,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(z+1 >= CHUNKSIZE)
          {
-           if(curBackChunk != NULL && renderType == curBackChunk->blockVisibleType(x,y,0))
+           if(parent->backChunk != NULL)
            {
-             backNeigh = true;
+             if(renderType == parent->backChunk->blockVisibleType(x,y,0))backNeigh = true;
            }
            else if(defaultNull) backNeigh = true;
          }
@@ -354,9 +490,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
 
          if(z-1 < 0)
          {
-           if(curFrontChunk != NULL && renderType == curFrontChunk->blockVisibleType(x,y,CHUNKSIZE-1))
+           if(parent->frontChunk != NULL)
            {
-             frontNeigh = true;
+             if(renderType == parent->frontChunk->blockVisibleType(x,y,CHUNKSIZE-1)) frontNeigh = true;
            }
            else if(defaultNull) frontNeigh = true;
          }
@@ -373,6 +509,9 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
        }
      }
    }
+
+
+
    for(int x = 0; x<CHUNKSIZE;x++)
    {
      for(int z = 0;z<CHUNKSIZE;z++)
@@ -385,11 +524,11 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          float realY = y+CHUNKSIZE*yCoord;
          float realZ = z+CHUNKSIZE*zCoord;
 
-
+         char ao00,ao01,ao11,ao10;
          BlockFace curFace = arrayFaces.get(x,y,z);
          char blockId = getBlock(x,y,z);
          Block tempBlock = ItemDatabase::blockDictionary[blockId];
-
+         curLocalPos = glm::ivec3(x,y,z);
          glm::vec3 topleft, bottomleft,topright,bottomright;
          glm::vec3 tempVec;
          Faces normVec;
@@ -400,202 +539,111 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          {
            char top = 1;
            char right = 1;
+           calcFace(x,y,z,&arrayFaces,&top,&right,blockId,TOPF,glm::ivec3(0,0,1),glm::ivec3(1,0,0));
 
-           arrayFaces.get(x,y,z).delFace(TOPF);
-           while(x+right < CHUNKSIZE && getBlock(x+right,y,z) == blockId &&
-                 arrayFaces.get(x+right,y,z).getFace(TOPF))
-           {
-             arrayFaces.get(x+right,y,z).delFace(TOPF);
-             right +=1;
-           }
-
-           while(z+top < CHUNKSIZE && getBlock(x,y,z+top) == blockId
-                 && arrayFaces.get(x,y,z+top).getFace(TOPF))
-           {
-             bool clearRow = true;
-             for(int i=0;i<right;i++)
-             {
-               if(getBlock(x+i,y,z+top) != blockId || !arrayFaces.get(x+i,y,z+top).getFace(TOPF) ) clearRow = false;
-             }
-
-             if(clearRow)
-             {
-               for(int i=0;i<right;i++)
-               {
-                 arrayFaces.get(x+i,y,z+top).delFace(TOPF);
-               }
-               top += 1;
-             }
-             else break;
-           }
-
-
-           bottomleft  = glm::vec3(realX+right+offset,realY+1.0f,realZ-offset);
-           bottomright = glm::vec3(realX+right+offset,realY+1.0f,realZ+top+offset);
-           topleft     = glm::vec3(realX-offset,realY+1.0f,realZ-offset);
-           topright    = glm::vec3(realX-offset,realY+1.0f,realZ+top+offset);
+           bottomright  = glm::vec3(realX+right+offset,realY+1.0f,realZ-offset);
+           topright = glm::vec3(realX+right+offset,realY+1.0f,realZ+top+offset);
+           bottomleft     = glm::vec3(realX-offset,realY+1.0f,realZ-offset);
+           topleft    = glm::vec3(realX-offset,realY+1.0f,realZ+top+offset);
 
            normVec = TOPF;
-           xdist = right;
-           ydist = top;
+           xdist = top;
+           ydist = right;
            curBlockid = tempBlock.getTop();
 
-           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
-           int index3 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
-           int index2 = addVertex(renderType,topright,normVec,TOP,RIGHT);
-           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT,&ao10);
+           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT,&ao11);
+           int index2 = addVertex(renderType,topleft,normVec,TOP,LEFT,&ao01);
+           int index1 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT,&ao00);
+           if(ao00 + ao11 > ao01 + ao10)
+           {
+             addIndices(renderType,index2,index3,index4,index1);
 
+           }
+           else addIndices(renderType,index1,index2,index3,index4);
 
-           addIndices(renderType,index1,index2,index3,index4);
          }
 
          if(curFace.getFace(BOTTOMF))
          {
            char top = 1;
            char right = 1;
-
-           arrayFaces.get(x,y,z).delFace(BOTTOMF);
-
-
-           while(x+right < CHUNKSIZE && getBlock(x+right,y,z) == blockId &&
-                 arrayFaces.get(x+right,y,z).getFace(BOTTOMF))
-           {
-             arrayFaces.get(x+right,y,z).delFace(BOTTOMF);
-             right +=1;
-           }
-
-           while(z+top < CHUNKSIZE && getBlock(x,y,z+top) == blockId
-                 && arrayFaces.get(x,y,z+top).getFace(BOTTOMF))
-           {
-             bool clearRow = true;
-             for(int i=0;i<right;i++)
-             {
-               if(getBlock(x+i,y,z+top) != blockId || !arrayFaces.get(x+i,y,z+top).getFace(BOTTOMF) ) clearRow = false;
-             }
-
-             if(clearRow)
-             {
-               for(int i=0;i<right;i++)
-               {
-                 arrayFaces.get(x+i,y,z+top).delFace(BOTTOMF);
-               }
-               top += 1;
-             }
-             else break;
-           }
+           calcFace(x,y,z,&arrayFaces,&top,&right,blockId,BOTTOMF,glm::ivec3(0,0,1),glm::ivec3(1,0,0));
 
            topleft     = glm::vec3(realX-offset,realY,realZ-offset);
-           bottomleft  = glm::vec3(realX+right+offset,realY,realZ-offset);
-           topright    = glm::vec3(realX-offset,realY,realZ+top+offset);
+           topright  = glm::vec3(realX+right+offset,realY,realZ-offset);
+           bottomleft    = glm::vec3(realX-offset,realY,realZ+top+offset);
            bottomright = glm::vec3(realX+right+offset,realY,realZ+top+offset);
            normVec = BOTTOMF;
            curBlockid = tempBlock.getBottom();
-           xdist = right;
-           ydist = top;
-           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
-           int index2 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
-           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT);
-           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
+           xdist = top;
+           ydist = right;
 
-           addIndices(renderType,index1,index2,index3,index4);
+           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT,&ao11);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT,&ao01);
+           int index2 = addVertex(renderType,topleft,normVec,TOP,LEFT,&ao10);
+           int index1 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT,&ao00);
+
+           if(ao00 + ao11 > ao01 + ao10)
+           {
+             addIndices(renderType,index2,index3,index4,index1);
+
+           }
+           else addIndices(renderType,index1,index2,index3,index4);
          }
 
          if(curFace.getFace(RIGHTF))
          {
            char top = 1;
            char right = 1;
-           arrayFaces.get(x,y,z).delFace(RIGHTF);
+           calcFace(x,y,z,&arrayFaces,&top,&right,blockId,RIGHTF,glm::ivec3(0,1,0),glm::ivec3(0,0,1));
 
-           while(z+right < CHUNKSIZE && getBlock(x,y,z+right) == blockId
-                 && arrayFaces.get(x,y,z+right).getFace(RIGHTF))
-           {
-             arrayFaces.get(x,y,z+right).delFace(RIGHTF);
-             right +=1;
-           }
-
-           while(y+top < CHUNKSIZE && getBlock(x,y+top,z) == blockId
-                 && arrayFaces.get(x,y+top,z).getFace(RIGHTF))
-           {
-             bool clearRow = true;
-             for(int i=0;i<right;i++)
-             {
-               if(getBlock(x,y+top,z+i) != blockId || !arrayFaces.get(x,y+top,z+i).getFace(RIGHTF)) clearRow = false;
-             }
-
-             if(clearRow)
-             {
-               for(int i=0;i<right;i++)
-               {
-                 arrayFaces.get(x,y+top,z+i).delFace(RIGHTF);
-               }
-               top += 1;
-             }
-             else break;
-           }
-           topleft     = glm::vec3(realX+1.0f,realY-offset,realZ-offset);
-           bottomleft  = glm::vec3(realX+1.0f,realY+top+offset,realZ-offset);
-           topright    = glm::vec3(realX+1.0f,realY-offset,realZ+right+offset);
-           bottomright = glm::vec3(realX+1.0f,realY+top+offset,realZ +right+offset);
+           bottomleft     = glm::vec3(realX+1.0f,realY-offset,realZ-offset);
+           topleft  = glm::vec3(realX+1.0f,realY+top+offset,realZ-offset);
+           bottomright    = glm::vec3(realX+1.0f,realY-offset,realZ+right+offset);
+           topright = glm::vec3(realX+1.0f,realY+top+offset,realZ +right+offset);
            normVec = RIGHTF;
            xdist = top;
            ydist = right;
            curBlockid = tempBlock.getRight();
-           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
-           int index2 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
-           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT);
-           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
+           int index1 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT,&ao00);
+           int index2 = addVertex(renderType,topleft,normVec,TOP,LEFT,&ao01);
+           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT,&ao11);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT,&ao10);
 
-           addIndices(renderType,index1,index2,index3,index4);
+           if(ao00 + ao11 > ao01 + ao10)
+           {
+             addIndices(renderType,index2,index3,index4,index1);
+
+           }
+           else addIndices(renderType,index1,index2,index3,index4);
          }
 
          if(curFace.getFace(LEFTF))
          {
-           float top = 1;
-           float right = 1;
-           arrayFaces.get(x,y,z).delFace(LEFTF);
+           char top = 1;
+           char right = 1;
+           calcFace(x,y,z,&arrayFaces,&top,&right,blockId,LEFTF,glm::ivec3(0,1,0),glm::ivec3(0,0,1));
 
-           while(z+right < CHUNKSIZE && getBlock(x,y,z+right) == blockId
-                 && arrayFaces.get(x,y,z+right).getFace(LEFTF))
-           {
-             arrayFaces.get(x,y,z+right).delFace(LEFTF);
-             right +=1;
-           }
-
-           while(y+top < CHUNKSIZE && getBlock(x,y+top,z) == blockId
-                 && arrayFaces.get(x,y+top,z).getFace(LEFTF))
-           {
-             bool clearRow = true;
-             for(int i=0;i<right;i++)
-             {
-               if(getBlock(x,y+top,z+i) != blockId || !arrayFaces.get(x,y+top,z+i).getFace(LEFTF)) clearRow = false;
-             }
-
-             if(clearRow)
-             {
-               for(int i=0;i<right;i++)
-               {
-                 arrayFaces.get(x,y+top,z+i).delFace(LEFTF);
-               }
-               top += 1;
-             }
-             else break;
-           }
-
-
-           topleft     = glm::vec3(realX,realY-offset,realZ-offset);
-           bottomleft  = glm::vec3(realX,realY+top+offset,realZ-offset);
-           topright    = glm::vec3(realX,realY-offset,realZ+right+offset);
-           bottomright = glm::vec3(realX,realY+top+offset,realZ +right+offset);
+           bottomright     = glm::vec3(realX,realY-offset,realZ-offset);
+           topright  = glm::vec3(realX,realY+top+offset,realZ-offset);
+           bottomleft    = glm::vec3(realX,realY-offset,realZ+right+offset);
+           topleft = glm::vec3(realX,realY+top+offset,realZ +right+offset);
            normVec = LEFTF;
            xdist   = top;
            ydist   = right;
            curBlockid = tempBlock.getLeft();
-           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
-           int index3 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
-           int index2 = addVertex(renderType,topright,normVec,TOP,RIGHT);
-           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
+           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT,&ao11);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT,&ao01);
+           int index2 = addVertex(renderType,topleft,normVec,TOP,LEFT,&ao10);
+           int index1 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT,&ao00);
 
-           addIndices(renderType,index1,index2,index3,index4);
+           if(ao00 + ao11 > ao01 + ao10)
+           {
+             addIndices(renderType,index2,index3,index4,index1);
+
+           }
+           else addIndices(renderType,index1,index2,index3,index4);
          }
 
 
@@ -604,113 +652,130 @@ void BSP::build(std::shared_ptr<BSPNode>  curRightChunk,std::shared_ptr<BSPNode>
          {
            char top = 1;
            char right = 1;
+           calcFace(x,y,z,&arrayFaces,&top,&right,blockId,BACKF,glm::ivec3(0,1,0),glm::ivec3(1,0,0));
 
-           arrayFaces.get(x,y,z).delFace(BACKF);
-
-
-           while(x+right < CHUNKSIZE && getBlock(x+right,y,z) == blockId
-                 && arrayFaces.get(x+right,y,z).getFace(BACKF))
-           {
-             arrayFaces.get(x+right,y,z).delFace(BACKF);
-             right +=1;
-           }
-
-           while(y+top < CHUNKSIZE && getBlock(x,y+top,z) == blockId
-                 && arrayFaces.get(x,y+top,z).getFace(BACKF))
-           {
-             bool clearRow = true;
-             for(int i=0;i<right;i++)
-             {
-               if(getBlock(x+i,y+top,z) != blockId || !arrayFaces.get(x+i,y+top,z).getFace(BACKF)) clearRow = false;
-             }
-
-             if(clearRow)
-             {
-               for(int i=0;i<right;i++)
-               {
-                 arrayFaces.get(x+i,y+top,z).delFace(BACKF);
-               }
-               top += 1;
-             }
-             else break;
-           }
-
-           topleft     = glm::vec3(realX-offset,realY-offset,realZ+1.0f);
            bottomleft  = glm::vec3(realX+right+offset,realY-offset,realZ+1.0f);
+           bottomright     = glm::vec3(realX-offset,realY-offset,realZ+1.0f);
            topright    = glm::vec3(realX-offset,realY+top+offset,realZ+1.0f);
-           bottomright = glm::vec3(realX+right+offset,realY+top+offset,realZ+1.0f);
+           topleft = glm::vec3(realX+right+offset,realY+top+offset,realZ+1.0f);
 
            curBlockid = tempBlock.getBack();
            normVec = BACKF;
-           xdist = right;
-           ydist = top;
-           int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
-           int index2 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
-           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT);
-           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
-           addIndices(renderType,index1,index2,index3,index4);
+           xdist = top;
+           ydist = right;
+           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT,&ao11);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT,&ao01);
+           int index2 = addVertex(renderType,topleft,normVec,TOP,LEFT,&ao10);
+           int index1 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT,&ao00);
+           if(ao00 + ao11 > ao01 + ao10)
+           {
+             addIndices(renderType,index2,index3,index4,index1);
+
+           }
+           else addIndices(renderType,index1,index2,index3,index4);
          }
 
 
          if(curFace.getFace(FRONTF))
-          {
-            char top = 1;
-            char right = 1;
-
-            arrayFaces.get(x,y,z).delFace(FRONTF);
-
-
-            while(x+right < CHUNKSIZE && getBlock(x+right,y,z) == blockId &&
-                  arrayFaces.get(x+right,y,z).getFace(FRONTF))
-            {
-              arrayFaces.get(x+right,y,z).delFace(FRONTF);
-              right +=1;
-            }
-
-            while(y+top < CHUNKSIZE && getBlock(x,y+top,z) == blockId
-                  && arrayFaces.get(x,y+top,z).getFace(FRONTF))
-            {
-              bool clearRow = true;
-              for(int i=0;i<right;i++)
-              {
-                if(getBlock(x+i,y+top,z) != blockId || !arrayFaces.get(x+i,y+top,z).getFace(FRONTF) ) clearRow = false;
-              }
-
-              if(clearRow)
-              {
-                for(int i=0;i<right;i++)
-                {
-                  arrayFaces.get(x+i,y+top,z).delFace(FRONTF);
-                }
-                top += 1;
-              }
-              else break;
-            }
-
-            xdist = right;
-            ydist = top;
-            topleft     = glm::vec3(realX-offset,realY-offset,realZ);
-            bottomleft  = glm::vec3(realX+right+offset,realY-offset,realZ);
-            topright    = glm::vec3(realX-offset,realY+top+offset,realZ);
-            bottomright = glm::vec3(realX+right+offset,realY+top+offset,realZ);
-
-            curBlockid = tempBlock.getBack();
-            normVec = FRONTF;
+         {
+           char top,right;
+           top = 1,right =1;
+           calcFace(x,y,z,&arrayFaces,&top,&right,blockId,FRONTF,glm::ivec3(0,1,0),glm::ivec3(1,0,0));
+           xdist = top;
+           ydist = right;
+           bottomleft     = glm::vec3(realX-offset,realY-offset,realZ);
+           topleft    = glm::vec3(realX-offset,realY+top+offset,realZ);
+           topright = glm::vec3(realX+right+offset,realY+top+offset,realZ);
+           bottomright  = glm::vec3(realX+right+offset,realY-offset,realZ);
 
 
-            int index1 = addVertex(renderType,topleft,normVec,TOP,LEFT);
-            int index3 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT);
-            int index2 = addVertex(renderType,topright,normVec,TOP,RIGHT);
-            int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT);
 
-            addIndices(renderType,index1,index2,index3,index4);
+           curBlockid = tempBlock.getFront();
+           normVec = FRONTF;
 
-          }
+
+           int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT,&ao11);
+           int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT,&ao01);
+           int index2 = addVertex(renderType,topleft,normVec,TOP,LEFT,&ao10);
+           int index1 = addVertex(renderType,bottomleft,normVec,BOTTOM,LEFT,&ao00);
+
+           if(ao00 + ao11 > ao01 + ao10)
+           {
+             addIndices(renderType,index2,index3,index4,index1);
+
+           }
+           else addIndices(renderType,index1,index2,index3,index4);
+
+         }
        }
      }
    }
 }
-inline void BSP::setupBufferObjects(RenderType type)
+
+
+
+void BSP::calcFace(const int x, const int y, const int z, Array3D<BlockFace,32>* arrayFaces,
+                   char* outtop, char* outright, char blockId, Faces face,
+                   const glm::ivec3& topVector, const glm::ivec3& rightVector)
+{
+  using namespace glm;
+  AmbientOcclusion bottomleft = getAO(ivec3(x,y,z),face,BOTTOM,LEFT);
+  AmbientOcclusion bottomright = getAO(ivec3(x,y,z),face,BOTTOM,RIGHT);
+  AmbientOcclusion topleft = getAO(ivec3(x,y,z),face,TOP,LEFT);
+  AmbientOcclusion topright = getAO(ivec3(x,y,z),face,TOP,RIGHT);
+  auto checkMatching = [&](glm::ivec3 pos)
+  {
+    return (getBlock(pos.x,pos.y,pos.z) == blockId)
+    && arrayFaces->get(pos.x,pos.y,pos.z).getFace(face)
+    && topleft == getAO(pos,face,TOP,LEFT)
+    && topright == getAO(pos,face,TOP,RIGHT)
+    && bottomright == getAO(pos,face,BOTTOM,RIGHT)
+    && bottomleft == getAO(pos,face,BOTTOM,LEFT);
+
+  };
+
+  arrayFaces->get(x,y,z).delFace(face);
+  glm::ivec3 origin = glm::ivec3(x,y,z);
+  glm::ivec3 r = rightVector;
+  glm::ivec3 rpos = r + origin;
+  while(glm::length(glm::vec3(origin*rightVector + r)) < CHUNKSIZE && checkMatching(rpos))
+  {
+    arrayFaces->get(rpos.x,rpos.y,rpos.z).delFace(face);
+    r += rightVector;
+    rpos += rightVector;
+  }
+
+  glm::ivec3 t =  topVector;
+  glm::ivec3 tpos = glm::ivec3(x,y,z) + t;
+
+  while(glm::length(glm::vec3(origin*topVector+t)) < CHUNKSIZE && checkMatching(tpos))
+  {
+
+    bool clearRow = true;
+    for(int i=0;i<glm::length(glm::vec3(r));i++)
+    {
+      glm::ivec3 rtpos = origin + t + rightVector*i;
+      if(!checkMatching(rtpos)) clearRow = false;
+    }
+
+    if(clearRow)
+    {
+      for(int i=0;i<glm::length(glm::vec3(r));i++)
+      {
+        glm::ivec3 rtpos = origin + t + rightVector*i;
+        arrayFaces->get(rtpos.x,rtpos.y,rtpos.z).delFace(face);
+      }
+      t += topVector;
+      tpos += topVector;
+    }
+    else break;
+  }
+  *outtop = glm::length(glm::vec3(t));
+  *outright = glm::length(glm::vec3(r));
+
+}
+
+void BSP::setupBufferObjects(RenderType type)
 {
   std::shared_ptr<std::vector<float>> curVert;
   std::shared_ptr<std::vector<uint>> curInd;

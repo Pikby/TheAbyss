@@ -6,6 +6,7 @@
 #include <thread>
 #include <chrono>
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
@@ -115,7 +116,7 @@ std::shared_ptr<BSPNode> World::chunkRayCast(const glm::vec3 &pos, const glm::ve
 {
   for(int i =0;i<horzRenderDistance;i++)
   {
-    glm::vec3 curPos = pos + front*i*CHUNKSIZE;
+    glm::vec3 curPos = pos + front*float(i*CHUNKSIZE);
     glm::ivec3 chunkPos = toChunkCoords(curPos);
     glm::ivec3 localPos = toLocalCoords(curPos);
     auto chunk = getChunk(chunkPos);
@@ -400,7 +401,7 @@ void World::delScan(float mainx, float mainy, float mainz)
   }
 }
 
-bool World::chunkExists(int x ,int y, int z) 
+bool World::chunkExists(int x ,int y, int z)
 {
   return BSPmap.exists(x,y,z);
 }

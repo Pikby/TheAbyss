@@ -35,7 +35,7 @@ TARGET = MainEngine/world.cpp MainEngine/main.cpp MainEngine/threads.cpp MainEng
 
 
 
-COBJECTLIST = $(C)settings.o $(C)drawer.o $(C)textureloading.o $(C)main.o $(C)world.o $(C)messenger.o \
+COBJECTLIST = $(C)settings.o $(C)textureloading.o $(C)drawer.o  $(C)main.o $(C)world.o $(C)messenger.o \
 							$(C)objects.o $(C)threads.o \
 							$(C)bsp.o $(C)gui.o $(C)mainchar.o $(C)inputhandling.o \
 							$(C)items.o

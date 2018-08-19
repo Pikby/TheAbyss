@@ -2,8 +2,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../../headers/shaders.h"
-#include <glm/ext.hpp>
-#include <glm/gtx/string_cast.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+//#include <glm/ext.hpp>
+//#include <glm/gtx/string_cast.hpp>
 #include <memory>
 
 class Camera;

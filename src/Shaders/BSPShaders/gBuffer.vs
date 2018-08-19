@@ -1,11 +1,17 @@
 #version 330 core
 layout (location = 0) in vec3 position;
 layout (location = 1) in float packagef;
-out vec2 TexCoord;
-out vec2 TexCells;
-out vec2 TexOrigin;
-out vec3 FinNormal;
-out vec3 FragPos;
+
+out VS_OUT
+{
+  vec2 TexCoord;
+  vec2 TexCells;
+  vec2 TexOrigin;
+  vec3 FinNormal;
+  vec3 FragPos;
+  float AO;
+} vs_out;
+
 
 
 
@@ -16,11 +22,13 @@ uniform int textureAtlasWidth;
 uniform int textureAtlasHeight;
 uniform int cellWidth;
 
+
 void main()
 {
 
   int package = floatBitsToInt(packagef);
-  int norm = ((package >> 24) & 0x3F);
+  int norm = ((package >> 24) & 0x7);
+  int ao = ((package >> 24) & 0x38);
   int texCoord = ((package >> 24) & 0xC0);
   int texId = (package >> 16) & 0xFF;
   int yblocks = (package >> 8) & 0xFF;
@@ -32,33 +40,44 @@ void main()
   float cellHeight = 1.0f/heightOfAtlasInCells;
   vec3 normVec = vec3(0.0f,1.0f,0.0f);
 
-  TexCells.x = xblocks;
-  TexCells.y = yblocks;
+  vs_out.TexCells.x = xblocks;
+  vs_out.TexCells.y = yblocks;
+
+  ao = (ao >> 3);
+  switch(ao)
+  {
+    case(0): vs_out.AO = 1.0; break;
+    case(1): vs_out.AO = 0.3; break;
+    case(2): vs_out.AO = 0.3; break;
+    case(3): vs_out.AO = 0.3; break;
+  }
+
+
   switch(norm)
   {
     //Front
-    case(1<<0):
-      normVec = vec3(1.0f,0.0f,0.0f);
+    case(0):
+      normVec = vec3(0.0f,0.0f,1.0f);
       break;
     //Back
-    case(1<<1):
-      normVec = vec3(-1.0f,0.0f,0.0f);
+    case(1):
+      normVec = vec3(0.0f,0.0f,-1.0f);
       break;
     //Top
-    case(1<<2):
+    case(2):
       normVec = vec3(0.0f,1.0f,0.0f);
       break;
     //Bottom
-    case(1<<3):
+    case(3):
       normVec = vec3(0.0f,-1.0f,0.0f);
       break;
-    //Left
-    case(1<<4):
-      normVec = vec3(0.0f,0.0f,1.0f);
-      break;
     //Right
-    case(1<<5):
-      normVec = vec3(0.0f,0.0f,-1.0f);
+    case(4):
+      normVec = vec3(1.0f,0.0f,0.0f);
+      break;
+    //Left
+    case(5):
+      normVec = vec3(-1.0f,0.0f,0.0f);
       break;
   }
 
@@ -67,22 +86,22 @@ void main()
   origin.x = (texId % widthOfAtlasInCells)*cellWidth;
   origin.y = (texId/widthOfAtlasInCells)*cellHeight;
 
-  TexOrigin = origin;
+  vs_out.TexOrigin = origin;
   //origin = vec2(0.0f,0.0f);
   if((texCoord & (1<<6)) != 0)
   {
-    TexCoord.y = origin.y + cellHeight;
+    vs_out.TexCoord.y = origin.y + cellHeight;
   }
-  else TexCoord.y = origin.y;
+  else vs_out.TexCoord.y = origin.y;
 
   if((texCoord & (1<<7)) != 0)
   {
-    TexCoord.x = origin.x + cellWidth;
+    vs_out.TexCoord.x = origin.x + cellWidth;
   }
-  else TexCoord.x = origin.x;
+  else vs_out.TexCoord.x = origin.x;
 
-  FinNormal = normVec;
-  FragPos = position;
+  vs_out.FinNormal = normVec;
+  vs_out.FragPos = position;
 
   gl_Position = projection*view*vec4(position, 1.0f);
 }

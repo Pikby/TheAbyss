@@ -1,10 +1,11 @@
 #define GLEW_STATIC
+#define GLM_ENABLE_EXPERIMENTAL
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/ext.hpp>
+//#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 #include <random>
 #include <limits>
@@ -66,7 +67,9 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   blockShader.setInt("cellWidth",128);
 
 
+  //gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.gs","../src/Shaders/BSPShaders/gBuffer.vs");
   gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.vs");
+
   gBufferShader.use();
   gBufferShader.setInt("textureAtlasWidth",384);
   gBufferShader.setInt("textureAtlasHeight",128);
@@ -161,7 +164,8 @@ void Drawer::initializeSSAO()
   SSAOBlurShader.setInt("ssaoInput",0);
   std::uniform_real_distribution<float> randomFloats(0.0, 1.0); // random floats between 0.0 - 1.0
   std::default_random_engine generator;
-  for (unsigned int i = 0; i < 64; ++i)
+  int kernelSize = 16;
+  for (unsigned int i = 0; i < kernelSize; ++i)
   {
       glm::vec3 sample(
           randomFloats(generator) * 2.0 - 1.0,
@@ -170,7 +174,7 @@ void Drawer::initializeSSAO()
       );
       sample  = glm::normalize(sample);
       sample *= randomFloats(generator);
-      float scale = (float)i / 64.0;
+      float scale = (float)i / kernelSize;
 
       scale = lerp(0.1f, 1.0f, scale * scale);
       sample *= scale;
@@ -215,9 +219,11 @@ void Drawer::initializeSSAO()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOColorBufferBlur,0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  SSAOShader.use();
+  for (unsigned int i = 0; i < 64; ++i)
+     SSAOShader.setVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
 }
 
-void renderQuad();
 void Drawer::renderSSAO()
 {
   glViewport(0,0,screenWidth,screenHeight);
@@ -225,9 +231,6 @@ void Drawer::renderSSAO()
     glClear(GL_COLOR_BUFFER_BIT);
     SSAOShader.use();
     SSAOShader.setMat4("view",viewMat);
-    SSAOShader.setMat4("projection",viewProj);
-    for (unsigned int i = 0; i < 64; ++i)
-       SSAOShader.setVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,gPosition);
     glActiveTexture(GL_TEXTURE1);
@@ -259,7 +262,9 @@ void Drawer::renderGBuffer()
   shader->use();
   shader->setMat4("view", viewMat);
   shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+  //lPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
   drawTerrain(shader,chunksToDraw);
+  //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
 
@@ -358,7 +363,7 @@ void Drawer::setLights(Shader* shader)
 
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
-void renderQuad()
+void Drawer::renderQuad()
 {
     if (quadVAO == 0)
     {
@@ -419,7 +424,7 @@ void Drawer::renderDirectionalShadows()
     }
     lightTarget /= 8;
     glm::vec3 sunAngle = dirLight.direction;
-    lightPos = lightTarget -(sunAngle*(distToSun));
+    lightPos = lightTarget -(sunAngle*((float)distToSun));
     objList[x]->setPosition(lightPos);
     objList[x]->setColor(glm::vec3(0.5f,0.5f,0.5f));
     objList[x]->updateModelMat();
@@ -567,20 +572,6 @@ void Drawer::drawFinal()
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBlitFramebuffer(0, 0, screenWidth, screenHeight, 0, 0, screenWidth, screenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
-
-  /*
-
-
-  shader->setMat4("view", viewMat);
-  shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-
-  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-
-  drawTerrain(shader,chunksToDraw);
-
-  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-  */
-
 }
 
 void Drawer::updateViewProjection(float camZoom,float near,float far)
@@ -601,6 +592,8 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
   blockShader.setMat4("projection",viewProj);
   gBufferShader.use();
   gBufferShader.setMat4("projection",viewProj);
+  SSAOShader.use();
+  SSAOShader.setMat4("projection",viewProj);
 }
 
 void Drawer::updateCameraMatrices(Camera* cam)
@@ -622,7 +615,7 @@ void Drawer::calculateFrustrum(glm::vec3* arr,float near, float far)
   float buffer = 0;
   float fovH = glm::radians(((camZoomInDegrees+buffer)/2)*ar);
   float fovV = glm::radians((camZoomInDegrees+buffer)/2);
-  glm::vec3 curPos = viewPos - viewFront*(CHUNKSIZE*2);
+  glm::vec3 curPos = viewPos - viewFront*((float)CHUNKSIZE*2);
   glm::vec3 rightaxis = glm::rotate(viewFront,fovH,viewUp);
   glm::vec3 toprightaxis = glm::rotate(rightaxis,fovV,viewRight);
   glm::vec3 bottomrightaxis = glm::rotate(rightaxis,-fovV,viewRight);

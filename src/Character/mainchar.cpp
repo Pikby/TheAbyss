@@ -39,7 +39,7 @@ MainChar::MainChar(float x, float y, float z, World* world )
   deltaz = 0;
   moveSpeed = 1.0f;
   curWorld = world;
-  mainCam = Camera(glm::vec3(xpos,ypos,zpos));
+  mainCam = Camera(glm::vec3((float)xpos,(float)ypos,(float)zpos));
   screenWidth = curWorld->drawer.screenWidth;
   screenHeight = curWorld->drawer.screenHeight;
   userName = Settings::get("userName");

@@ -4,11 +4,15 @@ layout (location = 0) out vec3 gPosition;
 layout (location = 1) out vec3 gNormal;
 layout (location = 2) out vec4 gColorSpec;
 
-in vec2 TexCoord;
-in vec3 FinNormal;
-in vec3 FragPos;
-in vec2 TexCells;
-in vec2 TexOrigin;
+in VS_OUT
+{
+  vec2 TexCoord;
+  vec2 TexCells;
+  vec2 TexOrigin;
+  vec3 FinNormal;
+  vec3 FragPos;
+  float AO;
+} vs_out;
 
 uniform sampler2D curTexture;
 uniform vec3 objectColor;
@@ -17,8 +21,8 @@ uniform vec3 objectColor;
 vec3 getTexture()
 {
   vec2 temp;
-  temp.x = mod(TexCoord.x*TexCells.x,(1.0f/3.0f))+TexOrigin.x;
-  temp.y = mod(TexCoord.y*TexCells.y,1)+TexOrigin.y;
+  temp.x = mod(vs_out.TexCoord.x*vs_out.TexCells.x,(1.0f/3.0f))+vs_out.TexOrigin.x;
+  temp.y = mod(vs_out.TexCoord.y*vs_out.TexCells.y,1)+vs_out.TexOrigin.y;
   return texture(curTexture,temp).rgb;
 }
 
@@ -26,7 +30,7 @@ void main()
 {
   vec3 objColor = objectColor;
   vec3 finColor = objColor*getTexture();
-  gPosition = FragPos;
-  gNormal = FinNormal;
-  gColorSpec = vec4(finColor,1);
+  gPosition = vs_out.FragPos;
+  gNormal = vs_out.FinNormal;
+  gColorSpec = vec4(finColor,vs_out.AO);
 }

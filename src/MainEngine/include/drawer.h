@@ -79,6 +79,7 @@ private:
   void calculateFrustrum(glm::vec3* arr, float near, float far);
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
   void initializeSSAO();
+  void renderQuad();
 public:
   void renderSSAO();
   std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> chunksToDraw;

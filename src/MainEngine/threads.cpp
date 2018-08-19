@@ -111,7 +111,7 @@ void draw()
       BSP::geometryChanged = false;
     }
 
-    newWorld->drawer.renderSSAO();
+    //newWorld->drawer.renderSSAO();
     newWorld->drawer.drawFinal();
     //newWorld->drawer.drawObjects();
     //newWorld->drawer.drawPlayers();

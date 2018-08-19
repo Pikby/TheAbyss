@@ -10,10 +10,12 @@ class Array3D
     }
     T &get(int x,int y, int z)
     {
+      if(x >= N || y >= N || z >= N) std::cout << "OUTOF ARRAY RANGE" << x << ":" << y << ":" << z << "\n";
       return array[x*N*N+z*N+y];
     }
     void set(int x,int y, int z, T value)
     {
+      if(x >= N || y >= N || z >= N) std::cout << "OUTOF ARRAY RANGE" << x << ":" << y << ":" << z << "\n";
       array[x*N*N+z*N+y] = value;
     }
     T &operator[](int i)
