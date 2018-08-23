@@ -264,10 +264,10 @@ void Messenger::sendMessage(const void* buffer, int length)
 
 void Messenger::createChunkRequest(int x, int y, int z)
 {
-  if(!requestMap.exists(x,y,z))
+  if(!requestMap.exists(glm::ivec3(x,y,z)))
   {
     OutMessage tmp = {0,0,0,0,x,y,z,0};
     messageQueue.push(tmp);
-    requestMap.add(x,y,z,true);
+    requestMap.add(glm::ivec3(x,y,z),true);
   }
 }

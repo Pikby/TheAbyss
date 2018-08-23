@@ -47,8 +47,8 @@ void main()
   switch(ao)
   {
     case(0): vs_out.AO = 1.0; break;
-    case(1): vs_out.AO = 0.3; break;
-    case(2): vs_out.AO = 0.3; break;
+    case(1): vs_out.AO = 0.8; break;
+    case(2): vs_out.AO = 0.5; break;
     case(3): vs_out.AO = 0.3; break;
   }
 

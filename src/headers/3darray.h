@@ -8,15 +8,15 @@ class Array3D
     {
       memset(array,0,sizeof(array));
     }
-    T &get(int x,int y, int z)
+    T &get(const glm::ivec3 &pos)
     {
-      if(x >= N || y >= N || z >= N) std::cout << "OUTOF ARRAY RANGE" << x << ":" << y << ":" << z << "\n";
-      return array[x*N*N+z*N+y];
+      //if(x >= N || y >= N || z >= N) std::cout << "OUTOF ARRAY RANGE" << x << ":" << y << ":" << z << "\n";
+      return array[pos.x*N*N+pos.z*N+pos.y];
     }
-    void set(int x,int y, int z, T value)
+    void set(const glm::ivec3 &pos, T value)
     {
-      if(x >= N || y >= N || z >= N) std::cout << "OUTOF ARRAY RANGE" << x << ":" << y << ":" << z << "\n";
-      array[x*N*N+z*N+y] = value;
+      //if(x >= N || y >= N || z >= N) std::cout << "OUTOF ARRAY RANGE" << x << ":" << y << ":" << z << "\n";
+      array[pos.x*N*N+pos.z*N+pos.y] = value;
     }
     T &operator[](int i)
     {

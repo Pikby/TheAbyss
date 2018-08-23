@@ -43,6 +43,7 @@ GUIRenderer::GUIRenderer(int Width, int Height, std::string userName)
   CEGUI::System::getSingleton().getDefaultGUIContext().getMouseCursor().setDefaultImage("TaharezLook/MouseArrow");
   WindowManager& wmgr = WindowManager::getSingleton();
   chatConsole.createChatWindow();
+
 }
 
 void GUIRenderer::openInventoryGUI()
@@ -65,6 +66,7 @@ void GUIRenderer::createMenuScreens()
 {
   using namespace CEGUI;
   gameWindow = WindowManager::getSingleton().loadLayoutFromFile( "game.layout" );
+  //gameWindow->hide();
   System::getSingleton().getDefaultGUIContext().setRootWindow(gameWindow);
   invWindow = WindowManager::getSingleton().loadLayoutFromFile( "inventory.layout" );
   invWindow->deactivate();

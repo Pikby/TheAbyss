@@ -5,9 +5,6 @@ typedef unsigned char uchar;
 #include "../../headers/3dmap.h"
 #include "messages.h"
 
-
-
-
 class Messenger
 {
 private:

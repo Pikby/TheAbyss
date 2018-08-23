@@ -113,17 +113,17 @@ void MainChar::addCharacterToChat(int key)
 
 void MainChar::update()
 {
-  if(!curWorld->blockExists(floor(xpos+deltax),floor(ypos),floor(zpos)))
+  if(!curWorld->blockExists(glm::ivec3(floor(xpos+deltax),floor(ypos),floor(zpos))))
   {
     xpos = xpos + deltax;
   }
 
-  if(!curWorld->blockExists(floor(xpos),floor(ypos),floor(zpos+deltaz)))
+  if(!curWorld->blockExists(glm::ivec3(floor(xpos),floor(ypos),floor(zpos+deltaz))))
   {
     zpos = zpos + deltaz;
   }
 
-  if(!curWorld->blockExists(floor(xpos),floor(ypos+deltay),floor(zpos)))
+  if(!curWorld->blockExists(glm::ivec3(floor(xpos),floor(ypos+deltay),floor(zpos))))
   {
     ypos = ypos + deltay;
     grounded = false;
@@ -131,7 +131,7 @@ void MainChar::update()
   deltax /= 5;
   deltay /= 5;
   deltaz /= 5;
-  mainCam.setPosition(xpos,ypos,zpos);
+  mainCam.setPosition((float)xpos,(float)ypos,(float)zpos);
   gui.chatConsole.update();
 
   static double lastFrame = 0;
@@ -167,12 +167,12 @@ void MainChar::moveBackward()
   deltaz += -sin(mainCam.yaw*PI/180.0)*moveSpeed;
 }
 
-void MainChar::setPosition(float x, float y, float z)
+void MainChar::setPosition(const glm::vec3 &pos)
 {
-  if(sqrt(pow(x-xpos,2)+pow(y-ypos,2)+pow(z-zpos,2) < 64*64)) return;
-  xpos = x;
-  ypos = y;
-  zpos = z;
+  if(pow(pos.x-xpos,2)+pow(pos.y-ypos,2)+pow(pos.z-zpos,2) < 64*64) return;
+  xpos = pos.x;
+  ypos = pos.y;
+  zpos = pos.z;
 }
 
 void MainChar::moveDown()
@@ -198,7 +198,7 @@ void MainChar::destroyBlock()
   std::cout << "Destroying blocks\n";
   curWorld->messenger.createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
 
-}
+} 
 void MainChar::addBlock(int id)
 {
     glm::vec4 block = curWorld->rayCast(mainCam.position,mainCam.front,reach);

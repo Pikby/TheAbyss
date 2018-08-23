@@ -122,14 +122,14 @@ void draw()
       std::cout << "OPENGL ERROR" << error << ":" << std::hex << error << std::dec << "\n";
 
     }
-
+    glEnable(GL_BLEND);
     glm::mat4 view = mainCam->getViewMatrix();
     skyBox.draw(&view);
     CEGUI::System::getSingleton().renderAllGUIContexts();
     glfwSwapBuffers(window);
 
   }
-  std::cout << "exiting draw thread \n";
+
 }
 
 void render()
@@ -151,7 +151,7 @@ void render()
     currentFrame = glfwGetTime();
     newWorld->renderWorld(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
   }
-  std::cout << "exiting render thread \n";
+
 
 }
 
@@ -174,7 +174,7 @@ void del()
     currentFrame = glfwGetTime();
     newWorld->delScan(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
   }
-  std::cout << "exiting delete thread \n";
+
 }
 
 void logic()
@@ -235,7 +235,7 @@ void send()
     }
   }
   newWorld->messenger.requestExit();
-  std::cout << "exiting server send thread\n";
+
 }
 
 void receive()
@@ -263,27 +263,27 @@ void receive()
           //std::thread chunkThread(&World::generateChunkFromString,newWorld,msg.x.i,msg.y.i,msg.z.i,buf);
           //chunkThread.detach();
 
-          newWorld->generateChunkFromString(msg.x.i,msg.y.i,msg.z.i,buf);
+          newWorld->generateChunkFromString(glm::ivec3(msg.x.i,msg.y.i,msg.z.i),buf);
         }
         break;
       case(1):
-        newWorld->delBlock(msg.x.i,msg.y.i,msg.z.i);
+        newWorld->delBlock(glm::ivec3(msg.x.i,msg.y.i,msg.z.i));
         break;
       case(2):
-        newWorld->addBlock(msg.x.i,msg.y.i,msg.z.i,msg.ext1);
+        newWorld->addBlock(glm::ivec3(msg.x.i,msg.y.i,msg.z.i),msg.ext1);
         break;
       case(10):
         //mainCharacter->(msg.x,msg.y,msg.z);
         break;
       case(90):
-        newWorld->addPlayer(msg.x.f,msg.y.f,msg.z.f,msg.ext1);
+        newWorld->addPlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
         break;
       case(91):
         if(msg.ext1 == newWorld->mainId)
         {
-          mainCharacter->setPosition(msg.x.f,msg.y.f,msg.z.f);
+          mainCharacter->setPosition(glm::vec3(msg.x.f,msg.y.f,msg.z.f));
         }
-        else newWorld->movePlayer(msg.x.f,msg.y.f,msg.z.f,msg.ext1);
+        else newWorld->movePlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
         break;
       case(99):
         newWorld->removePlayer(msg.ext1);
@@ -316,7 +316,6 @@ void receive()
         std::cout << "Receiving unknown opcode " << (int)msg.opcode << "\n";
     }
   }
-  std::cout << "Exiting receive thread \n";
 }
 
 void build(char threadNumb)
@@ -325,5 +324,4 @@ void build(char threadNumb)
   {
     newWorld->buildWorld(threadNumb);
   }
-  std::cout << "exiting build thread #" << threadNumb << "\n";
 }

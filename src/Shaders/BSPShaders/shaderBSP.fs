@@ -45,11 +45,13 @@ uniform PointLight pointLights[20];
 uniform int numbOfLights;
 uniform int numbOfCascadedShadows;
 
-vec3 objColor = texture(gColorSpec, TexCoords).rgb;
+vec4 objColorAO = texture(gColorSpec, TexCoords).rgba;
+vec3 objColor = objColorAO.rgb;
+float AO = objColorAO.a;
 vec3 normal = texture(gNormal, TexCoords).rgb;
 vec3 fragPosition = texture(gPosition, TexCoords).rgb;
 float fragDepth = distance(fragPosition,viewPos);
-float AO = texture(gColorSpec, TexCoords).a;
+
 
 int findCorrectShadowMap()
 {
@@ -134,18 +136,6 @@ void main()
     float shadow = 1;
     //shadow = 1-calcDirShadows();
 
-
-    //vec3 result = calcDirectionalLight(1.0f) * objectColor;
-    //shadow = 1-calcDirShadows();
-    //shadow = 1.0f;
-    //color = calcDirectionalLight(shadow);
-    // /color *= objectColor;
-    /*
-    for(int i=0;i<numbOfLights;i++)
-    {
-      result += calcPointLights(pointLights[i],shadow);
-    }
-    */
 
 
 /*

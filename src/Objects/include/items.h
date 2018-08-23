@@ -62,6 +62,11 @@ public:
 
 #define BLOCKRES 128
 
+
+enum Faces {FRONTF = 1 << 0, BACKF = 1 << 1,
+            TOPF = 1 << 2, BOTTOMF = 1 << 3,
+            RIGHTF = 1 << 4, LEFTF = 1 << 5};
+
 class Block
 {
 public:
@@ -93,6 +98,19 @@ public:
       std::cout << (int) texArray[i] << ",";
     }
     std::cout << "\n";
+  }
+
+  uchar getFace(Faces face)
+  {
+    switch(face)
+    {
+      case(FRONTF): return getFront(); break;
+      case(BACKF): return getBack(); break;
+      case(BOTTOMF): return getBottom(); break;
+      case(TOPF): return getTop(); break;
+      case(LEFTF): return getLeft(); break;
+      case(RIGHTF): return getRight(); break;
+    }
   }
 
   uchar getTop()

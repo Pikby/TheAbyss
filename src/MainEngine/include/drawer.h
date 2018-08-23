@@ -40,12 +40,6 @@ class Drawer
 {
 private:
   uint glTexture;
-  uint SSAOTexture;
-  std::vector<glm::vec3> ssaoNoise;
-  std::vector<glm::vec3> ssaoKernel;
-  uint SSAOFBO, SSAOColorBuffer;
-  uint SSAOBlurFBO, SSAOColorBufferBlur;
-  Shader SSAOShader,SSAOBlurShader;
   const char* texture;
 
   int vertRenderDistance, horzRenderDistance,renderBuffer;

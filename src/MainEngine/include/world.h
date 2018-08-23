@@ -46,46 +46,38 @@ public:
   std::string worldName;
 
   void calculateViewableChunks();
-  bool blockExists(int x, int y, int z);
-  bool blockExists(glm::vec3 pos)
+  bool blockExists(const glm::ivec3 &pos);
+  bool blockExists(const glm::vec3 &pos)
   {
-    return blockExists((int)floor(pos.x),(int)floor(pos.y),(int)floor(pos.z));
+    return blockExists(glm::ivec3(floor(pos)));
   }
-  bool blockExists(double x,double y, double z)
-  {
-    return blockExists((int)floor(x),(int)floor(y),(int)floor(z));
-  }
-  int anyExists(glm::vec3 pos);
-  bool entityExists(glm::vec3 pos);
-  bool entityExists(float x, float y, float z);
+  int anyExists(const glm::vec3 &pos);
+  bool entityExists(const glm::vec3 &pos);
 
-  std::shared_ptr<BSPNode> getChunk(glm::ivec3 vec)
-  {
-    return getChunk(vec.x,vec.y,vec.z);
-  }
-  std::shared_ptr<BSPNode> getChunk(int x, int y, int z);
+  std::shared_ptr<BSPNode> getChunk(const glm::ivec3 &pos);
   std::shared_ptr<BSPNode> chunkRayCast(const glm::vec3 &pos, const glm::vec3 &front);
   glm::vec4 rayCast(glm::vec3 pos, glm::vec3 front, int max);
 
   void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
+  void addToBuildQueueFront(std::shared_ptr<BSPNode> curNode);
   World(int numbBuildThreads,int width,int height);
 
   void renderWorld(float mainx, float mainy, float mainz);
 
   void buildWorld(int threadNumb);
-  bool chunkExists(int x, int y, int z);
-  void addPlayer(float x, float y, float z, uchar id);
+  bool chunkExists(const glm::ivec3 &pos);
+  void addPlayer(const glm::vec3 &pos, uchar id);
   void removePlayer(uchar id);
-  void movePlayer(float x,float y, float z, uchar id);
+  void movePlayer(const glm::vec3 &pos, uchar id);
 
-  void delBlock(int x, int y, int z);
-  void delChunk(int x, int y, int z);
+  void delBlock(const glm::ivec3 &pos);
+  void delChunk(const glm::ivec3 &pos);
   void deleteChunksFromQueue();
   void findChunkToRequest(const float mainx, const float mainy, const float mainz);
-  void addBlock(int x, int y, int z, int id);
-  void updateBlock(int x, int y, int z);
+  void addBlock(const glm::ivec3 &pos, uchar id);
+  void updateBlock(const glm::ivec3 &pos);
   void delScan(float mainx, float mainy, float mainz);
-  void generateChunkFromString(int chunkx, int chunky, int chunkz,const char* val);
+  void generateChunkFromString(const glm::ivec3 &pos,const char* val);
 
 };
 

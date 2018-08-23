@@ -22,7 +22,7 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   glBindTexture(GL_TEXTURE_2D, glTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   //Load and bind the texture from the class
   int texWidth, texHeight, nrChannels;
@@ -130,7 +130,6 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
       std::cout << "Framebuffer not complete!" << std::endl;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  initializeSSAO();
 
 }
 
@@ -147,110 +146,6 @@ void Drawer::addCube(Cube newCube)
   objList.push_back(std::make_shared<Cube>(newCube));
 }
 
-float lerp(float a, float b, float f)
-{
-    return a + f * (b - a);
-}
-void Drawer::initializeSSAO()
-{
-  SSAOShader = Shader("../src/Shaders/SSAOShaders/SSAO.fs","../src/Shaders/SSAOShaders/SSAO.vs");
-  SSAOShader.use();
-  SSAOShader.setInt("gPosition",0);
-  SSAOShader.setInt("gNormal",1);
-  SSAOShader.setInt("texNoise",2);
-
-  SSAOBlurShader = Shader("../src/Shaders/SSAOShaders/SSAOBlur.fs","../src/Shaders/SSAOShaders/SSAOBlur.vs");
-  SSAOBlurShader.use();
-  SSAOBlurShader.setInt("ssaoInput",0);
-  std::uniform_real_distribution<float> randomFloats(0.0, 1.0); // random floats between 0.0 - 1.0
-  std::default_random_engine generator;
-  int kernelSize = 16;
-  for (unsigned int i = 0; i < kernelSize; ++i)
-  {
-      glm::vec3 sample(
-          randomFloats(generator) * 2.0 - 1.0,
-          randomFloats(generator) * 2.0 - 1.0,
-          randomFloats(generator)
-      );
-      sample  = glm::normalize(sample);
-      sample *= randomFloats(generator);
-      float scale = (float)i / kernelSize;
-
-      scale = lerp(0.1f, 1.0f, scale * scale);
-      sample *= scale;
-      ssaoKernel.push_back(sample);
-  }
-  for (unsigned int i = 0; i < 16; i++)
-  {
-      glm::vec3 noise(
-          randomFloats(generator) * 2.0 - 1.0,
-          randomFloats(generator) * 2.0 - 1.0,
-          0.0f);
-      ssaoNoise.push_back(noise);
-  }
-  glGenTextures(1, &SSAOTexture);
-  glBindTexture(GL_TEXTURE_2D, SSAOTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-
-  glGenFramebuffers(1, &SSAOFBO);
-  glBindFramebuffer(GL_FRAMEBUFFER, SSAOFBO);
-
-  glGenTextures(1, &SSAOColorBuffer);
-  glBindTexture(GL_TEXTURE_2D, SSAOColorBuffer);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOColorBuffer, 0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-  glGenFramebuffers(1, &SSAOBlurFBO);
-  glBindFramebuffer(GL_FRAMEBUFFER, SSAOBlurFBO);
-  glGenTextures(1, &SSAOColorBufferBlur);
-  glBindTexture(GL_TEXTURE_2D, SSAOColorBufferBlur);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOColorBufferBlur,0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  SSAOShader.use();
-  for (unsigned int i = 0; i < 64; ++i)
-     SSAOShader.setVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
-}
-
-void Drawer::renderSSAO()
-{
-  glViewport(0,0,screenWidth,screenHeight);
-  glBindFramebuffer(GL_FRAMEBUFFER, SSAOFBO);
-    glClear(GL_COLOR_BUFFER_BIT);
-    SSAOShader.use();
-    SSAOShader.setMat4("view",viewMat);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D,gPosition);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D,gNormal);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D,SSAOTexture);
-    renderQuad();
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-  glBindFramebuffer(GL_FRAMEBUFFER, SSAOBlurFBO);
-      glClear(GL_COLOR_BUFFER_BIT);
-      SSAOBlurShader.use();
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, SSAOColorBuffer);
-      renderQuad();
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-}
 void Drawer::renderGBuffer()
 {
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
@@ -262,7 +157,7 @@ void Drawer::renderGBuffer()
   shader->use();
   shader->setMat4("view", viewMat);
   shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-  //lPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
   drawTerrain(shader,chunksToDraw);
   //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
@@ -559,8 +454,6 @@ void Drawer::drawFinal()
   glBindTexture(GL_TEXTURE_2D,gNormal);
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D,gColorSpec);
-  glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_2D,SSAOColorBuffer);
   setLights(shader);
   shader->setVec3("viewPos", viewPos);
   bindDirectionalShadows(shader);
@@ -592,13 +485,10 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
   blockShader.setMat4("projection",viewProj);
   gBufferShader.use();
   gBufferShader.setMat4("projection",viewProj);
-  SSAOShader.use();
-  SSAOShader.setMat4("projection",viewProj);
 }
 
 void Drawer::updateCameraMatrices(Camera* cam)
 {
-
   viewMat = cam->getViewMatrix();
   hsrMat = hsrProj*cam->getHSRMatrix();
   viewPos = cam->getPosition();

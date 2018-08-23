@@ -30,36 +30,37 @@ class Map3D
       size = 0;
     }
     unsigned int size;
-    bool exists(int x, int y, int z);
-    T get(int x, int y, int z);
-    void add(int x, int y, int z, T data);
-    void del(int x, int y, int z);
+    bool exists(const glm::ivec3 &pos);
+    T get(const glm::ivec3 &pos);
+    void add(const glm::ivec3 &pos, T data);
+    void del(const glm::ivec3 &pos);
     void print();
-    std::shared_ptr<std::list<T>> findAll(glm::ivec3 min, glm::ivec3 max);
+    std::shared_ptr<std::list<T>> findAll(const glm::ivec3 &min, const glm::ivec3 &max);
     const std::list<T> &getFullList()
     {
       return fullList;
     }
 };
 template <class T>
-void Map3D<T>::add(int x, int y,int z,T data)
+void Map3D<T>::add(const glm::ivec3 &pos,T data)
 {
   std::lock_guard<std::mutex> lock(mapMutex);
   auto itr = addToList(data);
   Node tmp = {itr,data};
-  map3D[x][y][z] = tmp;
+  map3D[pos.x][pos.y][pos.z] = tmp;
   size++;
 }
 
 template <class T>
-bool Map3D<T>::exists(int x, int y, int z)
+bool Map3D<T>::exists(const glm::ivec3 &pos)
 {
   std::lock_guard<std::mutex> lock(mapMutex);
-  if(map3D.count(x) == 1)
+  if(map3D.count(pos.x) == 1)
   {
-    if(map3D[x].count(y) == 1)
+    auto &xMaps = map3D[pos.x];
+    if(xMaps.count(pos.y) == 1)
     {
-      if(map3D[x][y].count(z) == 1)
+      if(xMaps[pos.y].count(pos.z) == 1)
       {
         return true;
       }
@@ -69,16 +70,18 @@ bool Map3D<T>::exists(int x, int y, int z)
 }
 
 template <class T>
-T Map3D<T>::get(int x, int y, int z)
+T Map3D<T>::get(const glm::ivec3 &pos)
 {
   std::lock_guard<std::mutex> lock(mapMutex);
-  if(map3D.count(x) == 1)
+  if(map3D.count(pos.x) == 1)
    {
-     if(map3D[x].count(y) == 1)
+     auto &xMaps = map3D[pos.x];
+     if(xMaps.count(pos.y) == 1)
      {
-       if(map3D[x][y].count(z) == 1)
+       auto &yMaps = xMaps[pos.y];
+       if(yMaps.count(pos.z) == 1)
        {
-         T tmp = map3D[x][y][z].data;
+         T tmp = yMaps[pos.z].data;
          return tmp;
        }
      }
@@ -87,24 +90,28 @@ T Map3D<T>::get(int x, int y, int z)
 }
 
 template <class T>
-void Map3D<T>::del(int x, int y, int z)
+void Map3D<T>::del(const glm::ivec3 &pos)
 {
   std::lock_guard<std::mutex> lock(mapMutex);
-  fullList.erase(map3D[x][y][z].placeInList);
-  map3D[x][y].erase(z);
-  if(map3D[x][y].empty())
+  auto &xMaps = map3D[pos.x];
+  auto &yMaps = xMaps[pos.y];
+  auto &node  = yMaps[pos.z];
+
+  fullList.erase(node.placeInList);
+  yMaps.erase(pos.z);
+  if(yMaps.empty())
   {
-    map3D[x].erase(y);
-    if(map3D[x].empty())
+    xMaps.erase(pos.y);
+    if(xMaps.empty())
     {
-      map3D.erase(x);
+      map3D.erase(pos.x);
     }
   }
   size--;
 }
 
 template <class T>
-std::shared_ptr<std::list<T>> Map3D<T>::findAll(glm::ivec3 min,glm::ivec3 max)
+std::shared_ptr<std::list<T>> Map3D<T>::findAll(const glm::ivec3 &min,const glm::ivec3 &max)
 {
   std::lock_guard<std::mutex> lock(mapMutex);
   std::shared_ptr<std::list<T>> partList(new std::list<T>);

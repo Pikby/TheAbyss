@@ -61,7 +61,7 @@ public:
   void handleMouseClick(int key);
   void addBlock(int id);
   void destroyBlock();
-  void setPosition(float x, float y, float z);
+  void setPosition(const glm::vec3 &pos);
   void draw();
   //Hud functions
   void addCharacterToChat(int key);
