@@ -1,14 +1,14 @@
 #pragma once
 #include <unordered_map>
-typedef const int cint;
+#include <glm/glm.hpp>
 template <class T, int N>
 class BoundedMap3D
 {
   private:
-    std::unordered_map<T> map;
-    int getIndex(cint x,cint y, cint z)
+    std::unordered_map<int,T> map;
+    int getIndex(const glm::ivec3 &pos)
     {
-      return x*N*N+y*N+z;
+      return pos.x*N*N+pos.y*N+pos.z;
     }
   public:
     int getSize()
@@ -19,20 +19,20 @@ class BoundedMap3D
     {
       return map.empty();
     }
-    bool exists(cint x,cint y,cint z)
+    bool exists(const glm::ivec3 &pos)
     {
-      return (map.count(getIndex(x,y,z)) == 1);
+      return (map.count(getIndex(pos)) == 1);
     }
-    void add(cint x,cint y, cint z, const T& obj)
+    void add(const glm::ivec3 &pos, const T& obj)
     {
-      map[getIndex(x,y,z)] = obj;
+      map[getIndex(pos)] = obj;
     }
-    void del(cint x,cint y,cint z)
+    void del(const glm::ivec3 &pos)
     {
-      map.erase(getIndex(x,y,z));
+      map.erase(getIndex(pos));
     }
-    T& get(cint x, cint y, cint z)
+    T& get(const glm::ivec3 &pos)
     {
-      return map[getIndex(x,y,z)];
+      return map[getIndex(pos)];
     }
-}
+};

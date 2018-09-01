@@ -29,7 +29,7 @@ public:
 };
 enum ItemType {LIGHTSOURCE,FOOD,PLACEABLE};
 
-class LightSource : public Item
+class LightSourceItem : public Item
 {
   virtual void attack1()
   {
@@ -75,7 +75,9 @@ public:
   int id;
   uchar texArray[6];
   RenderType visibleType;
-
+  bool isLightSource;
+  glm::vec3 lightColor;
+  int lightSize;
   Block(std::string newName, int newId, int* array,RenderType newVisibleType)
   {
     visibleType = newVisibleType;

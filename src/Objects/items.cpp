@@ -6,6 +6,26 @@
 Block ItemDatabase::blockDictionary[256];
 std::vector<Item*> ItemDatabase::itemDictionary;
 
+void removeWhiteSpace(std::string& line)
+{
+  line.erase( std::remove_if( line.begin(), line.end(), ::isspace ), line.end() );
+}
+
+glm::vec3 parseVec(std::string line)
+{
+  std::stringstream ss;
+  ss << line;
+  float arr[3];
+  for(int i = 0;i<3;i++)
+  {
+    if(ss.peek() == ',') ss.ignore();
+    ss >> arr[i];
+    std::cout << arr[i] << "\n";
+
+  }
+  return glm::vec3(arr[0],arr[1],arr[2]);
+}
+
 Block ItemDatabase::parseBlock(std::vector<std::string> lines)
 {
   using namespace std;
@@ -29,6 +49,14 @@ Block ItemDatabase::parseBlock(std::vector<std::string> lines)
   else if(opacity == "opaque") newBlock.visibleType = OPAQUE;
   else if(opacity == "transparent") newBlock.visibleType = TRANSPARENT;
 
+  if(dictionary.count("isLightSource"))
+  {
+    newBlock.isLightSource = true;
+    newBlock.lightColor = parseVec(dictionary["lightColor"]);
+    newBlock.lightSize  = std::stoi(dictionary["lightSize"]);
+  }
+
+
   return newBlock;
 }
 
@@ -41,12 +69,22 @@ std::map<std::string,std::string> ItemDatabase::compileDictionary(std::vector<st
   {
     string line = *itr;
     int colonPos = line.find(':');
-    if(colonPos == std::string::npos) continue;
+    if(colonPos == std::string::npos)
+    {
+
+      line.erase( std::remove_if(line.begin(),line.end(), ::isspace ), line.end() );
+      if(line != "")
+      {
+        dictionary[line] = "true";
+        continue;
+      }
+    }
 
     string key = line.substr(0,colonPos-1);
     string value = line.substr(colonPos+1,line.length());
-    key.erase( std::remove_if( key.begin(), key.end(), ::isspace ), key.end() );
-    value.erase( std::remove_if( value.begin(), value.end(), ::isspace ), value.end() );
+    removeWhiteSpace(key);
+    removeWhiteSpace(value);
+
     dictionary[key] = value;
   }
   return dictionary;
@@ -61,7 +99,6 @@ void ItemDatabase::initStrToItemDictionary()
   strToItemDictionary["Food"] = FOOD;
 }
 
-
 Item* ItemDatabase::parseItem(std::vector<std::string> lines)
 {
 
@@ -72,7 +109,7 @@ Item* ItemDatabase::parseItem(std::vector<std::string> lines)
   switch(strToItemDictionary[type])
   {
     case LIGHTSOURCE:
-      newItem = new LightSource; break;
+      newItem = new LightSourceItem; break;
 
 
     default:

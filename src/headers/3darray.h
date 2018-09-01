@@ -3,6 +3,7 @@ class Array3D
 {
   private:
     T array[N*N*N];
+    std::mutex arrayMutex;
   public:
     Array3D()
     {

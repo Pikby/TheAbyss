@@ -23,5 +23,21 @@
   id : 3
   name : Water
   textureIds : 2,2,2,2,2,2
-  opacity : translucent
+  opacity : opaque
+}
+{
+  id : 4
+  name : LightBlock
+  textureIds : 3,3,3,3,3,3
+  opacity : opaque
+  isLightSource
+    lightColor : ,0.1,0.2,0.3,
+    lightSize : 100
+}
+{
+  id : 5
+  name : LOL
+  textureIds : 4,4,4,4,4,4
+  opacity : opaque
+
 }

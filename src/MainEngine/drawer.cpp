@@ -54,7 +54,6 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   blockShader.setInt("gPosition", 0);
   blockShader.setInt("gNormal", 1);
   blockShader.setInt("gColorSpec", 2);
-  blockShader.setInt("SSAO",3);
   blockShader.setInt("dirLight.shadow[0]",4);
   blockShader.setInt("dirLight.shadow[1]",5);
   blockShader.setInt("dirLight.shadow[2]",6);
@@ -62,20 +61,16 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   blockShader.setFloat("far_plane",25.0f);
   blockShader.setFloat("fog_start",CHUNKSIZE*(horzRenderDistance-2));
   blockShader.setFloat("fog_dist",CHUNKSIZE);
-  blockShader.setInt("textureAtlasWidth",384);
-  blockShader.setInt("textureAtlasHeight",128);
-  blockShader.setInt("cellWidth",128);
-
-
-  //gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.gs","../src/Shaders/BSPShaders/gBuffer.vs");
   gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.vs");
 
+  int cellWidth = 128;
   gBufferShader.use();
-  gBufferShader.setInt("textureAtlasWidth",384);
-  gBufferShader.setInt("textureAtlasHeight",128);
-  gBufferShader.setInt("cellWidth",128);
+  gBufferShader.setInt("textureAtlasWidthInCells",texWidth/cellWidth);
+  gBufferShader.setInt("textureAtlasHeightInCells",texHeight/cellWidth);
+  gBufferShader.setInt("cellWidth",cellWidth);
   gBufferShader.setInt("curTexture",0);
 
+  std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
 
   dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
                             "../src/Shaders/dirDepthShader.vs");
@@ -579,10 +574,6 @@ void Drawer::drawTerrain(Shader* shader,std::shared_ptr<std::list<std::shared_pt
   for(auto it = list->cbegin();it != list->cend();++it)
   {
     std::shared_ptr<BSPNode> curNode = (*it);
-    if(curNode->toDelete == true)
-    {
-      curNode->del();
-    }
-    else curNode->drawOpaque();
+    curNode->drawOpaque();
   }
 }

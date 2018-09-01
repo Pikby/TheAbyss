@@ -57,10 +57,14 @@ World::World(int numbBuildThreads,int width,int height)
 
   drawnChunks = 0;
 
+  std::string name;
+
+  name = userName;
+  name.reserve(24);
   try
   {
     messenger.setupSockets(ipAddress,port);
-    messenger.sendMessage(userName.c_str(),24);
+    messenger.sendMessage(name.c_str(),24);
     messenger.receiveMessage(&mainId,sizeof(mainId));
   }catch(const char* err)
   {
@@ -145,8 +149,8 @@ void World::generateChunkFromString(const glm::ivec3 &chunk,const char* value)
     std::cout << "Replacing CHunk \n";
     delChunk(chunk);
   }
-  std::shared_ptr<BSPNode> tempChunk(new BSPNode(glm::ivec3(chunk),value));
-  BSPmap.add(glm::ivec3(chunk),tempChunk);
+  std::shared_ptr<BSPNode> originChunk(new BSPNode(chunk,value));
+  BSPmap.add(chunk,originChunk);
 
   int chunkx = chunk.x;
   int chunky = chunk.y;
@@ -155,89 +159,60 @@ void World::generateChunkFromString(const glm::ivec3 &chunk,const char* value)
     At this point the chunk is in both the linked list as well as the unorderedmap
     now it will attempt to find any nearby chunks and store a refrence to it
   */
+  std::shared_ptr<BSPNode> otherChunk;
+  auto update =[&](Faces neighFace, Faces originFace)
+  {
+    originChunk->setNeighbour(neighFace,otherChunk);
+    otherChunk->setNeighbour(originFace,originChunk);
+    addToBuildQueue(otherChunk);
+  };
 
-
-  std::shared_ptr<BSPNode>  otherChunk = getChunk(glm::ivec3(chunkx,chunky,chunkz-1));
+ otherChunk = getChunk(glm::ivec3(chunkx,chunky,chunkz-1));
   if(otherChunk  != NULL )
   {
-    tempChunk->frontChunk = otherChunk;
-    otherChunk->backChunk = tempChunk;
-    if(!otherChunk->toBuild)
-    {
-      addToBuildQueue(otherChunk);
-    }
+    update(FRONTF,BACKF);
   }
 
   otherChunk = getChunk(glm::ivec3(chunkx,chunky,chunkz+1));
   if(otherChunk != NULL)
   {
-    tempChunk->backChunk = otherChunk;
-    otherChunk->frontChunk = tempChunk;
-    if(!otherChunk->toBuild)
-    {
-      addToBuildQueue(otherChunk);
-    }
+    update(BACKF,FRONTF);
   }
 
   otherChunk = getChunk(glm::ivec3(chunkx,chunky-1,chunkz));
   if(otherChunk != NULL)
   {
-    tempChunk->bottomChunk = otherChunk;
-    otherChunk->topChunk = tempChunk;
-    if(!otherChunk->toBuild)
-    {
-      addToBuildQueue(otherChunk);
-    }
+    update(BOTTOMF,TOPF);
   }
-
   otherChunk = getChunk(glm::ivec3(chunkx,chunky+1,chunkz));
   if(otherChunk != NULL)
   {
-    tempChunk->topChunk = otherChunk;
-    otherChunk->bottomChunk = tempChunk;
-    if(!otherChunk->toBuild)
-    {
-      addToBuildQueue(otherChunk);
-    }
+    update(TOPF,BOTTOMF);
+
   }
 
   otherChunk = getChunk(glm::ivec3(chunkx-1,chunky,chunkz));
   if(otherChunk != NULL)
   {
-    tempChunk->leftChunk = otherChunk;
-    otherChunk->rightChunk = tempChunk;
-    if(!otherChunk->toBuild)
-    {
-      addToBuildQueue(otherChunk);
-    }
+    update(LEFTF,RIGHTF);
   }
 
   otherChunk = getChunk(glm::ivec3(chunkx+1,chunky,chunkz));
   if(otherChunk != NULL)
   {
-    tempChunk->rightChunk = otherChunk;
-    otherChunk->leftChunk = tempChunk;
-    if(!otherChunk->toBuild)
-    {
-      addToBuildQueue(otherChunk);
-    }
+    update(RIGHTF,LEFTF);
   }
   //Adds the chunk to the current mainBuildQueue if it is not already;
-  if(!tempChunk->toBuild)
-  {
-      addToBuildQueue(tempChunk);
-  }
+  addToBuildQueue(originChunk);
 }
 
 
 void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
 {
+  if(curNode->toBuild == true) return;
   static int currentThread = 0;
   buildQueue[currentThread].push(curNode);
   curNode->toBuild = true;
-
-  currentThread++;
-  if(currentThread >= numbOfThreads) currentThread = 0;
 }
 
 
@@ -325,6 +300,7 @@ void World::renderWorld(float mainx, float mainy, float mainz)
 
 void World::buildWorld(int threadNumb)
 {
+  buildQueue[threadNumb].waitForData();
   while(!buildQueue[threadNumb].empty())
   {
     std::shared_ptr<BSPNode> chunk = buildQueue[threadNumb].front();
@@ -343,6 +319,7 @@ void World::deleteChunksFromQueue()
   while(!chunkDeleteQueue.empty())
   {
     auto temp = chunkDeleteQueue.front();
+    //while(temp.use_count() >2){}
     temp->del();
     chunkDeleteQueue.pop();
   }
@@ -387,7 +364,7 @@ void World::delScan(float mainx, float mainy, float mainz)
     y/= CHUNKSIZE;
     z/= CHUNKSIZE;
 
-    glm::ivec3 chunk = (*itr)->curBSP.chunkPos;
+    glm::ivec3 chunk = (*itr)->chunkPos;
 
     if(abs(chunk.x-x) > horzRenderDistance + renderBuffer
     || abs(chunk.y-y) > horzRenderDistance + renderBuffer
@@ -454,31 +431,35 @@ glm::ivec3 inline World::toChunkCoords(glm::ivec3 in)
 
 inline void World::checkForUpdates(glm::ivec3 local,std::shared_ptr<BSPNode> chunk)
 {
+  auto check = [&](std::shared_ptr<BSPNode> chunk)
+  {
+    if(chunk != NULL) addToBuildQueue(chunk);
+  };
   if(local.x+1>=CHUNKSIZE)
   {
-    if(chunk->rightChunk != NULL) chunk->rightChunk->build();
+    check(chunk->getNeighbour(RIGHTF));
   }
   else if(local.x-1 < 0)
   {
-    if(chunk->leftChunk != NULL) chunk->leftChunk->build();
+    check(chunk->getNeighbour(LEFTF));
   }
 
   if(local.y+1>=CHUNKSIZE)
   {
-    if(chunk->topChunk != NULL) chunk->topChunk->build();
+    check(chunk->getNeighbour(TOPF));
   }
   else if(local.y-1 < 0)
   {
-    if(chunk->bottomChunk != NULL) chunk->bottomChunk->build();
+    check(chunk->getNeighbour(BOTTOMF));
   }
 
   if(local.z+1>=CHUNKSIZE)
   {
-    if(chunk->backChunk != NULL) chunk->backChunk->build();
+    check(chunk->getNeighbour(BACKF));
   }
   else if(local.z-1 < 0)
   {
-    if(chunk->frontChunk != NULL) chunk->frontChunk->build();
+    check(chunk->getNeighbour(FRONTF));
   }
 }
 
@@ -511,7 +492,7 @@ void World::addBlock(const glm::ivec3 &pos,uchar id)
   if(tempChunk != NULL)
   {
     tempChunk->addBlock(local,id);
-    tempChunk->build();
+    addToBuildQueue(tempChunk);
     checkForUpdates(local,tempChunk);
   }
 
@@ -527,7 +508,7 @@ void World::delBlock(const glm::ivec3 &pos)
   if(tempChunk != NULL)
   {
     tempChunk->delBlock(local);
-    tempChunk->build();
+    addToBuildQueue(tempChunk);
     checkForUpdates(local,tempChunk);
   }
 }

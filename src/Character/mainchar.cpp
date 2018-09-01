@@ -139,8 +139,10 @@ void MainChar::update()
   curFrame = glfwGetTime();
   double fps = 1.0f/(curFrame - lastFrame);
   lastFrame = curFrame;
-  std::string line = "FPS: " + std::to_string(fps);
+  std::string line = "[colour='FF000000']FPS: " + std::to_string(fps);
   gui.gameWindow->getChild("FPS")->setText(line);
+  line = "[colour='FF000000']ChunksLoaded: " + std::to_string(BSPNode::totalChunks);
+  gui.gameWindow->getChild("Chunks")->setText(line);
 }
 
 void MainChar::moveRight()
@@ -198,7 +200,7 @@ void MainChar::destroyBlock()
   std::cout << "Destroying blocks\n";
   curWorld->messenger.createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
 
-} 
+}
 void MainChar::addBlock(int id)
 {
     glm::vec4 block = curWorld->rayCast(mainCam.position,mainCam.front,reach);
@@ -245,7 +247,7 @@ void MainChar::handleMouseClick(int key)
   switch(key)
   {
     case GLFW_MOUSE_BUTTON_LEFT: destroyBlock() ; break;
-    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(1); break;
+    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(4); break;
 
   }
 

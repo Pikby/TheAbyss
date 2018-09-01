@@ -8,3 +8,4 @@ src/headers/SOIL.h
 src/headers/FastNoise.h
 src/FastNoise.cpp
 *.o
+*.rdc

@@ -17,12 +17,13 @@ in VS_OUT
 uniform sampler2D curTexture;
 uniform vec3 objectColor;
 
-
+uniform int textureAtlasWidthInCells;
+uniform int textureAtlasHeightInCells;
 vec3 getTexture()
 {
   vec2 temp;
-  temp.x = mod(vs_out.TexCoord.x*vs_out.TexCells.x,(1.0f/3.0f))+vs_out.TexOrigin.x;
-  temp.y = mod(vs_out.TexCoord.y*vs_out.TexCells.y,1)+vs_out.TexOrigin.y;
+  temp.x = mod(vs_out.TexCoord.x*vs_out.TexCells.x,1.0f/textureAtlasWidthInCells)+vs_out.TexOrigin.x;
+  temp.y = mod(vs_out.TexCoord.y*vs_out.TexCells.y,1.0f/textureAtlasHeightInCells)+vs_out.TexOrigin.y;
   return texture(curTexture,temp).rgb;
 }
 

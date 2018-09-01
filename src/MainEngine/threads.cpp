@@ -89,6 +89,7 @@ void draw()
 
     //std::cout << newWorld->drawnChunks << "\n";
     newWorld->drawnChunks = 0;
+    newWorld->drawer.chunksToDraw = NULL;
     newWorld->deleteChunksFromQueue();
     glfwPollEvents();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

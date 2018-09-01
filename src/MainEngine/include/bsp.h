@@ -44,24 +44,29 @@ class BSP
       {
         return ((faceData & f) != 0);
       }
+      bool isEmpty()
+      {
+        return (faceData != 0);
+      }
       BlockFace(){faceData = 0;}
     };
-    std::shared_ptr<std::vector<float>> oVertices,oVerticesBuffer,tVertices,tVerticesBuffer;
-    std::shared_ptr<std::vector<uint>> oIndices,oIndicesBuffer,tIndices,tIndicesBuffer;
+    std::vector<float> oVertices,tVertices;
+    std::vector<uint> oIndices,tIndices;
+    int oIndicesSize,tIndicesSize;
     uint oVBO, oEBO, oVAO, tVBO, tEBO, tVAO;
+    Array3D<uchar, CHUNKSIZE> worldArray;
     static std::string worldName;
     AmbientOcclusion getAO(const glm::ivec3 &pos, Faces face, TextureSides top, TextureSides right);
     int addVertex(RenderType renderType, const glm::vec3 &pos,Faces face, TextureSides texX, TextureSides texY, char* AOvalue);
     void addIndices(RenderType renderType,int index1, int index2, int index3, int index4);
     void setupBufferObjects(RenderType type);
-    Array3D<uchar, CHUNKSIZE> worldArray;
+
 
   public:
     RenderType blockVisibleType(const glm::ivec3 &pos);
     static bool geometryChanged;
-    glm::ivec3 chunkPos;
-    BSP(const glm::ivec3 &pos,const char* data,BSPNode* Parent);
-    BSP(){};
+
+    BSP(const char* data,BSPNode* Parent);
     void render();
     void freeGL();
     void addBlock(const glm::ivec3 &pos,char id);
@@ -78,10 +83,15 @@ class BSP
 class BSPNode
 {
   private:
-    std::mutex BSPMutex;
+    BSP curBSP;
+    std::recursive_mutex BSPMutex;
+    //references to the 6 cardinal neighbours of the chunk
+    std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;
   public:
     static int totalChunks;
-    BSP curBSP;
+    glm::ivec3 chunkPos;
+    std::atomic<bool> toRender,toBuild,toDelete;
+
     BSPNode(const glm::ivec3 &pos,const char* val);
     ~BSPNode();
     void saveChunk();
@@ -101,9 +111,9 @@ class BSPNode
 
     uchar getBlock(const glm::ivec3 &pos);
 
-    //references to the 6 cardinal neighbours of the chunk
-    std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;
+    std::shared_ptr<BSPNode> getNeighbour(Faces face);
+    void setNeighbour(Faces face, std::shared_ptr<BSPNode> neighbour);
 
     //Flags for use inbetween pointers
-    std::atomic<bool> toRender,toBuild,toDelete;
+
 };

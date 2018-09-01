@@ -18,10 +18,8 @@ out VS_OUT
 uniform mat4 view;
 uniform mat4 projection;
 
-uniform int textureAtlasWidth;
-uniform int textureAtlasHeight;
-uniform int cellWidth;
-
+uniform int textureAtlasWidthInCells;
+uniform int textureAtlasHeightInCells;
 
 void main()
 {
@@ -34,10 +32,8 @@ void main()
   int yblocks = (package >> 8) & 0xFF;
   int xblocks = package & 0xFF;
 
-  int widthOfAtlasInCells = textureAtlasWidth/cellWidth;
-  int heightOfAtlasInCells = textureAtlasHeight/cellWidth;
-  float cellWidth = 1.0f/widthOfAtlasInCells;
-  float cellHeight = 1.0f/heightOfAtlasInCells;
+  float cellWidth = 1.0f/textureAtlasWidthInCells;
+  float cellHeight = 1.0f/textureAtlasHeightInCells;
   vec3 normVec = vec3(0.0f,1.0f,0.0f);
 
   vs_out.TexCells.x = xblocks;
@@ -83,8 +79,8 @@ void main()
 
 
   vec2 origin;
-  origin.x = (texId % widthOfAtlasInCells)*cellWidth;
-  origin.y = (texId/widthOfAtlasInCells)*cellHeight;
+  origin.x = (texId % textureAtlasWidthInCells)*cellWidth;
+  origin.y = (texId/textureAtlasHeightInCells)*cellHeight;
 
   vs_out.TexOrigin = origin;
   //origin = vec2(0.0f,0.0f);

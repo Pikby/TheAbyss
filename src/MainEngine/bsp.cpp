@@ -15,38 +15,46 @@ int BSPNode::totalChunks = 0;
 bool BSP::geometryChanged = true;
 BSPNode::~BSPNode()
 {
-  //totalChunks--;
+  totalChunks--;
 }
 
-BSPNode::BSPNode(const glm::ivec3 &pos,const char *val)
+BSPNode::BSPNode(const glm::ivec3 &pos,const char *val) : curBSP(val,this)
 {
+
   //std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
   //std::cout << "curNumber of chunks: " << totalChunks << "\n";
-  //totalChunks++;
-  BSPMutex.lock();
-  curBSP = BSP(pos,val,this);
+  chunkPos = pos;
+  totalChunks++;
   toRender = false;
   toBuild = false;
   toDelete = false;
-  BSPMutex.unlock();
+
+  leftChunk = NULL;
+  rightChunk = NULL;
+  frontChunk = NULL;
+  backChunk = NULL;
+  topChunk = NULL;
+  bottomChunk = NULL;
 }
 
 void BSPNode::build()
 {
+  if(toDelete) return;
   BSPMutex.lock();
-  curBSP.build();
-  toRender = true;
-  toBuild = false;
+    curBSP.build();
+    toRender = true;
+    toBuild = false;
   BSPMutex.unlock();
 }
 
 void BSPNode::drawOpaque()
 {
+  if(toDelete) return;
   if(toRender == true)
   {
     if(BSPMutex.try_lock())
     {
-      curBSP.swapBuffers();
+      //curBSP.swapBuffers();
       curBSP.render();
       toRender = false;
       BSPMutex.unlock();
@@ -57,20 +65,21 @@ void BSPNode::drawOpaque()
 
 void BSPNode::drawTranslucent()
 {
-
+  /*
   if(toRender == true)
   {
      curBSP.render();
      toRender = false;
   }
   curBSP.drawTranslucent();
+  */
 }
 
 
 void BSPNode::del()
 {
   BSPMutex.lock();
-  curBSP.freeGL();
+    curBSP.freeGL();
   BSPMutex.unlock();
 }
 
@@ -84,6 +93,12 @@ void BSPNode::disconnect()
   if(backChunk != NULL) backChunk->frontChunk = NULL;
   if(topChunk != NULL) topChunk->bottomChunk = NULL;
   if(bottomChunk != NULL) bottomChunk->topChunk = NULL;
+  leftChunk = NULL;
+  rightChunk = NULL;
+  frontChunk = NULL;
+  backChunk = NULL;
+  topChunk = NULL;
+  bottomChunk = NULL;
   BSPMutex.unlock();
 
 }
@@ -92,6 +107,7 @@ void BSPNode::disconnect()
 //If looking for a block outside of a chunks local coordinates use this;
 RenderType BSPNode::blockVisibleTypeOOB(const glm::ivec3 &pos)
 {
+  //std::lock_guard<std::mutex> lock(BSPMutex);
   auto check = [&](std::shared_ptr<BSPNode> chunk,const glm::ivec3 &norm)
   {
     return chunk != NULL ? chunk->blockVisibleTypeOOB(pos+CHUNKSIZE*norm) : DEFAULTBLOCKMODE;
@@ -125,39 +141,79 @@ RenderType BSPNode::blockVisibleTypeOOB(const glm::ivec3 &pos)
 
 bool BSPNode::blockExists(const glm::ivec3 &pos)
 {
+  std::lock_guard<std::recursive_mutex> lock(BSPMutex);
   return curBSP.blockExists(pos);
 }
 
 void BSPNode::delBlock(const glm::ivec3 &pos)
 {
+  std::lock_guard<std::recursive_mutex> lock(BSPMutex);
   curBSP.delBlock(pos);
 }
 
 void BSPNode::addBlock(const glm::ivec3 &pos, char id)
 {
+  std::lock_guard<std::recursive_mutex> lock(BSPMutex);
   curBSP.addBlock(pos,id);
 }
 
 RenderType BSPNode::blockVisibleType(const glm::ivec3 &pos)
 {
+  std::lock_guard<std::recursive_mutex> lock(BSPMutex);
   return curBSP.blockVisibleType(pos);
 }
 
-
-BSP::BSP(const glm::ivec3 &pos,const char* data, BSPNode* Parent)
+std::shared_ptr<BSPNode> BSPNode::getNeighbour(Faces face)
 {
-  parent = Parent;
-  oVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-  tVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  tIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+  std::lock_guard<std::recursive_mutex> lock(BSPMutex);
+  switch(face)
+  {
+    case TOPF:
+      return topChunk;
+    case BOTTOMF:
+      return bottomChunk;
+    case LEFTF:
+      return leftChunk;
+    case RIGHTF:
+      return rightChunk;
+    case FRONTF:
+      return frontChunk;
+    case BACKF:
+      return backChunk;
+  }
+}
 
-  oVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  oIndices  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-  tVertices = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  tIndices = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-  chunkPos = pos;
+void BSPNode::setNeighbour(Faces face, std::shared_ptr<BSPNode> neighbour)
+{
+  std::lock_guard<std::recursive_mutex> lock(BSPMutex);
+  switch(face)
+  {
+    case TOPF:
+      topChunk = neighbour; break;
+    case BOTTOMF:
+      bottomChunk = neighbour; break;
+    case LEFTF:
+      leftChunk = neighbour; break;
+    case RIGHTF:
+      rightChunk = neighbour; break;
+    case FRONTF:
+      frontChunk = neighbour; break;
+    case BACKF:
+      backChunk = neighbour; break;
+  }
+}
+
+BSP::BSP(const char* data, BSPNode* Parent)
+{
+  oIndicesSize = 0;
+  tIndicesSize = 0;
+  parent = Parent;
+
   using namespace std;
+
+  oVBO = 0;
+  oEBO = 0;
+  oVAO = 0;
 
   const int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
   int i = 0;
@@ -179,7 +235,7 @@ BSP::BSP(const glm::ivec3 &pos,const char* data, BSPNode* Parent)
     {
       if(i+j>numbOfBlocks)
       {
-        std::cout << "ERROR CORRUPTED CHUNK AT " << glm::to_string(chunkPos) <<"\n";
+        std::cout << "ERROR CORRUPTED CHUNK AT " << glm::to_string(parent->chunkPos) <<"\n";
         return;
       }
       worldArray[i+j] = curId;
@@ -196,17 +252,20 @@ void BSP::freeGL()
   //Frees all the used opengl resourses
   //MUST BE DONE IN THE MAIN THHREAD
   //Since that is the only thread with opengl context
+  glDeleteVertexArrays(1,&oVAO);
   glDeleteBuffers(1,&oVBO);
   glDeleteBuffers(1,&oEBO);
-  glDeleteVertexArrays(1,&oVAO);
 
-  glDeleteBuffers(1,&tVBO);
-  glDeleteBuffers(1,&tEBO);
-  glDeleteVertexArrays(1,&tVAO);
+
+  //glDeleteBuffers(1,&tVBO);
+  //glDeleteBuffers(1,&tEBO);
+  //glDeleteVertexArrays(1,&tVAO);
+
 }
 
 void BSP::swapBuffers()
 {
+  /*
   oVertices = oVerticesBuffer;
   oIndices = oIndicesBuffer;
   tVertices = tVerticesBuffer;
@@ -216,6 +275,10 @@ void BSP::swapBuffers()
   oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
   tVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
   tIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
+
+  tIndicesSize = tIndices->size();
+  oIndicesSize = oIndices->size();
+  */
 }
 
 inline int pack4chars(char a, char b, char c, char d)
@@ -305,19 +368,25 @@ AmbientOcclusion BSP::getAO(const glm::ivec3 &pos, Faces face, TextureSides top,
   return static_cast<AmbientOcclusion> (side1Opacity+side2Opacity+cornerOpacity);
 }
 
-inline int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face, TextureSides top, TextureSides right, char* AOvalue)
+int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face, TextureSides top, TextureSides right, char* AOvalue)
 {
-  std::shared_ptr<std::vector<float>> curBuffer;
+  std::vector<float>* curBuffer;
   if(renderType == OPAQUE)
   {
-    curBuffer = oVerticesBuffer;
+    curBuffer = &oVertices;
   }
   else if(renderType == TRANSLUCENT)
   {
-    curBuffer = tVerticesBuffer;
+    std::cout << "are u sure about that?\n";
+    return 0;
+    curBuffer = &tVertices;
   }
-
-  int numbVert = oVerticesBuffer->size()/4;
+  else
+  {
+    std::cout << "Error\n";
+    return 0;
+  }
+  int numbVert = curBuffer->size()/4;
   //Adds position vector
   curBuffer->push_back(pos.x);
   curBuffer->push_back(pos.y);
@@ -347,16 +416,23 @@ inline int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face,
   return numbVert;
 }
 
-inline void BSP::addIndices(RenderType renderType,int index1, int index2, int index3, int index4)
+void BSP::addIndices(RenderType renderType,int index1, int index2, int index3, int index4)
 {
-  std::shared_ptr<std::vector<uint>> curBuffer;
+  std::vector<uint>* curBuffer;
   if(renderType == OPAQUE)
   {
-    curBuffer = oIndicesBuffer;
+    curBuffer = &oIndices;
   }
   else if(renderType == TRANSLUCENT)
   {
-    curBuffer = tIndicesBuffer;
+    std::cout << "are u sure about that?\n";
+    return;
+    curBuffer = &tIndices;
+  }
+  else
+  {
+    std::cout << "Indices error\n";
+    return;
   }
   //Add the First triangle of the square
   curBuffer->push_back(index1);
@@ -372,7 +448,7 @@ inline void BSP::addIndices(RenderType renderType,int index1, int index2, int in
 
 bool BSP::blockExists(const glm::ivec3 &pos)
 {
-  return worldArray.get(pos) == 0 ? false : true;
+  return (worldArray.get(pos) != 0);
 }
 
 RenderType BSP::blockVisibleType(const glm::ivec3 &pos)
@@ -383,6 +459,14 @@ RenderType BSP::blockVisibleType(const glm::ivec3 &pos)
 void BSP::addBlock(const glm::ivec3 &pos, char id)
 {
   worldArray.set(pos,id);
+  Block curBlock = ItemDatabase::blockDictionary[getBlock(pos)];
+  if(curBlock.isLightSource)
+  {
+    //LightSource light;
+    //light.color = curBlock.lightColor;
+    //light.lightSize = curBlock.lightSize;
+    //lightSources.add(pos,light);
+  }
 }
 
 inline void BSP::delBlock(const glm::ivec3 &pos)
@@ -397,11 +481,13 @@ inline uchar BSP::getBlock(const glm::ivec3 &pos)
 
 void BSP::build()
 {
-  oVerticesBuffer->clear();
-  oIndicesBuffer->clear();
-  tVerticesBuffer->clear();
-  tIndicesBuffer->clear();
+
+  oVertices.clear();
+  oIndices.clear();
+  tVertices.clear();
+  tIndices.clear();
   Array3D<BlockFace,32> arrayFaces;
+  //Populate arrayFaces in order to determine all visible faces of the mesh
   for(int x = 0; x<CHUNKSIZE;x++)
   {
     for(int z = 0;z<CHUNKSIZE;z++)
@@ -421,64 +507,48 @@ void BSP::build()
 
          bool defaultNull = true;
 
-
+         auto check = [&](Faces face,const glm::ivec3& pos,bool* flag)
+         {
+           auto neigh = parent->getNeighbour(face);
+           if(neigh != NULL)
+           {
+             if(renderType == neigh->blockVisibleType(pos)) *flag = true;
+           }
+           else if(defaultNull) *flag = true;
+         };
          if(x+1 >= CHUNKSIZE)
          {
-           if(parent->rightChunk != NULL)
-           {
-             if(renderType == parent->rightChunk->blockVisibleType(glm::ivec3(0,y,z))) rightNeigh = true;
-           }
-           else if(defaultNull) rightNeigh = true;
+           check(RIGHTF,glm::ivec3(0,y,z),&rightNeigh);
          }
          else if(renderType == blockVisibleType(glm::ivec3(x+1,y,z))) rightNeigh = true;
 
          if(x-1 < 0)
          {
-           if(parent->leftChunk != NULL)
-           {
-             if(renderType == parent->leftChunk->blockVisibleType(glm::ivec3(CHUNKSIZE-1,y,z))) leftNeigh = true;
-           }
-           else if(defaultNull) leftNeigh = true;
+           check(LEFTF,glm::ivec3(CHUNKSIZE-1,y,z),&leftNeigh);
          }
          else if(renderType == blockVisibleType(glm::ivec3(x-1,y,z))) leftNeigh = true;
 
          if(y+1 >= CHUNKSIZE)
          {
-           if(parent->topChunk != NULL)
-           {
-              if(renderType == parent->topChunk->blockVisibleType(glm::ivec3(x,0,z))) topNeigh = true;
-           }
-           else if(defaultNull) topNeigh = true;
+           check(TOPF,glm::ivec3(x,0,z),&topNeigh);
          }
          else if(renderType == blockVisibleType(glm::ivec3(x,y+1,z))) topNeigh = true;
 
          if(y-1 < 0)
          {
-          if(parent->bottomChunk != NULL)
-          {
-            if(renderType == parent->bottomChunk->blockVisibleType(glm::ivec3(x,CHUNKSIZE-1,z))) bottomNeigh = true;
-          }
-          else if(defaultNull) bottomNeigh = true;
+           check(BOTTOMF,glm::ivec3(x,CHUNKSIZE-1,z),&bottomNeigh);
          }
          else if(renderType == blockVisibleType(glm::ivec3(x,y-1,z))) bottomNeigh = true;
 
          if(z+1 >= CHUNKSIZE)
          {
-           if(parent->backChunk != NULL)
-           {
-             if(renderType == parent->backChunk->blockVisibleType(glm::ivec3(x,y,0)))backNeigh = true;
-           }
-           else if(defaultNull) backNeigh = true;
+           check(BACKF,glm::ivec3(x,y,0),&backNeigh);
          }
          else if(renderType == blockVisibleType(glm::ivec3(x,y,z+1))) backNeigh = true;
 
          if(z-1 < 0)
          {
-           if(parent->frontChunk != NULL)
-           {
-             if(renderType == parent->frontChunk->blockVisibleType(glm::ivec3(x,y,CHUNKSIZE-1))) frontNeigh = true;
-           }
-           else if(defaultNull) frontNeigh = true;
+           check(FRONTF,glm::ivec3(x,y,CHUNKSIZE-1),&frontNeigh);
          }
          else if(renderType == blockVisibleType(glm::ivec3(x,y,z-1))) frontNeigh = true;
 
@@ -602,6 +672,7 @@ void BSP::build()
 
    };
 
+  //Go through the array and test all faces and attempt to join them using greedy meshing
    for(x = 0; x<CHUNKSIZE;x++)
    {
      for(z = 0;z<CHUNKSIZE;z++)
@@ -610,8 +681,9 @@ void BSP::build()
        {
          glm::ivec3 chunkLocalPos = glm::ivec3(x,y,z);
          renderType = blockVisibleType(chunkLocalPos);
-         blockOrigin = chunkLocalPos + CHUNKSIZE*chunkPos;
+         blockOrigin = chunkLocalPos + CHUNKSIZE*(parent->chunkPos);
          curFace  = arrayFaces.get(chunkLocalPos);
+         //if(curFace.isEmpty()) continue;
          blockId = getBlock(chunkLocalPos);
          tempBlock = ItemDatabase::blockDictionary[blockId];
          curLocalPos = chunkLocalPos;
@@ -672,37 +744,61 @@ void BSP::build()
        }
      }
    }
+
 }
 
 void BSP::setupBufferObjects(RenderType type)
 {
-  std::shared_ptr<std::vector<float>> curVert;
-  std::shared_ptr<std::vector<uint>> curInd;
+  int error = glGetError();
+  if(error != 0)
+  {
+    std::cout << "OPENGL ERRORBEFORE BUFFESETUP" << error << ": in chunk pos"<< glm::to_string(parent->chunkPos) << "\n";
+    std::cout << oVAO << ":" << oIndicesSize << "\n";
+  }
+  std::vector<float>* curVert;
+  std::vector<uint>* curInd;
+  uint *VBO;
+  uint *EBO;
+  uint *VAO;
+  int *indicesSize;
   if(type == OPAQUE)
   {
-    curVert = oVertices;
-    curInd = oIndices;
+    indicesSize = &oIndicesSize;
+    curVert = &oVertices;
+    curInd = &oIndices;
+    VBO = &oVBO;
+    EBO = &oEBO;
+    VAO = &oVAO;
   }
   else if(type == TRANSLUCENT)
   {
-    curVert = tVertices;
-    curInd = tIndices;
+    indicesSize = &tIndicesSize;
+    curVert = &tVertices;
+    curInd = &tIndices;
+    VBO = &tVBO;
+    EBO = &tEBO;
+    VAO = &tVAO;
   }
-  if(curInd->size() != 0)
+  else
   {
-    glDeleteBuffers(1, &oVBO);
-    glDeleteBuffers(1, &oEBO);
-    glDeleteVertexArrays(1, &oVAO);
+    std::cout << "????\n";
+  }
+  *indicesSize = curInd->size();
+  if(*indicesSize != 0)
+  {
+    glDeleteBuffers(1, VBO);
+    glDeleteBuffers(1, EBO);
+    glDeleteVertexArrays(1, VAO);
 
-    glGenVertexArrays(1, &oVAO);
-    glGenBuffers(1, &oEBO);
-    glGenBuffers(1, &oVBO);
-    glBindVertexArray(oVAO);
+    glGenVertexArrays(1, VAO);
+    glGenBuffers(1, EBO);
+    glGenBuffers(1, VBO);
+    glBindVertexArray(*VAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER,oVBO);
+    glBindBuffer(GL_ARRAY_BUFFER,*VBO);
     glBufferData(GL_ARRAY_BUFFER, curVert->size()*sizeof(float),&curVert->front(), GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,oEBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,*EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, curInd->size()*sizeof(uint),&curInd->front(), GL_DYNAMIC_DRAW);
 
     int vertexSize = 4*sizeof(float);
@@ -715,10 +811,19 @@ void BSP::setupBufferObjects(RenderType type)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     geometryChanged = true;
+
+
+    curVert->clear();
+    curInd->clear();
+    if(error != 0)
+    {
+      std::cout << "OPENGL ERRORAFTER BUFFESETUP" << error << ": in chunk pos"<< glm::to_string(parent->chunkPos) << "\n";
+      std::cout << oVAO << ":" << oIndicesSize << "\n";
+    }
   }
 }
 
-inline void BSP::render()
+void BSP::render()
 {
   setupBufferObjects(OPAQUE);
 
@@ -726,12 +831,11 @@ inline void BSP::render()
 
 void BSP::drawOpaque()
 {
-
-  if(oIndices->size() != 0)
+  //std::cout << oIndicesSize << "\n";
+  if(oIndicesSize != 0)
   {
-
     glBindVertexArray(oVAO);
-    glDrawElements(GL_TRIANGLES, oIndices->size(), GL_UNSIGNED_INT,0);
+    glDrawElements(GL_TRIANGLES, oIndicesSize, GL_UNSIGNED_INT,0);
     glBindVertexArray(0);
     //If it errors, re render it
     //TODO: find the source of the bug so the chunk building never fails
@@ -739,8 +843,8 @@ void BSP::drawOpaque()
     int error = glGetError();
     if(error != 0)
     {
-      std::cout << "OPENGL ERROR" << error << ": in chunk pos"<< glm::to_string(chunkPos) << "\n";
-      render();
+      std::cout << "OPENGL ERROR" << error << ": in chunk pos"<< glm::to_string(parent->chunkPos) << "\n";
+      //std::cout << oVAO << ":" << oIndicesSize << "\n";
     }
 
   }
@@ -749,6 +853,6 @@ void BSP::drawOpaque()
 void BSP::drawTranslucent()
 {
   glBindVertexArray(tVAO);
-  glDrawElements(GL_TRIANGLES, tIndices->size(), GL_UNSIGNED_INT,0);
+  //glDrawElements(GL_TRIANGLES, tIndices->size(), GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
 }

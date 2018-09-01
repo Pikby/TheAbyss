@@ -158,7 +158,7 @@ $(C)settings.o: ../src/Settings/settings.cpp
 	$(OFLAGS) ../src/Settings/settings.cpp -o $(C)settings.o
 
 linux: $(COBJECTLIST)
-	$(CC) -o linux  $(COBJECTLIST) $(CFLAGSLINUX) -O3
+	$(CC) -o linux  $(COBJECTLIST) $(CFLAGSLINUX) -O3 -g
 
 windows:
 	cd ../src && $(WCC) -o windows.exe $(TARGET) $(CFLAGSWINDOWS)
