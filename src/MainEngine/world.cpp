@@ -28,7 +28,6 @@
 
 World::World(int numbBuildThreads,int width,int height)
 {
-  buildQueue = new TSafeQueue<std::shared_ptr<BSPNode>>[numbBuildThreads];
   numbOfThreads = numbBuildThreads;
 
   ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
@@ -138,6 +137,33 @@ void World::calculateViewableChunks()
   glm::ivec3 min = toChunkCoords(drawer.viewMin);
   glm::ivec3 max = toChunkCoords(drawer.viewMax);
   drawer.chunksToDraw = BSPmap.findAll(min,max);
+
+  auto check = [](glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 target)
+  {
+      glm::vec3 U = b - a;
+      glm::vec3 V = c - a;
+      glm::vec3 UVCross = glm::cross(U,V);
+      glm::vec3 chunkVec = target - a;
+      return (glm::dot(chunkVec,UVCross) < 0);
+  };
+  glm::vec3* viewFrustrum = drawer.viewFrustrum;
+
+  if(drawer.chunksToDraw->empty()) return;
+  for(auto it = drawer.chunksToDraw->cbegin();it != drawer.chunksToDraw->cend();)
+  {
+    std::shared_ptr<BSPNode> curNode = (*it);
+    glm::vec3 chunkVec = curNode->getRealWorldPosition();
+    if(check(viewFrustrum[3],viewFrustrum[6],viewFrustrum[7],chunkVec)
+       && check(viewFrustrum[3],viewFrustrum[0],viewFrustrum[2],chunkVec)
+       && check(viewFrustrum[0],viewFrustrum[4],viewFrustrum[5],chunkVec)
+       && check(viewFrustrum[2],viewFrustrum[5],viewFrustrum[6],chunkVec)
+       && check(viewFrustrum[3],viewFrustrum[7],viewFrustrum[4],chunkVec))
+    {
+      ++it;
+    }
+    else it = (drawer.chunksToDraw->erase(it));
+  }
+
 }
 
 
@@ -210,11 +236,16 @@ void World::generateChunkFromString(const glm::ivec3 &chunk,const char* value)
 void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
 {
   if(curNode->toBuild == true) return;
-  static int currentThread = 0;
-  buildQueue[currentThread].push(curNode);
   curNode->toBuild = true;
+  buildQueue.push(curNode);
 }
 
+void World::addToBuildQueueFront(std::shared_ptr<BSPNode> curNode)
+{
+  if(curNode->toBuild == true) return;
+  curNode->toBuild = true;
+  buildQueue.push_front(curNode);
+}
 
 void World::findChunkToRequest(const float mainx,const float mainy,const float mainz)
 {
@@ -300,12 +331,11 @@ void World::renderWorld(float mainx, float mainy, float mainz)
 
 void World::buildWorld(int threadNumb)
 {
-  buildQueue[threadNumb].waitForData();
-  while(!buildQueue[threadNumb].empty())
+  buildQueue.waitForData();
+  while(!buildQueue.empty())
   {
-    std::shared_ptr<BSPNode> chunk = buildQueue[threadNumb].front();
+    std::shared_ptr<BSPNode> chunk = buildQueue.getAndPop();
     chunk->build();
-    buildQueue[threadNumb].pop();
   }
 }
 
@@ -383,7 +413,7 @@ bool World::chunkExists(const glm::ivec3 &pos)
 //If there is an entity, returns it id and position,
 //If there is a block, return its position and an id of 0
 //If there is nothing return a 0 vector  with -1 id
-glm::vec4 World::rayCast(glm::vec3 pos, glm::vec3 front, int max)
+glm::vec4 World::rayCast(const glm::vec3 &pos,const glm::vec3 &front, int max)
 {
   float parts = 10;
   for(float i = 0; i<max;i += 1/parts)
@@ -407,7 +437,7 @@ glm::vec4 World::rayCast(glm::vec3 pos, glm::vec3 front, int max)
 
 
 
-glm::ivec3 inline World::toLocalCoords(glm::ivec3 in)
+glm::ivec3 inline World::toLocalCoords(const glm::ivec3 &in)
 {
   glm::ivec3 out;
   out.x = in.x >= 0 ? in.x % CHUNKSIZE : CHUNKSIZE + (in.x % CHUNKSIZE);
@@ -420,7 +450,7 @@ glm::ivec3 inline World::toLocalCoords(glm::ivec3 in)
   return out;
 }
 
-glm::ivec3 inline World::toChunkCoords(glm::ivec3 in)
+glm::ivec3 inline World::toChunkCoords(const glm::ivec3 &in)
 {
   glm::ivec3 out;
   out.x = floor((float)in.x/(float)CHUNKSIZE);
@@ -429,7 +459,7 @@ glm::ivec3 inline World::toChunkCoords(glm::ivec3 in)
   return out;
 }
 
-inline void World::checkForUpdates(glm::ivec3 local,std::shared_ptr<BSPNode> chunk)
+inline void World::checkForUpdates(const glm::ivec3 &local,std::shared_ptr<BSPNode> chunk)
 {
   auto check = [&](std::shared_ptr<BSPNode> chunk)
   {
@@ -492,7 +522,7 @@ void World::addBlock(const glm::ivec3 &pos,uchar id)
   if(tempChunk != NULL)
   {
     tempChunk->addBlock(local,id);
-    addToBuildQueue(tempChunk);
+    addToBuildQueueFront(tempChunk);
     checkForUpdates(local,tempChunk);
   }
 
@@ -508,7 +538,7 @@ void World::delBlock(const glm::ivec3 &pos)
   if(tempChunk != NULL)
   {
     tempChunk->delBlock(local);
-    addToBuildQueue(tempChunk);
+    addToBuildQueueFront(tempChunk);
     checkForUpdates(local,tempChunk);
   }
 }
@@ -520,7 +550,7 @@ void World::updateBlock(const glm::ivec3 &pos)
   std::shared_ptr<BSPNode>  tempChunk = getChunk(chunk);
   if(!tempChunk->toBuild)
   {
-    addToBuildQueue(tempChunk);
+    addToBuildQueueFront(tempChunk);
   }
 
 }

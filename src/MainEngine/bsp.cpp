@@ -203,6 +203,12 @@ void BSPNode::setNeighbour(Faces face, std::shared_ptr<BSPNode> neighbour)
   }
 }
 
+//Get real world position
+glm::ivec3 BSPNode::getRealWorldPosition()
+{
+  return (CHUNKSIZE*chunkPos) + glm::ivec3(CHUNKSIZE/2);
+}
+
 BSP::BSP(const char* data, BSPNode* Parent)
 {
   oIndicesSize = 0;
@@ -214,6 +220,9 @@ BSP::BSP(const char* data, BSPNode* Parent)
   oVBO = 0;
   oEBO = 0;
   oVAO = 0;
+  tVBO = 0;
+  tEBO = 0;
+  tVAO = 0;
 
   const int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
   int i = 0;
@@ -257,29 +266,12 @@ void BSP::freeGL()
   glDeleteBuffers(1,&oEBO);
 
 
-  //glDeleteBuffers(1,&tVBO);
-  //glDeleteBuffers(1,&tEBO);
-  //glDeleteVertexArrays(1,&tVAO);
+  glDeleteBuffers(1,&tVBO);
+  glDeleteBuffers(1,&tEBO);
+  glDeleteVertexArrays(1,&tVAO);
 
 }
 
-void BSP::swapBuffers()
-{
-  /*
-  oVertices = oVerticesBuffer;
-  oIndices = oIndicesBuffer;
-  tVertices = tVerticesBuffer;
-  tIndices = tIndicesBuffer;
-
-  oVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  oIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-  tVerticesBuffer = std::shared_ptr<std::vector<float>> (new std::vector<float>);
-  tIndicesBuffer  = std::shared_ptr<std::vector<uint>> (new std::vector<uint>);
-
-  tIndicesSize = tIndices->size();
-  oIndicesSize = oIndices->size();
-  */
-}
 
 inline int pack4chars(char a, char b, char c, char d)
 {
@@ -425,8 +417,6 @@ void BSP::addIndices(RenderType renderType,int index1, int index2, int index3, i
   }
   else if(renderType == TRANSLUCENT)
   {
-    std::cout << "are u sure about that?\n";
-    return;
     curBuffer = &tIndices;
   }
   else
@@ -481,11 +471,13 @@ inline uchar BSP::getBlock(const glm::ivec3 &pos)
 
 void BSP::build()
 {
+  oVertices = std::vector<float>();
+  oIndices = std::vector<uint>();
+  tVertices = std::vector<float>();
+  tIndices = std::vector<uint>();
 
-  oVertices.clear();
-  oIndices.clear();
-  tVertices.clear();
-  tIndices.clear();
+  oVertices.reserve(20000);
+  oIndices.reserve(10000);
   Array3D<BlockFace,32> arrayFaces;
   //Populate arrayFaces in order to determine all visible faces of the mesh
   for(int x = 0; x<CHUNKSIZE;x++)
@@ -811,35 +803,24 @@ void BSP::setupBufferObjects(RenderType type)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     geometryChanged = true;
-
-
-    curVert->clear();
-    curInd->clear();
-    if(error != 0)
-    {
-      std::cout << "OPENGL ERRORAFTER BUFFESETUP" << error << ": in chunk pos"<< glm::to_string(parent->chunkPos) << "\n";
-      std::cout << oVAO << ":" << oIndicesSize << "\n";
-    }
+    *curVert = std::vector<float>();
+    *curInd = std::vector<uint>();
   }
 }
 
 void BSP::render()
 {
   setupBufferObjects(OPAQUE);
-
 }
 
 void BSP::drawOpaque()
 {
-  //std::cout << oIndicesSize << "\n";
   if(oIndicesSize != 0)
   {
     glBindVertexArray(oVAO);
     glDrawElements(GL_TRIANGLES, oIndicesSize, GL_UNSIGNED_INT,0);
     glBindVertexArray(0);
-    //If it errors, re render it
-    //TODO: find the source of the bug so the chunk building never fails
-    //Cause this is just a bandaid solution lmao
+
     int error = glGetError();
     if(error != 0)
     {

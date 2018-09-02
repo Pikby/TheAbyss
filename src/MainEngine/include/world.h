@@ -19,24 +19,22 @@ typedef unsigned int uint;
 
 //Class which encapsulates all the chunks as well as the shaders and dicionary
 class BSPNode;
-class BSP;
-class Block;
 class MainChar;
 class Player;
 enum target{BLOCK = 0, NOTHING = -1};
 class World
 {
 private:
-  static glm::ivec3 toLocalCoords(glm::ivec3 in);
-  static glm::ivec3 toChunkCoords(glm::ivec3 in);
-  inline void checkForUpdates(glm::ivec3 local,std::shared_ptr<BSPNode> chunk);
+  static glm::ivec3 toLocalCoords(const glm::ivec3 &in);
+  static glm::ivec3 toChunkCoords(const glm::ivec3 &in);
+  inline void checkForUpdates(const glm::ivec3 &local,std::shared_ptr<BSPNode> chunk);
 public:
   Messenger messenger;
   Drawer drawer;
   Map3D<std::shared_ptr<BSPNode>> BSPmap;
   char mainId;
 
-  TSafeQueue<std::shared_ptr<BSPNode>>* buildQueue;
+  TSafeQueue<std::shared_ptr<BSPNode>> buildQueue;
   TSafeQueue<std::shared_ptr<BSPNode>> chunkDeleteQueue;
   int horzRenderDistance,vertRenderDistance,renderBuffer;
   int drawnChunks;
@@ -56,7 +54,7 @@ public:
 
   std::shared_ptr<BSPNode> getChunk(const glm::ivec3 &pos);
   std::shared_ptr<BSPNode> chunkRayCast(const glm::vec3 &pos, const glm::vec3 &front);
-  glm::vec4 rayCast(glm::vec3 pos, glm::vec3 front, int max);
+  glm::vec4 rayCast(const glm::vec3 &pos,const glm::vec3 &front, int max);
 
   void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
   void addToBuildQueueFront(std::shared_ptr<BSPNode> curNode);
@@ -80,5 +78,3 @@ public:
   void generateChunkFromString(const glm::ivec3 &pos,const char* val);
 
 };
-
-//The class for each individual block in the dictionary

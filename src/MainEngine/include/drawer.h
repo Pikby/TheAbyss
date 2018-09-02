@@ -60,9 +60,7 @@ private:
   glm::vec3 viewUp;
   glm::vec3 viewRight;
 
-  //Plane goes bottomleft,topleft,topright,bottomright;
-  //0-3 is near 4-7 is far
-  glm::vec3 viewFrustrum[8];
+
   float camZoomInDegrees;
   float camNear;
   float camFar;
@@ -72,10 +70,11 @@ private:
   Shader quadShader;
   void calculateFrustrum(glm::vec3* arr, float near, float far);
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
-  void initializeSSAO();
   void renderQuad();
 public:
-  void renderSSAO();
+  //Plane goes bottomleft,topleft,topright,bottomright;
+  //0-3 is near 4-7 is far
+  glm::vec3 viewFrustrum[8];
   std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> chunksToDraw;
   std::map<uchar, std::shared_ptr<Player>> playerList;
   Map3D<std::shared_ptr<BSPNode>>* BSPmap;

@@ -69,7 +69,7 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   gBufferShader.setInt("textureAtlasHeightInCells",texHeight/cellWidth);
   gBufferShader.setInt("cellWidth",cellWidth);
   gBufferShader.setInt("curTexture",0);
-
+  gBufferShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
   std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
 
   dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
@@ -151,7 +151,7 @@ void Drawer::renderGBuffer()
   Shader* shader = &gBufferShader;
   shader->use();
   shader->setMat4("view", viewMat);
-  shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+
   //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
   drawTerrain(shader,chunksToDraw);
   //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );

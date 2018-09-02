@@ -7,7 +7,7 @@ template <class T>
 class TSafeQueue
 {
 private:
-  std::queue<T> queue;
+  std::deque<T> queue;
   std::mutex queueMutex;
   std::condition_variable cv;
 
@@ -35,19 +35,25 @@ public:
   void push(const T &item)
   {
     std::lock_guard<std::mutex> lock(queueMutex);
-    queue.push(item);
+    queue.push_back(item);
+    cv.notify_one();
+  }
+  void push_front(const T &item)
+  {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    queue.push_front(item);
     cv.notify_one();
   }
   void pop()
   {
     std::lock_guard<std::mutex> lock(queueMutex);
-    queue.pop();
+    queue.pop_front();
   }
   T getAndPop()
   {
     std::lock_guard<std::mutex> lock(queueMutex);
     T temp = queue.front();
-    queue.pop();
+    queue.pop_front();
     return temp;
   }
   void waitForData()
