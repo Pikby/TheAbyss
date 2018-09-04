@@ -70,7 +70,7 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   gBufferShader.setInt("cellWidth",cellWidth);
   gBufferShader.setInt("curTexture",0);
   gBufferShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-  std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
+  //std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
 
   dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
                             "../src/Shaders/dirDepthShader.vs");
@@ -154,6 +154,7 @@ void Drawer::renderGBuffer()
 
   //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
   drawTerrain(shader,chunksToDraw);
+  drawTerrainTranslucent(shader,chunksToDraw);
   //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 }
@@ -576,4 +577,24 @@ void Drawer::drawTerrain(Shader* shader,std::shared_ptr<std::list<std::shared_pt
     std::shared_ptr<BSPNode> curNode = (*it);
     curNode->drawOpaque();
   }
+}
+
+void Drawer::drawTerrainTranslucent(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
+{
+  glEnable(GL_DEPTH_TEST);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ONE, GL_ONE);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, glTexture);
+
+  glDepthMask(false);
+  if(list->empty()) return;
+  for(auto it = list->cbegin();it != list->cend();++it)
+  {
+    std::shared_ptr<BSPNode> curNode = (*it);
+    curNode->drawTranslucent();
+  }
+  glDepthMask(true);
+  glBlendFunc(GL_ONE, GL_ONE);
 }

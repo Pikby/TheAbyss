@@ -65,14 +65,7 @@ void BSPNode::drawOpaque()
 
 void BSPNode::drawTranslucent()
 {
-  /*
-  if(toRender == true)
-  {
-     curBSP.render();
-     toRender = false;
-  }
   curBSP.drawTranslucent();
-  */
 }
 
 
@@ -369,8 +362,6 @@ int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face, Textur
   }
   else if(renderType == TRANSLUCENT)
   {
-    std::cout << "are u sure about that?\n";
-    return 0;
     curBuffer = &tVertices;
   }
   else
@@ -811,6 +802,7 @@ void BSP::setupBufferObjects(RenderType type)
 void BSP::render()
 {
   setupBufferObjects(OPAQUE);
+  setupBufferObjects(TRANSLUCENT);
 }
 
 void BSP::drawOpaque()
@@ -833,7 +825,11 @@ void BSP::drawOpaque()
 
 void BSP::drawTranslucent()
 {
-  glBindVertexArray(tVAO);
-  //glDrawElements(GL_TRIANGLES, tIndices->size(), GL_UNSIGNED_INT,0);
-  glBindVertexArray(0);
+  if(tIndicesSize)
+  {
+    glBindVertexArray(tVAO);
+    glDrawElements(GL_TRIANGLES, tIndicesSize, GL_UNSIGNED_INT,0);
+    glBindVertexArray(0);
+  }
+
 }

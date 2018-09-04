@@ -120,6 +120,8 @@ public:
     renderDirectionalDepthMap();
   }
   void drawTerrain(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);
+  void drawTerrainTranslucent(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);
+
   void drawPlayers(Shader* shader);
 
 

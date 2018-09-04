@@ -28,8 +28,8 @@
 {
   id : 4
   name : LightBlock
-  textureIds : 3,3,3,3,3,3
-  opacity : opaque
+  textureIds : 1,1,1,1,1,1
+  opacity : translucent
   isLightSource
     lightColor : ,0.1,0.2,0.3,
     lightSize : 100
