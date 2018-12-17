@@ -26,9 +26,10 @@
 //#include "worldDrawingEngine.h"
 
 
-World::World(int numbBuildThreads,int width,int height)
+World::World(int NumbBuildThreads,int width,int height)
 {
-  numbOfThreads = numbBuildThreads;
+  numbOfBuildThreads = NumbBuildThreads;
+
 
   ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
   ItemDatabase::loadItemDictionary("../assets/itemDictionary.dat");
@@ -235,16 +236,23 @@ void World::generateChunkFromString(const glm::ivec3 &chunk,const char* value)
 
 void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
 {
+  static int curQueue = 0;
+  curQueue %= numbOfBuildThreads;
+
   if(curNode->toBuild == true) return;
   curNode->toBuild = true;
   buildQueue.push(curNode);
+    //curQueue++;
+
+
 }
 
 void World::addToBuildQueueFront(std::shared_ptr<BSPNode> curNode)
 {
-  if(curNode->toBuild == true) return;
-  curNode->toBuild = true;
-  buildQueue.push_front(curNode);
+  std::lock_guard<std::recursive_mutex> lock(curNode->BSPMutex);
+    if(curNode->toBuild == true) return;
+    curNode->toBuild = true;
+    buildQueue.push_front(curNode);
 }
 
 void World::findChunkToRequest(const float mainx,const float mainy,const float mainz)
@@ -329,7 +337,7 @@ void World::renderWorld(float mainx, float mainy, float mainz)
   }
 }
 
-void World::buildWorld(int threadNumb)
+void World::buildWorld(char threadNumb)
 {
   buildQueue.waitForData();
   while(!buildQueue.empty())

@@ -9,7 +9,7 @@
 int main()
 {
   glfwInit();
-  const int numbBuildThreads = 1;
+  const int numbBuildThreads = 2;
   int winWidth = std::stoi(Settings::get("windowWidth"));
   int winHeight = std::stoi(Settings::get("windowHeight"));
   GLFWwindow* newWindow = createWindow(winWidth,winHeight);
@@ -78,6 +78,8 @@ int main()
 
   std::cout << "Render threads created \n";
   std::thread buildThread(build,0);
+  //std::thread buildThread2(build,1);
+  //buildThread2.detach();
   buildThread.detach();
   /*
   pthread_t buildThreads[numbBuildThreads];

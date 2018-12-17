@@ -92,10 +92,11 @@ class BSPNode
 {
   private:
     BSP curBSP;
-    std::recursive_mutex BSPMutex;
+
     //references to the 6 cardinal neighbours of the chunk
     std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;
   public:
+    std::recursive_mutex BSPMutex;
     static int totalChunks;
     glm::ivec3 chunkPos;
 

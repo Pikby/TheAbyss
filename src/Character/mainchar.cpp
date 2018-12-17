@@ -136,13 +136,19 @@ void MainChar::update()
 
   static double lastFrame = 0;
   static double curFrame = 0;
+  static double lastfps = 0;
   curFrame = glfwGetTime();
-  double fps = 1.0f/(curFrame - lastFrame);
+  double curfps = 1.0f/(curFrame - lastFrame);
+  const double smoothing = 0.999;
+  double fps = lastfps*smoothing + curfps*(1-smoothing);
   lastFrame = curFrame;
+  lastfps = fps;
   std::string line = "[colour='FF000000']FPS: " + std::to_string(fps);
   gui.gameWindow->getChild("FPS")->setText(line);
   line = "[colour='FF000000']ChunksLoaded: " + std::to_string(BSPNode::totalChunks);
   gui.gameWindow->getChild("Chunks")->setText(line);
+  line = "[colour='FF000000']Chunks In Queue 0: " + std::to_string(curWorld->buildQueue.size());
+  gui.gameWindow->getChild("ChunksQueue")->setText(line);
 }
 
 void MainChar::moveRight()

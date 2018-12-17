@@ -48,7 +48,7 @@
 // Only the latest compilers will support this
 //#define FN_COMPILE_AVX512
 
-// Using FMA instructions with AVX(51)2/NEON provides a small performance increase but can cause 
+// Using FMA instructions with AVX(51)2/NEON provides a small performance increase but can cause
 // minute variations in noise output compared to other SIMD levels due to higher calculation precision
 // Intel compiler will always generate FMA instructions, use /Qfma- or -no-fma to disable
 #define FN_USE_FMA
@@ -109,7 +109,7 @@ public:
 	enum CellularDistanceFunction { Euclidean, Manhattan, Natural };
 	enum CellularReturnType { CellValue, Distance, Distance2, Distance2Add, Distance2Sub, Distance2Mul, Distance2Div, NoiseLookup, Distance2Cave };
 
-	// Creates new FastNoiseSIMD for the highest supported instuction set of the CPU 
+	// Creates new FastNoiseSIMD for the highest supported instuction set of the CPU
 	static FastNoiseSIMD* NewFastNoiseSIMD(int seed = 1337);
 
 	// Returns highest detected level of CPU support
@@ -228,15 +228,15 @@ public:
 	// Default: 3
 	void SetPerturbFractalOctaves(int perturbOctaves) { m_perturbOctaves = perturbOctaves; m_perturbFractalBounding = CalculateFractalBounding(m_perturbOctaves, m_perturbGain); }
 
-	// Sets octave lacunarity for perturb fractal types 
+	// Sets octave lacunarity for perturb fractal types
 	// Default: 2.0
 	void SetPerturbFractalLacunarity(float perturbLacunarity) { m_perturbLacunarity = perturbLacunarity; }
-	
-	// Sets octave gain for perturb fractal types 
+
+	// Sets octave gain for perturb fractal types
 	// Default: 0.5
 	void SetPerturbFractalGain(float perturbGain) { m_perturbGain = perturbGain; m_perturbFractalBounding = CalculateFractalBounding(m_perturbOctaves, m_perturbGain);	}
 
-	// Sets the length for vectors after perturb normalising 
+	// Sets the length for vectors after perturb normalising
 	// Default: 1.0
 	void SetPerturbNormaliseLength(float perturbNormaliseLength) { m_perturbNormaliseLength = perturbNormaliseLength; }
 
@@ -282,7 +282,7 @@ public:
 	float* GetCellularSet(int xStart, int yStart, int zStart, int xSize, int ySize, int zSize, float scaleModifier = 1.0f);
 	virtual void FillCellularSet(float* noiseSet, int xStart, int yStart, int zStart, int xSize, int ySize, int zSize, float scaleModifier = 1.0f) = 0;
 	virtual void FillCellularSet(float* noiseSet, FastNoiseVectorSet* vectorSet, float xOffset = 0.0f, float yOffset = 0.0f, float zOffset = 0.0f) = 0;
-	
+
 	float* GetCubicSet(int xStart, int yStart, int zStart, int xSize, int ySize, int zSize, float scaleModifier = 1.0f);
 	float* GetCubicFractalSet(int xStart, int yStart, int zStart, int xSize, int ySize, int zSize, float scaleModifier = 1.0f);
 	virtual void FillCubicSet(float* noiseSet, int xStart, int yStart, int zStart, int xSize, int ySize, int zSize, float scaleModifier = 1.0f) = 0;
@@ -304,8 +304,8 @@ protected:
 	int m_octaves = 3;
 	float m_lacunarity = 2.0f;
 	float m_gain = 0.5f;
-	FractalType m_fractalType = FBM;	
-	float m_fractalBounding;	
+	FractalType m_fractalType = FBM;
+	float m_fractalBounding;
 
 	CellularDistanceFunction m_cellularDistanceFunction = Euclidean;
 	CellularReturnType m_cellularReturnType = Distance;

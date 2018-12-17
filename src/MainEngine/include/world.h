@@ -38,7 +38,7 @@ public:
   TSafeQueue<std::shared_ptr<BSPNode>> chunkDeleteQueue;
   int horzRenderDistance,vertRenderDistance,renderBuffer;
   int drawnChunks;
-  int numbOfThreads;
+  int numbOfBuildThreads;
 
   //The name of the world, for saving and loading
   std::string worldName;
@@ -62,7 +62,7 @@ public:
 
   void renderWorld(float mainx, float mainy, float mainz);
 
-  void buildWorld(int threadNumb);
+  void buildWorld(char threadNumb);
   bool chunkExists(const glm::ivec3 &pos);
   void addPlayer(const glm::vec3 &pos, uchar id);
   void removePlayer(uchar id);
