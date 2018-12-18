@@ -12,6 +12,17 @@
 #include "include/mainchar.h"
 
 #define PI 3.14159265
+std::string MainChar::userName;
+Menu MainChar::curMenu;
+GUIRenderer MainChar::gui;
+int MainChar::screenWidth, MainChar::screenHeight;
+std::deque<std::string> MainChar::chatLog;
+float MainChar::gravity, MainChar::moveSpeed,MainChar::deltax,MainChar::deltay,MainChar::deltaz;
+int MainChar::reach;
+bool MainChar::shiftHeld, MainChar::grounded,MainChar::controlHeld,MainChar::inInventory;
+Camera MainChar::mainCam;
+std::atomic<float> MainChar::xpos,MainChar::ypos,MainChar::zpos;
+
 
 template <typename T> int sign(T val)
 {
@@ -27,7 +38,7 @@ float max(float a, float b, float c)
 
 }
 
-MainChar::MainChar(float x, float y, float z, World* world )
+void MainChar::initMainChar(float x, float y, float z)
 {
   shiftHeld = false;
   curMenu = WORLDMENU;
@@ -37,11 +48,11 @@ MainChar::MainChar(float x, float y, float z, World* world )
   deltax = 0;
   deltay = 0;
   deltaz = 0;
+  reach = 200;
   moveSpeed = 1.0f;
-  curWorld = world;
   mainCam = Camera(glm::vec3((float)xpos,(float)ypos,(float)zpos));
-  screenWidth = curWorld->drawer.screenWidth;
-  screenHeight = curWorld->drawer.screenHeight;
+  screenWidth = World::drawer.screenWidth;
+  screenHeight = World::drawer.screenHeight;
   userName = Settings::get("userName");
   gui = GUIRenderer(screenWidth,screenHeight,userName);
 
@@ -113,17 +124,17 @@ void MainChar::addCharacterToChat(int key)
 
 void MainChar::update()
 {
-  if(!curWorld->blockExists(glm::ivec3(floor(xpos+deltax),floor(ypos),floor(zpos))))
+  if(!World::blockExists(glm::ivec3(floor(xpos+deltax),floor(ypos),floor(zpos))))
   {
     xpos = xpos + deltax;
   }
 
-  if(!curWorld->blockExists(glm::ivec3(floor(xpos),floor(ypos),floor(zpos+deltaz))))
+  if(!World::blockExists(glm::ivec3(floor(xpos),floor(ypos),floor(zpos+deltaz))))
   {
     zpos = zpos + deltaz;
   }
 
-  if(!curWorld->blockExists(glm::ivec3(floor(xpos),floor(ypos+deltay),floor(zpos))))
+  if(!World::blockExists(glm::ivec3(floor(xpos),floor(ypos+deltay),floor(zpos))))
   {
     ypos = ypos + deltay;
     grounded = false;
@@ -147,7 +158,7 @@ void MainChar::update()
   gui.gameWindow->getChild("FPS")->setText(line);
   line = "[colour='FF000000']ChunksLoaded: " + std::to_string(BSPNode::totalChunks);
   gui.gameWindow->getChild("Chunks")->setText(line);
-  line = "[colour='FF000000']Chunks In Queue 0: " + std::to_string(curWorld->buildQueue.size());
+  line = "[colour='FF000000']Chunks In Queue 0: " + std::to_string(World::buildQueue.size());
   gui.gameWindow->getChild("ChunksQueue")->setText(line);
 }
 
@@ -200,16 +211,16 @@ void MainChar::jump()
 //Destroys the block ur looking at
 void MainChar::destroyBlock()
 {
-  glm::vec4 block = curWorld->rayCast(mainCam.position,mainCam.front,reach);
+  glm::vec4 block = World::rayCast(mainCam.position,mainCam.front,reach);
 
   if(block.w == NOTHING) return;
   std::cout << "Destroying blocks\n";
-  curWorld->messenger.createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
+  World::messenger.createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
 
 }
 void MainChar::addBlock(int id)
 {
-    glm::vec4 block = curWorld->rayCast(mainCam.position,mainCam.front,reach);
+    glm::vec4 block = World::rayCast(mainCam.position,mainCam.front,reach);
     if(block.w == NOTHING) return;
 
     glm::vec3 p1 = glm::vec3(block);
@@ -221,15 +232,15 @@ void MainChar::addBlock(int id)
 
     if(x != 0)
     {
-      curWorld->messenger.createAddBlockRequest(floor(p1.x)-sign(x),floor(p1.y),floor(p1.z),id);
+      World::messenger.createAddBlockRequest(floor(p1.x)-sign(x),floor(p1.y),floor(p1.z),id);
     }
     else if(y != 0)
     {
-      curWorld->messenger.createAddBlockRequest(floor(p1.x),floor(p1.y)-sign(y),floor(p1.z),id);
+      World::messenger.createAddBlockRequest(floor(p1.x),floor(p1.y)-sign(y),floor(p1.z),id);
     }
     else if(z != 0)
     {
-      curWorld->messenger.createAddBlockRequest(floor(p1.x),floor(p2.y),floor(p1.z)-sign(z),id);
+      World::messenger.createAddBlockRequest(floor(p1.x),floor(p2.y),floor(p1.z)-sign(z),id);
     }
 
 }
@@ -291,7 +302,7 @@ void MainChar::sendMessage()
   gui.chatConsole.open(false);
   if(gui.chatConsole.curMsg != "")
   {
-    curWorld->messenger.createChatMessage(gui.chatConsole.curMsg);
+    World::messenger.createChatMessage(gui.chatConsole.curMsg);
     gui.chatConsole.sendCurrentMessage();
   }
 

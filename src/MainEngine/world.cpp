@@ -23,10 +23,21 @@
 
 #include "include/messenger.h"
 #include "../Objects/include/items.h"
-//#include "worldDrawingEngine.h"
+
+//Initialize all the static objects for world
+Messenger World::messenger;
+Drawer World::drawer;
+Map3D<std::shared_ptr<BSPNode>> World::BSPmap;
+char World::mainId;
+TSafeQueue<std::shared_ptr<BSPNode>> World::buildQueue;
+TSafeQueue<std::shared_ptr<BSPNode>> World::chunkDeleteQueue;
+int World::horzRenderDistance,World::vertRenderDistance,World::renderBuffer;
+int World::drawnChunks;
+int World::numbOfBuildThreads;
+std::string World::worldName;
 
 
-World::World(int NumbBuildThreads,int width,int height)
+void World::initWorld(int NumbBuildThreads,int width,int height)
 {
   numbOfBuildThreads = NumbBuildThreads;
 

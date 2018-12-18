@@ -20,15 +20,8 @@ static float lastFrame = 0.0f;
 static float lastX = 400;
 static float lastY = 300;
 static bool firstMouse = true;
-static MainChar* mainCharacter;
 std::map<int,int> keyMap;
 
-
-
-void initializeInputs(MainChar* mc)
-{
-	mainCharacter = mc;
-}
 CEGUI::Key::Scan translateGLFWtoCEGUI(int key)
 {
 	//using namespace CEGUI;
@@ -50,7 +43,7 @@ void updateInputs()
 	{
 
 		int key = it->first;
-		mainCharacter->handleKeyHold(key);
+		MainChar::handleKeyHold(key);
 	}
 }
 
@@ -58,11 +51,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
 	if(action == GLFW_PRESS || action == GLFW_REPEAT)
 	{
-		mainCharacter->handleKeyPress(key);
+		MainChar::handleKeyPress(key);
 	}
 	else if(action == GLFW_RELEASE)
 	{
-		mainCharacter->handleKeyRelease(key);
+		MainChar::handleKeyRelease(key);
 	}
 
 	if(keyMap.count(key) == 1)
@@ -94,12 +87,12 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	lastX = xpos;
 	lastY = ypos;
 
-	mainCharacter->processMouseMovement(xoffset, yoffset);
+	MainChar::processMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	mainCharacter->mainCam.processMouseScroll(yoffset);
+	MainChar::mainCam.processMouseScroll(yoffset);
 }
 
 void mousekey_callback(GLFWwindow* window, int button, int action, int mods)
@@ -108,7 +101,7 @@ void mousekey_callback(GLFWwindow* window, int button, int action, int mods)
 	CEGUI::GUIContext& context = CEGUI::System::getSingleton().getDefaultGUIContext();
   if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
 	{
-    mainCharacter->handleMouseClick(GLFW_MOUSE_BUTTON_LEFT);
+    MainChar::handleMouseClick(GLFW_MOUSE_BUTTON_LEFT);
 
 		context.injectMouseButtonDown(CEGUI::LeftButton);
 	}
@@ -120,7 +113,7 @@ void mousekey_callback(GLFWwindow* window, int button, int action, int mods)
 
   if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 	{
-		mainCharacter->handleMouseClick(GLFW_MOUSE_BUTTON_RIGHT);
+		MainChar::handleMouseClick(GLFW_MOUSE_BUTTON_RIGHT);
 		CEGUI::GUIContext& context = CEGUI::System::getSingleton().getDefaultGUIContext();
 		context.injectMouseButtonDown(CEGUI::RightButton);
 	}
@@ -136,5 +129,5 @@ void moveForward(bool isOn)
 	static bool on = false;
 	on = isOn;
 
-	if(on) mainCharacter->moveForward();
+	if(on) MainChar::moveForward();
 }

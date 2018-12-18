@@ -2,7 +2,6 @@
 #include "gui.h"
 #include <atomic>
 #include "../../headers/camera.h"
-class World;
 
 class Item;
 
@@ -14,58 +13,55 @@ class MainChar
 {
 private:
   //References
-  std::string userName;
-  Menu curMenu;
-  World* curWorld;
-  GUIRenderer gui;
-  int screenWidth, screenHeight;
-  std::deque<std::string> chatLog;
+  static std::string userName;
+  static Menu curMenu;
+  static GUIRenderer gui;
+  static int screenWidth, screenHeight;
+  static std::deque<std::string> chatLog;
 
   //Character attributes
-  float gravity;
-  float moveSpeed;
-  float deltax,deltay,deltaz;
-  int reach = 200;
-  bool grounded;
-  bool shiftHeld;
-  bool controlHeld;
+  static float gravity;
+  static float moveSpeed;
+  static float deltax,deltay,deltaz;
+  static int reach;
+  static bool shiftHeld;
+  static bool grounded;
+  static bool controlHeld;
 
 
-  bool inInventory;
+  static bool inInventory;
 public:
-  Camera mainCam;
+  static Camera mainCam;
+  static std::atomic<float> xpos,ypos,zpos;
 
-
-  std::atomic<float> xpos,ypos,zpos;
-
-  MainChar(float x, float y, float z, World* curWorld );
+  static void initMainChar(float x, float y, float z);
   //Update movement
-  void update();
-  void processMouseMovement(float xoffset, float yoffset);
-  void switchInventoryMode();
-  void openChat();
-  void closeChat();
-  void sendMessage();
+  static void update();
+  static void processMouseMovement(float xoffset, float yoffset);
+  static void switchInventoryMode();
+  static void openChat();
+  static void closeChat();
+  static void sendMessage();
   //Movement inputs
-  void moveLeft();
-  void moveRight();
-  void moveForward();
-  void moveBackward();
-  void moveDown();
-  void moveUp();
-  void jump();
+  static void moveLeft();
+  static void moveRight();
+  static void moveForward();
+  static void moveBackward();
+  static void moveDown();
+  static void moveUp();
+  static void jump();
 
-  void handleKeyPress(int key);
-  void handleKeyHold(int key);
-  void handleKeyRelease(int key);
-  void handleMouseClick(int key);
-  void addBlock(int id);
-  void destroyBlock();
-  void setPosition(const glm::vec3 &pos);
-  void draw();
+  static void handleKeyPress(int key);
+  static void handleKeyHold(int key);
+  static void handleKeyRelease(int key);
+  static void handleMouseClick(int key);
+  static void addBlock(int id);
+  static void destroyBlock();
+  static void setPosition(const glm::vec3 &pos);
+  static void draw();
   //Hud functions
-  void addCharacterToChat(int key);
-  void addChatLine(std::string line)
+  static void addCharacterToChat(int key);
+  static void addChatLine(std::string line)
   {
     gui.chatConsole.incomingMessages->push(line);
   }

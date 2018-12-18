@@ -20,10 +20,8 @@
 #include "../Settings/settings.h"
 
 
-//Global maincharacter reference which encapsulates the camera
-static World* newWorld;
+
 static GLFWwindow* window;
-static MainChar* mainCharacter;
 
 
 
@@ -52,9 +50,8 @@ GLFWwindow* createWindow(int width, int height)
 
 void initWorld(int numbBuildThreads, int width,  int height)
 {
-  newWorld = new World(numbBuildThreads,width,height);
-  mainCharacter = new MainChar(0,50,0,newWorld);
-  initializeInputs(mainCharacter);
+  World::initWorld(numbBuildThreads,width,height);
+  MainChar::initMainChar(0,50,0);
 }
 
 void closeGame()
@@ -69,9 +66,9 @@ void draw()
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
-  newWorld->drawer.createDirectionalLight(glm::vec3(-0.1f,-1.0f,-0.1f),glm::vec3(0.4f,0.4f,0.4f));
+  World::drawer.createDirectionalLight(glm::vec3(-0.1f,-1.0f,-0.1f),glm::vec3(0.4f,0.4f,0.4f));
   SkyBox skyBox;
-  Camera* mainCam = &(mainCharacter->mainCam);
+  Camera* mainCam = &(MainChar::mainCam);
 
   Cube cube;
   cube.render();
@@ -79,32 +76,32 @@ void draw()
   Player player;
   player.render();
 
-  newWorld->drawer.addCube(glm::vec3(0,50,0));
-    newWorld->drawer.addCube(glm::vec3(0,50,0));
-    newWorld->drawer.addCube(glm::vec3(0,50,0));
-    newWorld->drawer.addCube(glm::vec3(0,50,0));
-  //newWorld->addLight(glm::vec3(10,50,10));
+  World::drawer.addCube(glm::vec3(0,50,0));
+    World::drawer.addCube(glm::vec3(0,50,0));
+    World::drawer.addCube(glm::vec3(0,50,0));
+    World::drawer.addCube(glm::vec3(0,50,0));
+  //World::addLight(glm::vec3(10,50,10));
   while(!glfwWindowShouldClose(window))
   {
 
-    //std::cout << newWorld->drawnChunks << "\n";
-    newWorld->drawnChunks = 0;
-    newWorld->drawer.chunksToDraw = NULL;
-    newWorld->deleteChunksFromQueue();
+    //std::cout << World::drawnChunks << "\n";
+    World::drawnChunks = 0;
+    World::drawer.chunksToDraw = NULL;
+    World::deleteChunksFromQueue();
     glfwPollEvents();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    mainCharacter->update();
+    MainChar::update();
 
 
-    newWorld->drawer.updateCameraMatrices(mainCam);
+    World::drawer.updateCameraMatrices(mainCam);
 
     //if(std::stoi(Settings::get("unlockCamera")))
     {
-      newWorld->calculateViewableChunks();
+      World::calculateViewableChunks();
     }
-    newWorld->drawer.renderGBuffer();
+    World::drawer.renderGBuffer();
 
-    //newWorld->drawer.renderDirectionalShadows();
+    //World::drawer.renderDirectionalShadows();
     if(BSP::geometryChanged == true)
     {
 
@@ -112,10 +109,10 @@ void draw()
       BSP::geometryChanged = false;
     }
 
-    //newWorld->drawer.renderSSAO();
-    newWorld->drawer.drawFinal();
-    //newWorld->drawer.drawObjects();
-    //newWorld->drawer.drawPlayers();
+    //World::drawer.renderSSAO();
+    World::drawer.drawFinal();
+    World::drawer.drawObjects();
+    World::drawer.drawPlayers();
 
     int error = glGetError();
     if(error != 0)
@@ -150,7 +147,7 @@ void render()
     //std::cout << deltaFrame << ":" << waitTime ;
     //std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
     currentFrame = glfwGetTime();
-    newWorld->renderWorld(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
+    World::renderWorld(MainChar::xpos,MainChar::ypos,MainChar::zpos);
   }
 
 
@@ -173,7 +170,7 @@ void del()
     //std::cout << deltaFrame << ":" << waitTime ;
     std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
     currentFrame = glfwGetTime();
-    newWorld->delScan(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
+    World::delScan(MainChar::xpos,MainChar::ypos,MainChar::zpos);
   }
 
 }
@@ -198,7 +195,7 @@ void logic()
     updateInputs();
 
     //DO the game logic
-    newWorld->messenger.createMoveRequest(mainCharacter->xpos,mainCharacter->ypos,mainCharacter->zpos);
+    World::messenger.createMoveRequest(MainChar::xpos,MainChar::ypos,MainChar::zpos);
   }
 }
 
@@ -206,28 +203,28 @@ void send()
 {
   while(!glfwWindowShouldClose(window))
   {
-    newWorld->messenger.messageQueue.waitForData();
-    while(!newWorld->messenger.messageQueue.empty())
+    World::messenger.messageQueue.waitForData();
+    while(!World::messenger.messageQueue.empty())
     {
-      OutMessage msg = newWorld->messenger.messageQueue.front();
-      newWorld->messenger.messageQueue.pop();
+      OutMessage msg = World::messenger.messageQueue.front();
+      World::messenger.messageQueue.pop();
       uchar opcode = msg.opcode;
       switch(opcode)
       {
         case(0):
-          newWorld->messenger.requestChunk(msg.x.i,msg.y.i,msg.z.i);
+          World::messenger.requestChunk(msg.x.i,msg.y.i,msg.z.i);
           break;
         case(1):
-          newWorld->messenger.requestDelBlock(msg.x.i,msg.y.i,msg.z.i);
+          World::messenger.requestDelBlock(msg.x.i,msg.y.i,msg.z.i);
           break;
         case(2):
-          newWorld->messenger.requestAddBlock(msg.x.i,msg.y.i,msg.z.i,msg.ext1);
+          World::messenger.requestAddBlock(msg.x.i,msg.y.i,msg.z.i,msg.ext1);
           break;
         case(91):
-          newWorld->messenger.requestMove(msg.x.f,msg.y.f,msg.z.f);
+          World::messenger.requestMove(msg.x.f,msg.y.f,msg.z.f);
           break;
         case(100):
-          newWorld->messenger.sendChatMessage(msg.data);
+          World::messenger.sendChatMessage(msg.data);
           break;
         default:
           std::cout << "Sending unknown opcode" << std::dec << (int)msg.opcode << "\n";
@@ -235,7 +232,7 @@ void send()
       }
     }
   }
-  newWorld->messenger.requestExit();
+  World::messenger.requestExit();
 
 }
 
@@ -246,7 +243,7 @@ void receive()
     InMessage msg;
     try
     {
-      msg = newWorld->messenger.receiveAndDecodeMessage();
+      msg = World::messenger.receiveAndDecodeMessage();
     }
     catch(...)
     {
@@ -260,52 +257,52 @@ void receive()
       case(0):
         {
           char* buf = new char[msg.length];
-          newWorld->messenger.receiveMessage(buf,msg.length);
+          World::messenger.receiveMessage(buf,msg.length);
           //std::thread chunkThread(&World::generateChunkFromString,newWorld,msg.x.i,msg.y.i,msg.z.i,buf);
           //chunkThread.detach();
 
-          newWorld->generateChunkFromString(glm::ivec3(msg.x.i,msg.y.i,msg.z.i),buf);
+          World::generateChunkFromString(glm::ivec3(msg.x.i,msg.y.i,msg.z.i),buf);
         }
         break;
       case(1):
-        newWorld->delBlock(glm::ivec3(msg.x.i,msg.y.i,msg.z.i));
+        World::delBlock(glm::ivec3(msg.x.i,msg.y.i,msg.z.i));
         break;
       case(2):
-        newWorld->addBlock(glm::ivec3(msg.x.i,msg.y.i,msg.z.i),msg.ext1);
+        World::addBlock(glm::ivec3(msg.x.i,msg.y.i,msg.z.i),msg.ext1);
         break;
       case(10):
-        //mainCharacter->(msg.x,msg.y,msg.z);
+        //MainChar::(msg.x,msg.y,msg.z);
         break;
       case(90):
-        newWorld->addPlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
+        World::addPlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
         break;
       case(91):
-        if(msg.ext1 == newWorld->mainId)
+        if(msg.ext1 == World::mainId)
         {
-          mainCharacter->setPosition(glm::vec3(msg.x.f,msg.y.f,msg.z.f));
+          MainChar::setPosition(glm::vec3(msg.x.f,msg.y.f,msg.z.f));
         }
-        else newWorld->movePlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
+        else World::movePlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
         break;
       case(99):
-        newWorld->removePlayer(msg.ext1);
+        World::removePlayer(msg.ext1);
         break;
       case(100):
         {
           char* buf = new char[msg.length];
-          newWorld->messenger.receiveMessage(buf,msg.length);
+          World::messenger.receiveMessage(buf,msg.length);
           std::string line = "(Server): ";
           line.append(buf);
-          mainCharacter->addChatLine(line);
+          MainChar::addChatLine(line);
           delete[] buf;
         }
         break;
       case(101):
         {
           char* buf = new char[msg.length];
-          newWorld->messenger.receiveMessage(buf,msg.length);
+          World::messenger.receiveMessage(buf,msg.length);
           std::string line = std::string(buf,msg.length);
           std::cout << line;
-          mainCharacter->addChatLine(line);
+          MainChar::addChatLine(line);
           delete[] buf;
           break;
         }
@@ -323,6 +320,6 @@ void build(char threadNumb)
 {
   while(!glfwWindowShouldClose(window))
   {
-    newWorld->buildWorld(threadNumb);
+    World::buildWorld(threadNumb);
   }
 }

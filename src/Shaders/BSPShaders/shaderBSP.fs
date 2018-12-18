@@ -47,10 +47,14 @@ uniform int numbOfCascadedShadows;
 
 vec4 objColorAO = texture(gColorSpec, TexCoords).rgba;
 vec3 objColor = objColorAO.rgb;
+
+
 float AO = objColorAO.a;
 vec3 normal = texture(gNormal, TexCoords).rgb;
 vec3 fragPosition = texture(gPosition, TexCoords).rgb;
 float fragDepth = distance(fragPosition,viewPos);
+
+
 
 
 int findCorrectShadowMap()
@@ -123,8 +127,8 @@ vec3 calcDirectionalLight(float shadow)
 
 
   vec3 ambient = dirLight.ambient*AO;
-  vec3 diffuse = dirLight.diffuse*diff*AO;
-  vec3 specular = dirLight.specular*spec*AO;
+  vec3 diffuse = dirLight.diffuse*diff;
+  vec3 specular = dirLight.specular*spec;
 
   return (ambient + shadow*(diffuse + specular));
 }

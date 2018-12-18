@@ -19,18 +19,18 @@ uniform vec3 objectColor;
 
 uniform int textureAtlasWidthInCells;
 uniform int textureAtlasHeightInCells;
-vec3 getTexture()
+vec4 getTexture()
 {
   vec2 temp;
   temp.x = mod(vs_out.TexCoord.x*vs_out.TexCells.x,1.0f/textureAtlasWidthInCells)+vs_out.TexOrigin.x;
   temp.y = mod(vs_out.TexCoord.y*vs_out.TexCells.y,1.0f/textureAtlasHeightInCells)+vs_out.TexOrigin.y;
-  return texture(curTexture,temp).rgb;
+  return texture(curTexture,temp).rgba;
 }
 
 void main()
 {
   vec3 objColor = objectColor;
-  vec3 finColor = objColor*getTexture();
+  vec3 finColor = objColor*getTexture().rgb;
   gPosition = vs_out.FragPos;
   gNormal = vs_out.FinNormal;
   gColorSpec = vec4(finColor,vs_out.AO);
