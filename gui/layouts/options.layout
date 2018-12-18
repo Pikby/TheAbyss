@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 
 <GUILayout version="4">
-    <Window name="Options" type="TaharezLook/FrameWindow">
+    <Window name="Options" type="Vanilla/FrameWindow">
         <Property name="AlwaysOnTop" value="True" />
         <Property name="MinSize" value="{{0.2,0},{0.2,0}}" />
         <Property name="MaxSize" value="{{0.8,0},{0.2,0}}" />

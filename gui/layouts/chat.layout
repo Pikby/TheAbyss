@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 
 <GUILayout version="4">
-    <Window name="Console" type="TaharezLook/FrameWindow">
+    <Window name="Console" type="Vanilla/FrameWindow">
         <Property name="AlwaysOnTop" value="True" />
         <Property name="MinSize" value="{{0.2,0},{0.2,0}}" />
         <Property name="MaxSize" value="{{0.8,0},{0.2,0}}" />
@@ -10,7 +10,7 @@
         <Property name="Text" value="Console" />
         <Property name="Alpha" value= "0.5" />
 
-        <Window name="Editbox" type="TaharezLook/Editbox">
+        <Window name="Editbox" type="Vanilla/Editbox">
             <Property name="ID" value="2" />
             <Property name="VerticalAlignment" value="Bottom" />
             <Property name="MaxSize" value="{{1,0},{1,0}}" />
@@ -20,7 +20,7 @@
             <Property name="Alpha" value= "1" />
         </Window>
 
-        <Window name="History" type="TaharezLook/Listbox">
+        <Window name="History" type="Vanilla/Listbox">
             <Property name="ID" value="3" />
             <Property name="MaxSize" value="{{1,0},{1,0}}" />
             <Property name="Position" value="{{0,7},{0,7}}" />

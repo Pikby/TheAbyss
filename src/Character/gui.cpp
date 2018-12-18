@@ -35,12 +35,12 @@ GUIRenderer::GUIRenderer(int Width, int Height, std::string userName)
   using namespace CEGUI;
   CEGUI::OpenGL3Renderer& myRenderer = CEGUI::OpenGL3Renderer::bootstrapSystem();
   initResourcePaths();
-  CEGUI::SchemeManager::getSingleton().createFromFile( "TaharezLook.scheme" );
+  CEGUI::SchemeManager::getSingleton().createFromFile( "Vanilla.scheme" );
 
   System::getSingleton().getDefaultGUIContext().getMouseCursor().hide();
   createMenuScreens();
 
-  CEGUI::System::getSingleton().getDefaultGUIContext().getMouseCursor().setDefaultImage("TaharezLook/MouseArrow");
+  CEGUI::System::getSingleton().getDefaultGUIContext().getMouseCursor().setDefaultImage("Vanilla-Images/MouseArrow");
   WindowManager& wmgr = WindowManager::getSingleton();
   chatConsole.createChatWindow();
 
