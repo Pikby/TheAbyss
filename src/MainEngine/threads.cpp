@@ -57,6 +57,8 @@ void initWorld(int numbBuildThreads, int width,  int height)
 void closeGame()
 {
   glfwSetWindowShouldClose(window, true);
+  World::buildQueue.notify_one();
+  World::chunkDeleteQueue.notify_one();
 }
 
 
@@ -127,7 +129,7 @@ void draw()
     glfwSwapBuffers(window);
 
   }
-
+  std::cout << "Draw thread done\n";
 }
 
 void render()
@@ -197,6 +199,7 @@ void logic()
     //DO the game logic
     World::messenger.createMoveRequest(MainChar::xpos,MainChar::ypos,MainChar::zpos);
   }
+  std::cout << "Ending logic thread\n";
 }
 
 void send()
@@ -233,7 +236,6 @@ void send()
     }
   }
   World::messenger.requestExit();
-
 }
 
 void receive()
@@ -308,12 +310,13 @@ void receive()
         }
       case(0xFF):
         std::cout << "Received exit message\n";
-        glfwSetWindowShouldClose(window, true);
+        closeGame();
         break;
       default:
         std::cout << "Receiving unknown opcode " << (int)msg.opcode << "\n";
     }
   }
+  std::cout << "RECEIVE THREAD DONE\n";
 }
 
 void build(char threadNumb)
@@ -322,4 +325,5 @@ void build(char threadNumb)
   {
     World::buildWorld(threadNumb);
   }
+  std::cout << "Ending build thread\n";
 }

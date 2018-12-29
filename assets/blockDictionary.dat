@@ -23,12 +23,12 @@
   id : 3
   name : Water
   textureIds : 2,2,2,2,2,2
-  opacity : opaque
+  opacity : translucent
 }
 {
   id : 4
   name : LightBlock
-  textureIds : 1,1,1,1,1,1
+  textureIds : 3,3,3,3,3,3
   opacity : translucent
   isLightSource
     lightColor : ,0.1,0.2,0.3,

@@ -11,10 +11,10 @@
 #include <limits>
 #include "include/drawer.h"
 #include "../TextureLoading/textureloading.h"
+#include "include/world.h"
 
-void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_ptr<BSPNode>>* map)
+void Drawer::setupShadersAndTextures(int width, int height)
 {
-  BSPmap = map;
 
 
   const char* texture = "../assets/textures/atlas.png";
@@ -22,8 +22,8 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   glBindTexture(GL_TEXTURE_2D, glTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   //Load and bind the texture from the class
   int texWidth, texHeight, nrChannels;
   unsigned char* image = loadTexture(texture, &texWidth,&texHeight,&nrChannels);
@@ -45,8 +45,14 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   objShader.setInt("pointLights[1].shadow",6);
   objShader.setFloat("far_plane",25.0f);
 
+
+  depthBufferLoadingShader = Shader("../src/Shaders/depthBufferLoadingShader.vs","../src/Shaders/depthBufferLoadingShader.fs");
+  depthBufferLoadingShader.use();
+  depthBufferLoadingShader.setInt("depthTexture",0);
+
   quadShader = Shader("../src/Shaders/old/debugQuad.vs","../src/Shaders/old/debugQuad.fs");
   quadShader.use();
+
   //blockShader.setInt("depthMap",0);
 
   blockShader = Shader("../src/Shaders/BSPShaders/shaderBSP.fs","../src/Shaders/BSPShaders/shaderBSP.vs");
@@ -54,6 +60,7 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   blockShader.setInt("gPosition", 0);
   blockShader.setInt("gNormal", 1);
   blockShader.setInt("gColorSpec", 2);
+  blockShader.setInt("transTexture", 3);
   blockShader.setInt("dirLight.shadow[0]",4);
   blockShader.setInt("dirLight.shadow[1]",5);
   blockShader.setInt("dirLight.shadow[2]",6);
@@ -70,6 +77,19 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   gBufferShader.setInt("cellWidth",cellWidth);
   gBufferShader.setInt("curTexture",0);
   gBufferShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+
+
+  transShader = Shader("../src/Shaders/BSPShaders/transShader.fs","../src/Shaders/BSPShaders/transShader.vs");
+
+
+  transShader.use();
+  transShader.setInt("textureAtlasWidthInCells",texWidth/cellWidth);
+  transShader.setInt("textureAtlasHeightInCells",texHeight/cellWidth);
+  transShader.setInt("cellWidth",cellWidth);
+  transShader.setInt("curTexture",0);
+  transShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+
+
   //std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
 
   dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
@@ -86,45 +106,71 @@ void Drawer::setupShadersAndTextures(int width, int height,  Map3D<std::shared_p
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
 
-  // - position color buffer
-  glGenTextures(1, &gPosition);
-  glBindTexture(GL_TEXTURE_2D, gPosition);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+    // - position color buffer
+    glGenTextures(1, &gPosition);
+    glBindTexture(GL_TEXTURE_2D, gPosition);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
 
-  // - normal color buffer
-  glGenTextures(1, &gNormal);
-  glBindTexture(GL_TEXTURE_2D, gNormal);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+    // - normal color buffer
+    glGenTextures(1, &gNormal);
+    glBindTexture(GL_TEXTURE_2D, gNormal);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
 
-  // - color + specular color buffer
-  glGenTextures(1, &gColorSpec);
-  glBindTexture(GL_TEXTURE_2D, gColorSpec);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenWidth, screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColorSpec, 0);
+    // - color + specular color buffer
+    glGenTextures(1, &gColorSpec);
+    glBindTexture(GL_TEXTURE_2D, gColorSpec);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenWidth, screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColorSpec, 0);
 
-  // - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
-  unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-  glDrawBuffers(3, attachments);
 
-  glGenRenderbuffers(1, &gDepth);
-  glBindRenderbuffer(GL_RENDERBUFFER, gDepth);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screenWidth, screenHeight);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, gDepth);
+    // - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
+    unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+    glDrawBuffers(3, attachments);
 
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-      std::cout << "Framebuffer not complete!" << std::endl;
+    glGenTextures(1, &gDepth);
+    glBindTexture(GL_TEXTURE_2D, gDepth);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth,screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gDepth, 0);
+
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+
+  glGenFramebuffers(1, &transBuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
+
+    glGenTextures(1, &transTexture);
+    glBindTexture(GL_TEXTURE_2D, transTexture);
+
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA16F,screenWidth,screenHeight,0,GL_RGBA,GL_FLOAT,0);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, transTexture, 0);
+
+    uint transDepth;
+    glGenTextures(1, &transDepth);
+    glBindTexture(GL_TEXTURE_2D, transDepth);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth,screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, transDepth, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER,0);
 
 }
 
@@ -144,19 +190,49 @@ void Drawer::addCube(Cube newCube)
 void Drawer::renderGBuffer()
 {
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glViewport(0,0,screenWidth,screenHeight);
-  glBindTexture(GL_TEXTURE_2D, glTexture);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-  Shader* shader = &gBufferShader;
-  shader->use();
-  shader->setMat4("view", viewMat);
 
-  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-  drawTerrain(shader,chunksToDraw);
-  drawTerrainTranslucent(shader,chunksToDraw);
-  //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0,0,screenWidth,screenHeight);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, glTexture);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    Shader* shader = &gBufferShader;
+    shader->use();
+    shader->setMat4("view", viewMat);
+
+    //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    drawTerrainOpaque(shader,chunksToDraw);
+    //drawTerrainTranslucent(shader,chunksToDraw);
+    //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glDisable(GL_DEPTH_TEST);
+    glClearColor(0.0f,0.0f,0.0f,1.0f);
+    glViewport(0,0,screenWidth,screenHeight);
+
+    depthBufferLoadingShader.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, gDepth);
+
+
+    renderQuad();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, glTexture);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    shader = &transShader;
+    shader->use();
+    shader->setMat4("view", viewMat);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE,GL_ONE);
+    drawTerrainTranslucent(shader,chunksToDraw);
+    glDepthMask(GL_TRUE);
+    //glEnable(GL_DEPTH_TEST);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
 }
 
 void Drawer::renderDirectionalDepthMap()
@@ -339,13 +415,13 @@ void Drawer::renderDirectionalShadows()
 
     calculateMinandMaxPoints(frustrum,8,&min,&max);
     //auto chunkList = BSPmap->findAll(toChunkCoords(min),toChunkCoords(max));
-    auto chunkList = std::make_shared<std::list<std::shared_ptr<BSPNode>>>(BSPmap->getFullList());
+    auto chunkList = std::make_shared<std::list<std::shared_ptr<BSPNode>>>(World::BSPmap.getFullList());
     glViewport(0,0,viewWidth,viewWidth);
       glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[x]);
         glClear(GL_DEPTH_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glCullFace(GL_FRONT);
-        drawTerrain(&dirDepthShader,chunkList);
+        drawTerrainOpaque(&dirDepthShader,chunkList);
         glCullFace(GL_BACK);
       glBindFramebuffer(GL_FRAMEBUFFER,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -450,6 +526,9 @@ void Drawer::drawFinal()
   glBindTexture(GL_TEXTURE_2D,gNormal);
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D,gColorSpec);
+  glActiveTexture(GL_TEXTURE3);
+  glBindTexture(GL_TEXTURE_2D,transTexture);
+
   setLights(shader);
   shader->setVec3("viewPos", viewPos);
   bindDirectionalShadows(shader);
@@ -481,6 +560,8 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
   blockShader.setMat4("projection",viewProj);
   gBufferShader.use();
   gBufferShader.setMat4("projection",viewProj);
+  transShader.use();
+  transShader.setMat4("projection",viewProj);
 }
 
 void Drawer::updateCameraMatrices(Camera* cam)
@@ -495,8 +576,11 @@ void Drawer::updateCameraMatrices(Camera* cam)
   calculateMinandMaxPoints(viewFrustrum,8,&viewMin,&viewMax);
 }
 
+
+//Caculates the viewing frustrum, likely could  be optimized, since this algorithm has more calculations then necessary, but it functions
 void Drawer::calculateFrustrum(glm::vec3* arr,float near, float far)
 {
+
   float ar = (float)screenWidth/(float)screenHeight;
   float buffer = 0;
   float fovH = glm::radians(((camZoomInDegrees+buffer)/2)*ar);
@@ -558,19 +642,16 @@ void Drawer::calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::
 
 }
 
-void Drawer::drawTerrain(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
+
+/*
+Iterates through all the chunks and draws them unless they're marked for destruciton
+then it calls freeGl which will free up all  resourses on the chunk and then
+removes all refrences to it
+At that point the chunk should be deleted by the smart pointers;
+*/
+
+void Drawer::drawTerrainOpaque(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
 {
-  /*
-  Iterates through all the chunks and draws them unless they're marked for destruciton
-  then it calls freeGl which will free up all  resourses on the chunk and then
-  removes all refrences to it
-  At that point the chunk should be deleted by the smart pointers;
-  */
-
-  glEnable(GL_DEPTH_TEST);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, glTexture);
-
   if(list->empty()) return;
   for(auto it = list->cbegin();it != list->cend();++it)
   {
@@ -579,22 +660,13 @@ void Drawer::drawTerrain(Shader* shader,std::shared_ptr<std::list<std::shared_pt
   }
 }
 
+//Same as draw terrain, but for translucent blocks.
 void Drawer::drawTerrainTranslucent(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
 {
-  glEnable(GL_DEPTH_TEST);
-
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_ONE, GL_ONE);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, glTexture);
-
-  glDepthMask(false);
   if(list->empty()) return;
   for(auto it = list->cbegin();it != list->cend();++it)
   {
     std::shared_ptr<BSPNode> curNode = (*it);
     curNode->drawTranslucent();
   }
-  glDepthMask(true);
-  glBlendFunc(GL_ONE, GL_ONE);
 }

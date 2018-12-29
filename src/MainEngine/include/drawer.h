@@ -1,3 +1,5 @@
+#pragma once
+
 #include "bsp.h"
 #include <list>
 #include <map>
@@ -66,8 +68,12 @@ private:
   float camFar;
   unsigned int gBuffer,gDepth;
   unsigned int gPosition, gNormal, gColorSpec;
+
+  uint transBuffer, transTexture, transDepth;
   Shader objShader,dirDepthShader,pointDepthShader,blockShader,gBufferShader;
+  Shader transShader;
   Shader quadShader;
+  Shader depthBufferLoadingShader;
   void calculateFrustrum(glm::vec3* arr, float near, float far);
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
   void renderQuad();
@@ -77,13 +83,12 @@ public:
   glm::vec3 viewFrustrum[8];
   std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> chunksToDraw;
   std::map<uchar, std::shared_ptr<Player>> playerList;
-  Map3D<std::shared_ptr<BSPNode>>* BSPmap;
   glm::vec3 viewMin;
   glm::vec3 viewMax;
   float directionalShadowResolution;
   int screenWidth,screenHeight;
   void updateViewProjection(float camZoom,float near=0, float far=0);
-  void setupShadersAndTextures(int screenWidth, int screenHeight, Map3D<std::shared_ptr<BSPNode>>* map);
+  void setupShadersAndTextures(int screenWidth, int screenHeight);
   void setRenderDistances(int vert,int horz,int buffer);
   void renderDirectionalDepthMap();
   void renderPointDepthMap(int id);
@@ -119,7 +124,7 @@ public:
     dirLight = {dir,amb,dif,spec};
     renderDirectionalDepthMap();
   }
-  void drawTerrain(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);
+  void drawTerrainOpaque(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);
   void drawTerrainTranslucent(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);
 
   void drawPlayers(Shader* shader);

@@ -86,7 +86,7 @@ void World::initWorld(int NumbBuildThreads,int width,int height)
 
 
   drawer.setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
-  drawer.setupShadersAndTextures(width,height,&BSPmap);
+  drawer.setupShadersAndTextures(width,height);
   drawer.updateViewProjection(45.0f,0.1f,(horzRenderDistance)*CHUNKSIZE);
 }
 

@@ -1,22 +1,15 @@
 #version 330 core
-
-layout (location = 0) out vec3 gPosition;
-layout (location = 1) out vec3 gNormal;
-layout (location = 2) out vec4 gColorSpec;
+layout(location = 0) out vec4 color;
 
 in VS_OUT
 {
   vec2 TexCoord;
   vec2 TexCells;
   vec2 TexOrigin;
-  vec3 FinNormal;
-  vec3 FragPos;
-  float AO;
 } vs_out;
 
 uniform sampler2D curTexture;
 uniform vec3 objectColor;
-
 
 uniform int textureAtlasWidthInCells;
 uniform int textureAtlasHeightInCells;
@@ -33,11 +26,6 @@ void main()
   vec4 text = getTexture();
   vec3 objColor = objectColor;
   vec3 finColor = objColor*text.rgb;
-
-
-
-  gPosition = vs_out.FragPos;
-  gNormal = vs_out.FinNormal;
-  gColorSpec = vec4(finColor,vs_out.AO);
+  color = vec4(finColor,1.0f);
 
 }

@@ -44,6 +44,10 @@ public:
     queue.push_front(item);
     cv.notify_one();
   }
+  void notify_one()
+  {
+    cv.notify_one();
+  }
   void pop()
   {
     std::lock_guard<std::mutex> lock(queueMutex);

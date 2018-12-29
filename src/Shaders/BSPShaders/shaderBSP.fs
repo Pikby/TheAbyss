@@ -33,7 +33,7 @@ out vec4 finalcolor;
 uniform sampler2D gColorSpec;
 uniform sampler2D gNormal;
 uniform sampler2D gPosition;
-uniform sampler2D SSAO;
+uniform sampler2D transTexture;
 
 uniform vec3 viewPos;
 uniform float far_plane;
@@ -48,6 +48,9 @@ uniform int numbOfCascadedShadows;
 vec4 objColorAO = texture(gColorSpec, TexCoords).rgba;
 vec3 objColor = objColorAO.rgb;
 
+vec4 transColorAO = texture(transTexture, TexCoords).rgba;
+vec3 transColor = transColorAO.rgb;
+float transColorCount = transColorAO.a;
 
 float AO = objColorAO.a;
 vec3 normal = texture(gNormal, TexCoords).rgb;
@@ -153,5 +156,17 @@ void main()
     vec3 fog = fogMod*vec3(1.0f,1.0f,1.0f);
     vec3 finColor = fog+objColor*calcDirectionalLight(shadow);
     //vec3 finColor = fog+objColor;
-    finalcolor = vec4(finColor,1.0f);
+
+    //Pixel has no translucent objects
+    if(transColor == vec3(0.0f,0.0f,0.0f))
+    {
+      finalcolor = vec4(finColor,1);
+    }
+    else
+    {
+      //Pixel has translucent object, so calculate it
+      vec3 finTransColor = transColor/((transColorCount-0.5));
+      finalcolor = vec4((finTransColor + finColor )/2.0f,1.0f);
+
+    }
 }

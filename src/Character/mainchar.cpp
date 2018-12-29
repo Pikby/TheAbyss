@@ -49,7 +49,7 @@ void MainChar::initMainChar(float x, float y, float z)
   deltay = 0;
   deltaz = 0;
   reach = 200;
-  moveSpeed = 1.0f;
+  moveSpeed = 0.1f;
   mainCam = Camera(glm::vec3((float)xpos,(float)ypos,(float)zpos));
   screenWidth = World::drawer.screenWidth;
   screenHeight = World::drawer.screenHeight;
@@ -105,6 +105,7 @@ void MainChar::handleKeyPress(int key)
         case GLFW_KEY_ENTER: sendMessage(); break;
         default: addCharacterToChat(key); break;
       }
+      break;
     default:
       switch(key)
       {
@@ -264,7 +265,7 @@ void MainChar::handleMouseClick(int key)
   switch(key)
   {
     case GLFW_MOUSE_BUTTON_LEFT: destroyBlock() ; break;
-    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(4); break;
+    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(3); break;
 
   }
 
