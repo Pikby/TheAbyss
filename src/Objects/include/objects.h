@@ -18,7 +18,7 @@ protected:
   public:
   void updateModelMat()
   {
-    modelMat = glm::mat4();
+    modelMat = glm::mat4(1.0f);
     modelMat = glm::translate(modelMat,pos);
     modelMat = glm::rotate(modelMat,angInRads,rotAxis);
     modelMat = glm::scale(modelMat,scale);
@@ -41,6 +41,11 @@ protected:
   {
     rotAxis = rot;
     angInRads = newAngInRads;
+  }
+  void setModelMatrix(const glm::mat4 &newModel)
+  {
+    modelMat = newModel;
+    //updateModelMat();
   }
   void setPosition(const glm::vec3 &newPos)
   {

@@ -43,6 +43,8 @@ struct BlockFace
 class BSP
 {
   private:
+    glm::mat4 modelMat;
+
     static std::string worldName;
     Array3D<uchar, CHUNKSIZE> worldArray;
     BSPNode* parent;
@@ -75,7 +77,7 @@ class BSP
     RenderType blockVisibleType(const glm::ivec3 &pos);
 
 
-    BSP(const char* data,BSPNode* Parent);
+    BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent);
     void render();
     void freeGL();
     void addBlock(const glm::ivec3 &pos,char id);
@@ -84,8 +86,8 @@ class BSP
     void delBlock(const glm::ivec3 &pos);
 
     void build();
-    void drawOpaque();
-    void drawTranslucent();
+    void drawOpaque(Shader* shader,const glm::vec3 &viewPos);
+    void drawTranslucent(Shader* shader, const glm::vec3 &viewPos);
 };
 
 class BSPNode
@@ -112,8 +114,8 @@ class BSPNode
 
 
     void build();
-    void drawOpaque();
-    void drawTranslucent();
+    void drawOpaque(Shader* shader, const glm::vec3 &pos);
+    void drawTranslucent(Shader* shader, const glm::vec3 &pos);
     std::string getCompressedChunk();
     void delBlock(const glm::ivec3 &pos);
     void addBlock(const glm::ivec3 &pos, char id);

@@ -51,7 +51,7 @@ GLFWwindow* createWindow(int width, int height)
 void initWorld(int numbBuildThreads, int width,  int height)
 {
   World::initWorld(numbBuildThreads,width,height);
-  MainChar::initMainChar(0,50,0);
+  MainChar::initMainChar(1000000,50,1000000);
 }
 
 void closeGame()
@@ -78,10 +78,10 @@ void draw()
   Player player;
   player.render();
 
-  World::drawer.addCube(glm::vec3(0,50,0));
+  World::drawer.addCube(glm::vec3(0,0,0));
     World::drawer.addCube(glm::vec3(0,50,0));
-    World::drawer.addCube(glm::vec3(0,50,0));
-    World::drawer.addCube(glm::vec3(0,50,0));
+    World::drawer.addCube(glm::vec3(0,70,0));
+    World::drawer.addCube(glm::vec3(0,1500,0));
   //World::addLight(glm::vec3(10,50,10));
   while(!glfwWindowShouldClose(window))
   {
@@ -101,9 +101,10 @@ void draw()
     {
       World::calculateViewableChunks();
     }
+    //World::drawer.renderDirectionalShadows();
     World::drawer.renderGBuffer();
 
-    //World::drawer.renderDirectionalShadows();
+
     if(BSP::geometryChanged == true)
     {
 
@@ -111,10 +112,9 @@ void draw()
       BSP::geometryChanged = false;
     }
 
-    //World::drawer.renderSSAO();
     World::drawer.drawFinal();
-    World::drawer.drawObjects();
-    World::drawer.drawPlayers();
+    //World::drawer.drawObjects();
+    //World::drawer.drawPlayers();
 
     int error = glGetError();
     if(error != 0)
@@ -279,6 +279,7 @@ void receive()
         World::addPlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
         break;
       case(91):
+        std::cout << "Moving player" << msg.x.f << msg.y.f << msg.z.f << "\n";
         if(msg.ext1 == World::mainId)
         {
           MainChar::setPosition(glm::vec3(msg.x.f,msg.y.f,msg.z.f));

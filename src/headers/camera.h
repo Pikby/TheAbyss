@@ -68,7 +68,7 @@ public:
 
     glm::mat4 getViewMatrix()
     {
-    	return glm::lookAt(position, position + front, up);
+    	return glm::lookAt(glm::vec3(0), glm::vec3(0) + front, up);
     }
 
 		glm::vec3 getPosition()

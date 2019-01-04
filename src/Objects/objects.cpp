@@ -4,7 +4,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <vector>
-
+#include <glm/gtx/string_cast.hpp>
 
 unsigned int Cube::VAO, Cube::VBO, Cube::EBO;
 unsigned int Player::VAO, Player::VBO, Player::EBO;
@@ -138,15 +138,19 @@ void Cube::render()
   glBindVertexArray(0);
 }
 
+
 void Cube::draw(Shader* shader)
 {
-
-  shader->setMat4("model",modelMat);
+  shader->use();
+  shader->setMat4("modelMat",modelMat);
   shader->setVec3("objectColor",glm::vec3(0.5,0.5f,0.5f));
-
+  glDisable(GL_CULL_FACE);
+  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
+  //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+  glEnable(GL_CULL_FACE);
 }
 
 void Player::render()
@@ -179,7 +183,7 @@ void Player::draw(Shader* shader)
 {
   shader->setMat4("model",modelMat);
   shader->setVec3("objectColor",color);
- 
+
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
@@ -236,7 +240,7 @@ SkyBox::SkyBox()
   glEnableVertexAttribArray(0);
 
   projectMat = glm::perspective(glm::radians(90.0f),
-                  (float)1920/ (float)1080, 0.1f, 100.0f);
+                  (float)1920/ (float)1080, 0.1f, 10.0f);
 
 }
 

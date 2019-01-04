@@ -18,7 +18,7 @@ BSPNode::~BSPNode()
   totalChunks--;
 }
 
-BSPNode::BSPNode(const glm::ivec3 &pos,const char *val) : curBSP(val,this)
+BSPNode::BSPNode(const glm::ivec3 &pos,const char *val) : curBSP(val,pos,this)
 {
 
   //std::cout << "generating chunk" << x << ":" << y << ":" << z << " with size" << val.size() << "\n";
@@ -47,7 +47,7 @@ void BSPNode::build()
   BSPMutex.unlock();
 }
 
-void BSPNode::drawOpaque()
+void BSPNode::drawOpaque(Shader* shader, const glm::vec3 &pos)
 {
   if(toDelete) return;
   if(toRender == true)
@@ -60,12 +60,12 @@ void BSPNode::drawOpaque()
       BSPMutex.unlock();
     }
   }
-  curBSP.drawOpaque();
+  curBSP.drawOpaque(shader,pos);
 }
 
-void BSPNode::drawTranslucent()
+void BSPNode::drawTranslucent(Shader* shader, const glm::vec3 &pos)
 {
-  curBSP.drawTranslucent();
+  curBSP.drawTranslucent(shader,pos);
 }
 
 
@@ -202,8 +202,10 @@ glm::ivec3 BSPNode::getRealWorldPosition()
   return (CHUNKSIZE*chunkPos) + glm::ivec3(CHUNKSIZE/2);
 }
 
-BSP::BSP(const char* data, BSPNode* Parent)
+BSP::BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent)
 {
+  //blockOrigin = chunkLocalPos + CHUNKSIZE*(parent->chunkPos);
+  modelMat = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*pos));
   oIndicesSize = 0;
   tIndicesSize = 0;
   parent = Parent;
@@ -624,7 +626,7 @@ void BSP::build()
      normVec = face;
    };
    vec3 depthoffset = glm::vec3(0,1,0);
-   const float offset = 0.005f;
+   const float offset = 0.00f;
    auto createVertices = [&](bool front)
    {
      bottomright = blockOrigin + depthoffset + (right+offset)*vec3(rightVector) + offset*vec3(-rightVector);
@@ -665,6 +667,7 @@ void BSP::build()
          glm::ivec3 chunkLocalPos = glm::ivec3(x,y,z);
          renderType = blockVisibleType(chunkLocalPos);
          blockOrigin = chunkLocalPos + CHUNKSIZE*(parent->chunkPos);
+         blockOrigin = chunkLocalPos;
          curFace  = arrayFaces.get(chunkLocalPos);
          //if(curFace.isEmpty()) continue;
          blockId = getBlock(chunkLocalPos);
@@ -805,10 +808,13 @@ void BSP::render()
   setupBufferObjects(TRANSLUCENT);
 }
 
-void BSP::drawOpaque()
+void BSP::drawOpaque(Shader* shader, const glm::vec3 &pos)
 {
   if(oIndicesSize != 0)
   {
+    glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->chunkPos)-pos);
+    //std::cout << glm::to_string(glm::vec3(parent->chunkPos) - pos) << "\n";
+    shader->setMat4("model",model);
     glBindVertexArray(oVAO);
     glDrawElements(GL_TRIANGLES, oIndicesSize, GL_UNSIGNED_INT,0);
     glBindVertexArray(0);
@@ -823,10 +829,12 @@ void BSP::drawOpaque()
   }
 }
 
-void BSP::drawTranslucent()
+void BSP::drawTranslucent(Shader* shader,const glm::vec3 &pos)
 {
   if(tIndicesSize)
   {
+    glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->chunkPos)-pos);
+    shader->setMat4("model",model);
     glBindVertexArray(tVAO);
     glDrawElements(GL_TRIANGLES, tIndicesSize, GL_UNSIGNED_INT,0);
     glBindVertexArray(0);

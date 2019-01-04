@@ -11,7 +11,7 @@ out VS_OUT
 
 
 
-
+uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
@@ -56,5 +56,5 @@ void main()
   else vs_out.TexCoord.x = origin.x;
 
 
-  gl_Position = projection*view*vec4(position, 1.0f);
+  gl_Position = projection*view*model*vec4(position, 1.0f);
 }

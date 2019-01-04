@@ -55,7 +55,7 @@ float transColorCount = transColorAO.a;
 float AO = objColorAO.a;
 vec3 normal = texture(gNormal, TexCoords).rgb;
 vec3 fragPosition = texture(gPosition, TexCoords).rgb;
-float fragDepth = distance(fragPosition,viewPos);
+float fragDepth = length(fragPosition);
 
 
 
@@ -124,7 +124,7 @@ vec3 calcDirectionalLight(float shadow)
   vec3 lightDir = normalize(-dirLight.direction);
   float diff = max(dot(normal, lightDir), 0.0);
 
-  vec3 viewDir = normalize(viewPos - fragPosition);
+  vec3 viewDir = normalize(-fragPosition);
   vec3 reflectDir = reflect(-lightDir, normal);
   float spec = pow(max(dot(viewDir, reflectDir), 0.0), 8);
 
@@ -141,10 +141,13 @@ void main()
 {
 
     float shadow = 1;
-    //shadow = 1-calcDirShadows();
+    shadow = 1-calcDirShadows();
 
 
-
+    if(fragPosition == vec3(0,0,0))
+    {
+      discard;
+    }
 /*
     if(findCorrectShadowMap() == 0) objColor =  vec3(0.000, 0.500, 1.000);
     else if(findCorrectShadowMap() == 1) objColor = vec3(1,0,0);
@@ -153,6 +156,7 @@ void main()
     //float maxDistance = dirLight.arrayOfDistances[numbOfCascadedShadows];
 
     float fogMod = max((fragDepth-fog_start)/fog_dist,0);
+    //fogMod = 0;
     vec3 fog = fogMod*vec3(1.0f,1.0f,1.0f);
     vec3 finColor = fog+objColor*calcDirectionalLight(shadow);
     //vec3 finColor = fog+objColor;

@@ -74,7 +74,7 @@ private:
   Shader transShader;
   Shader quadShader;
   Shader depthBufferLoadingShader;
-  void calculateFrustrum(glm::vec3* arr, float near, float far);
+  static void calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::vec3 &front,const glm::vec3 &right,const glm::vec3 &up, float camZoomInDegrees,float ar,float near, float far);
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
   void renderQuad();
 public:

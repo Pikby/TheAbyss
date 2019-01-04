@@ -49,7 +49,7 @@ void MainChar::initMainChar(float x, float y, float z)
   deltay = 0;
   deltaz = 0;
   reach = 200;
-  moveSpeed = 0.1f;
+  moveSpeed = 10.0f;
   mainCam = Camera(glm::vec3((float)xpos,(float)ypos,(float)zpos));
   screenWidth = World::drawer.screenWidth;
   screenHeight = World::drawer.screenHeight;
@@ -225,7 +225,7 @@ void MainChar::addBlock(int id)
     if(block.w == NOTHING) return;
 
     glm::vec3 p1 = glm::vec3(block);
-    glm::vec3 p2 = p1 - mainCam.front/10.0f;
+    glm::vec3 p2 = p1 - glm::vec3(mainCam.front)/10.0f;
 
     int x = floor(p1.x)-floor(p2.x);
     int y = floor(p1.y)-floor(p2.y);

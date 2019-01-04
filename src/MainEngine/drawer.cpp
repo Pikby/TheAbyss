@@ -95,7 +95,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
   dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
                             "../src/Shaders/dirDepthShader.vs");
   dirDepthShader.use();
-  glm::mat4 model;
+  glm::mat4 model(1.0f);
   dirDepthShader.setMat4("model",model);
   pointDepthShader = Shader("../src/Shaders/pointDepthShader.fs",
                             "../src/Shaders/pointDepthShader.vs",
@@ -202,6 +202,7 @@ void Drawer::renderGBuffer()
 
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     drawTerrainOpaque(shader,chunksToDraw);
+    //drawObjects();
     //drawTerrainTranslucent(shader,chunksToDraw);
     //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
@@ -379,42 +380,62 @@ void Drawer::renderDirectionalShadows()
 
   for(int x = 0;x<NUMBOFCASCADEDSHADOWS;x++)
   {
+    //if(x>=1) break;
     glm::vec3 frustrum[8];
     float near = camNear + ((camFar-camNear)/NUMBOFCASCADEDSHADOWS)*x;
     float far = camNear + ((camFar-camNear)/NUMBOFCASCADEDSHADOWS)*(x+1);
-    calculateFrustrum(frustrum,near,far);
+    calculateFrustrum(frustrum,viewPos,viewFront,viewRight,viewUp,camZoomInDegrees,(float)screenWidth/(float)screenHeight,near,far);
     dirLight.arrayOfDistances[x] = far;
-    glm::vec3 lightTarget,lightPos;
+    glm::vec3 lightTarget(0);
+    glm::vec3 lightPos(0);
     for(int i=0;i<8;i++)
     {
       lightTarget+=frustrum[i];
+    //  std::cout << i << glm::to_string(frustrum[i]) << "\n";
     }
     lightTarget /= 8;
+
     glm::vec3 sunAngle = dirLight.direction;
     lightPos = lightTarget -(sunAngle*((float)distToSun));
     objList[x]->setPosition(lightPos);
     objList[x]->setColor(glm::vec3(0.5f,0.5f,0.5f));
     objList[x]->updateModelMat();
+    //std::cout << glm::to_string(lightTarget) << glm::to_string(sunAngle) << distToSun << "\n";
+    //std::cout << "Lightpos"<< glm::to_string(lightPos) << "\n";
+
+    //std::cout << "Lightpos::" << glm::to_string(lightPos) << glm::to_string(lightTarget) << "\n";
     lightView  = glm::lookAt(lightPos,lightTarget,glm::vec3(0.0f,1.0f,0.0f));
+    //std::cout << "LightView: " << glm::to_string(lightView);
+
     glm::vec3 min,max;
 
     for(int i=0;i<8;i++)
     {
+      //std::cout << glm::to_string(frustrum[i]) << "\n";
+      //std::cout << glm::to_string(lightView) << "\n";
       frustrum[i] = glm::vec3(lightView*glm::vec4(frustrum[i],1.0f));
+      //std::cout << i << glm::to_string(frustrum[i]) << "\n";
     }
 
     calculateMinandMaxPoints(frustrum,8,&min,&max);
     const int buf = 0;
     int factor = x == 0 ? factor = 1 : factor = x*2;
     float viewWidth = directionalShadowResolution/factor;
-    lightProjection = glm::ortho(min.x-buf, max.x+buf, min.y-buf,max.y+buf,-1.0f,shadowFar);
+    lightProjection = glm::ortho(min.x, max.x, min.y,max.y,-1.0f,shadowFar);
     dirLight.lightSpaceMat[x] = lightProjection * lightView;
+
+
 
     dirDepthShader.use();
     dirDepthShader.setMat4("lightSpaceMatrix",dirLight.lightSpaceMat[x]);
 
-    calculateMinandMaxPoints(frustrum,8,&min,&max);
-    //auto chunkList = BSPmap->findAll(toChunkCoords(min),toChunkCoords(max));
+    glm::vec3 worldMin = min;
+    glm::vec3 worldMax = max;
+    //std::cout << glm::to_string(min) << glm::to_string(max) << "\n";
+    //std::cout << glm::to_string(worldMin) << glm::to_string(worldMax) << "\n";
+    //std::cout << glm::to_string(lightPos) << "\n";
+    //calculateMinandMaxPoints(frustrum,8,&min,&max);
+    //auto chunkList = World::BSPmap.findAll(toChunkCoords(worldMin),toChunkCoords(worldMax));
     auto chunkList = std::make_shared<std::list<std::shared_ptr<BSPNode>>>(World::BSPmap.getFullList());
     glViewport(0,0,viewWidth,viewWidth);
       glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[x]);
@@ -488,7 +509,6 @@ void Drawer::drawObjects()
   glBindTexture(GL_TEXTURE_CUBE_MAP,0);
   glBindTexture(GL_TEXTURE_2D,0);
   objShader.setMat4("view",viewMat);
-  objShader.setVec3("viewPos",viewPos);
   for(int i=0;i<objList.size();i++)
   {
     objList[i]->draw(&objShader);
@@ -572,49 +592,47 @@ void Drawer::updateCameraMatrices(Camera* cam)
   viewFront = cam->front;
   viewUp = cam->up;
   viewRight = cam->right;
-  calculateFrustrum(viewFrustrum,camNear,camFar);
+  calculateFrustrum(viewFrustrum,viewPos,viewFront,viewRight,viewUp,camZoomInDegrees,(float)screenWidth/(float)screenHeight,camNear,camFar);
   calculateMinandMaxPoints(viewFrustrum,8,&viewMin,&viewMax);
 }
 
 
 //Caculates the viewing frustrum, likely could  be optimized, since this algorithm has more calculations then necessary, but it functions
-void Drawer::calculateFrustrum(glm::vec3* arr,float near, float far)
+void Drawer::calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::vec3 &front,const glm::vec3 &right,const glm::vec3 &up, float camZoomInDegrees,float ar,float near, float far)
 {
-
-  float ar = (float)screenWidth/(float)screenHeight;
   float buffer = 0;
   float fovH = glm::radians(((camZoomInDegrees+buffer)/2)*ar);
   float fovV = glm::radians((camZoomInDegrees+buffer)/2);
-  glm::vec3 curPos = viewPos - viewFront*((float)CHUNKSIZE*2);
-  glm::vec3 rightaxis = glm::rotate(viewFront,fovH,viewUp);
-  glm::vec3 toprightaxis = glm::rotate(rightaxis,fovV,viewRight);
-  glm::vec3 bottomrightaxis = glm::rotate(rightaxis,-fovV,viewRight);
-  glm::vec3 leftaxis = glm::rotate(viewFront,-fovH,viewUp);
-  glm::vec3 topleftaxis = glm::rotate(leftaxis,fovV,viewRight);
-  glm::vec3 bottomleftaxis = glm::rotate(leftaxis,-fovV,viewRight);
+  glm::vec3 curPos = pos - front*((float)CHUNKSIZE*2);
+  glm::vec3 rightaxis = glm::rotate(front,fovH,up);
+  glm::vec3 toprightaxis = glm::rotate(rightaxis,fovV,right);
+  glm::vec3 bottomrightaxis = glm::rotate(rightaxis,-fovV,right);
+  glm::vec3 leftaxis = glm::rotate(front,-fovH,up);
+  glm::vec3 topleftaxis = glm::rotate(leftaxis,fovV,right);
+  glm::vec3 bottomleftaxis = glm::rotate(leftaxis,-fovV,right);
 
 
   //std::cout << "nnear and far" << near << ":" << far <<  "\n";
   float d;
   float a = near;
-  d = a/(glm::dot(bottomleftaxis,viewFront));
+  d = a/(glm::dot(bottomleftaxis,front));
   arr[0] = d*bottomleftaxis+curPos;
-  d = a/(glm::dot(topleftaxis,viewFront));
+  d = a/(glm::dot(topleftaxis,front));
   arr[1] = d*topleftaxis+curPos;
-  d = a/(glm::dot(toprightaxis,viewFront));
+  d = a/(glm::dot(toprightaxis,front));
   arr[2] =  d*toprightaxis+curPos;
-  d = a/(glm::dot(bottomrightaxis,viewFront));
+  d = a/(glm::dot(bottomrightaxis,front));
   arr[3] = d*bottomrightaxis+curPos;
 
 
   a = far;
-  d = a/(glm::dot(bottomleftaxis,viewFront));
+  d = a/(glm::dot(bottomleftaxis,front));
   arr[4] = d*bottomleftaxis+curPos;
-  d = a/(glm::dot(topleftaxis,viewFront));
+  d = a/(glm::dot(topleftaxis,front));
   arr[5] = d*topleftaxis+curPos;
-  d = a/(glm::dot(toprightaxis,viewFront));
+  d = a/(glm::dot(toprightaxis,front));
   arr[6] =  d*toprightaxis+curPos;
-  d = a/(glm::dot(bottomrightaxis,viewFront));
+  d = a/(glm::dot(bottomrightaxis,front));
   arr[7] = d*bottomrightaxis+curPos;
 
 
@@ -656,7 +674,7 @@ void Drawer::drawTerrainOpaque(Shader* shader,std::shared_ptr<std::list<std::sha
   for(auto it = list->cbegin();it != list->cend();++it)
   {
     std::shared_ptr<BSPNode> curNode = (*it);
-    curNode->drawOpaque();
+    curNode->drawOpaque(shader,viewPos);
   }
 }
 
@@ -667,6 +685,6 @@ void Drawer::drawTerrainTranslucent(Shader* shader,std::shared_ptr<std::list<std
   for(auto it = list->cbegin();it != list->cend();++it)
   {
     std::shared_ptr<BSPNode> curNode = (*it);
-    curNode->drawTranslucent();
+    curNode->drawTranslucent(shader,viewPos);
   }
 }
