@@ -18,8 +18,8 @@ void Drawer::setupShadersAndTextures(int width, int height)
 
 
   const char* texture = "../assets/textures/atlas.png";
-  glGenTextures(1, &glTexture);
-  glBindTexture(GL_TEXTURE_2D, glTexture);
+  glGenTextures(1, &textureAtlas);
+  glBindTexture(GL_TEXTURE_2D, textureAtlas);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -35,6 +35,8 @@ void Drawer::setupShadersAndTextures(int width, int height)
 
   screenWidth = width;
   screenHeight = height;
+
+  skyBox = SkyBox("../assets/alps");
 
   objShader = Shader("../src/Shaders/EntityShaders/entShader.vs",
                      "../src/Shaders/EntityShaders/entShader.fs");
@@ -68,6 +70,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader.setFloat("far_plane",25.0f);
   blockShader.setFloat("fog_start",CHUNKSIZE*(horzRenderDistance-2));
   blockShader.setFloat("fog_dist",CHUNKSIZE);
+  blockShader.setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
   gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.vs");
 
   int cellWidth = 128;
@@ -76,7 +79,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
   gBufferShader.setInt("textureAtlasHeightInCells",texHeight/cellWidth);
   gBufferShader.setInt("cellWidth",cellWidth);
   gBufferShader.setInt("curTexture",0);
-  gBufferShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+  gBufferShader.setVec3("objectColor", 0.5f, 0.5f, 0.31f);
 
 
   transShader = Shader("../src/Shaders/BSPShaders/transShader.fs","../src/Shaders/BSPShaders/transShader.vs");
@@ -102,35 +105,53 @@ void Drawer::setupShadersAndTextures(int width, int height)
                             "../src/Shaders/pointDepthShader.gs");
 
 
+  setAllBuffers();
+
+}
+
+void Drawer::deleteAllBuffers()
+{
+  glDeleteBuffers(1,&gBuffer);
+  glDeleteTextures(1,&gDepth);
+  glDeleteTextures(1,&gPosition);
+  glDeleteTextures(1,&gNormal);
+  glDeleteTextures(1,&gColorSpec);
+
+  glDeleteBuffers(1,&transBuffer);
+  glDeleteTextures(1,&transTexture);
+}
+
+void Drawer::setAllBuffers()
+{
   glGenFramebuffers(1, &gBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
 
     // - position color buffer
     glGenTextures(1, &gPosition);
-    glBindTexture(GL_TEXTURE_2D, gPosition);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gPosition);
+    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGB16F, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, gPosition, 0);
 
     // - normal color buffer
     glGenTextures(1, &gNormal);
-    glBindTexture(GL_TEXTURE_2D, gNormal);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gNormal);
+    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGB16F, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, gNormal, 0);
 
     // - color + specular color buffer
     glGenTextures(1, &gColorSpec);
-    glBindTexture(GL_TEXTURE_2D, gColorSpec);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenWidth, screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColorSpec, 0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gColorSpec);
+    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGBA, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, gColorSpec, 0);
 
 
     // - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
@@ -139,7 +160,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
 
     glGenTextures(1, &gDepth);
     glBindTexture(GL_TEXTURE_2D, gDepth);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth,screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth*MSAA,screenHeight*MSAA, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -153,27 +174,23 @@ void Drawer::setupShadersAndTextures(int width, int height)
   glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
 
     glGenTextures(1, &transTexture);
-    glBindTexture(GL_TEXTURE_2D, transTexture);
-
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA16F,screenWidth,screenHeight,0,GL_RGBA,GL_FLOAT,0);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, transTexture);
+    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE,0,GL_RGBA16F,screenWidth*MSAA,screenHeight*MSAA,0,GL_RGBA,GL_FLOAT,0);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, transTexture, 0);
 
     uint transDepth;
-    glGenTextures(1, &transDepth);
-    glBindTexture(GL_TEXTURE_2D, transDepth);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth,screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+     glGenTextures(1, &transDepth);
+     glBindTexture(GL_TEXTURE_2D, transDepth);
+     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth*MSAA,screenHeight*MSAA, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, transDepth, 0);
   glBindFramebuffer(GL_FRAMEBUFFER,0);
-
 }
-
 
 
 void Drawer::setRenderDistances(int vert, int horz, int buffer)
@@ -192,9 +209,9 @@ void Drawer::renderGBuffer()
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport(0,0,screenWidth,screenHeight);
+    glViewport(0,0,screenWidth*2,screenHeight*2);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, glTexture);
+    glBindTexture(GL_TEXTURE_2D, textureAtlas);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     Shader* shader = &gBufferShader;
     shader->use();
@@ -202,6 +219,7 @@ void Drawer::renderGBuffer()
 
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     drawTerrainOpaque(shader,chunksToDraw);
+    //skyBox.draw(&viewMat);
     //drawObjects();
     //drawTerrainTranslucent(shader,chunksToDraw);
     //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
@@ -211,7 +229,7 @@ void Drawer::renderGBuffer()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //glDisable(GL_DEPTH_TEST);
     glClearColor(0.0f,0.0f,0.0f,1.0f);
-    glViewport(0,0,screenWidth,screenHeight);
+    glViewport(0,0,screenWidth*2,screenHeight*2);
 
     depthBufferLoadingShader.use();
     glActiveTexture(GL_TEXTURE0);
@@ -220,7 +238,7 @@ void Drawer::renderGBuffer()
 
     renderQuad();
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, glTexture);
+    glBindTexture(GL_TEXTURE_2D, textureAtlas);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     shader = &transShader;
     shader->use();
@@ -541,13 +559,13 @@ void Drawer::drawFinal()
   shader->use();
 
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D,gPosition);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gPosition);
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D,gNormal);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gNormal);
   glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D,gColorSpec);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gColorSpec);
   glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_2D,transTexture);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,transTexture);
 
   setLights(shader);
   shader->setVec3("viewPos", viewPos);
@@ -558,7 +576,7 @@ void Drawer::drawFinal()
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glBlitFramebuffer(0, 0, screenWidth, screenHeight, 0, 0, screenWidth, screenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+  glBlitFramebuffer(0, 0, screenWidth*MSAA, screenHeight*MSAA, 0, 0, screenWidth, screenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
 }
 
@@ -572,8 +590,6 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
                               (float)screenWidth/(float)screenHeight,
                               camNear,camFar+5*CHUNKSIZE);
 
-  hsrProj = glm::perspective(glm::radians(camZoom+10.0f),float(screenWidth)/(float)screenHeight
-                           ,camNear,camFar+CHUNKSIZE*3);
   objShader.use();
   objShader.setMat4("projection",viewProj);
   blockShader.use();
@@ -587,7 +603,6 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
 void Drawer::updateCameraMatrices(Camera* cam)
 {
   viewMat = cam->getViewMatrix();
-  hsrMat = hsrProj*cam->getHSRMatrix();
   viewPos = cam->getPosition();
   viewFront = cam->front;
   viewUp = cam->up;
@@ -667,6 +682,20 @@ then it calls freeGl which will free up all  resourses on the chunk and then
 removes all refrences to it
 At that point the chunk should be deleted by the smart pointers;
 */
+
+
+void Drawer::addLight(glm::vec3 pos,glm::vec3 amb,glm::vec3 spe,glm::vec3 dif,
+         float cons, float lin, float quad)
+{
+  lightList.push_back(PointLight{pos,amb,spe,dif,cons,lin,quad});
+  renderPointDepthMap(lightList.size()-1);
+}
+
+void Drawer::createDirectionalLight(glm::vec3 dir,glm::vec3 amb,glm::vec3 dif,glm::vec3 spec)
+{
+  dirLight = {dir,amb,dif,spec};
+  renderDirectionalDepthMap();
+}
 
 void Drawer::drawTerrainOpaque(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
 {

@@ -49,7 +49,7 @@ void MainChar::initMainChar(float x, float y, float z)
   deltay = 0;
   deltaz = 0;
   reach = 200;
-  moveSpeed = 10.0f;
+  moveSpeed = 0.2f;
   mainCam = Camera(glm::vec3((float)xpos,(float)ypos,(float)zpos));
   screenWidth = World::drawer.screenWidth;
   screenHeight = World::drawer.screenHeight;

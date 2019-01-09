@@ -98,7 +98,8 @@ class SkyBox
   glm::mat4 projectMat;
   Shader skyboxShader;
   public:
-  SkyBox();
+  SkyBox(const std::string &filePath);
+  SkyBox(){};
   void draw(glm::mat4* view);
 
 };

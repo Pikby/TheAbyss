@@ -30,10 +30,10 @@ in vec2 TexCoords;
 out vec4 finalcolor;
 
 
-uniform sampler2D gColorSpec;
-uniform sampler2D gNormal;
-uniform sampler2D gPosition;
-uniform sampler2D transTexture;
+uniform sampler2DMS gColorSpec;
+uniform sampler2DMS gNormal;
+uniform sampler2DMS gPosition;
+uniform sampler2DMS transTexture;
 
 uniform vec3 viewPos;
 uniform float far_plane;
@@ -45,16 +45,21 @@ uniform PointLight pointLights[20];
 uniform int numbOfLights;
 uniform int numbOfCascadedShadows;
 
-vec4 objColorAO = texture(gColorSpec, TexCoords).rgba;
+uniform ivec2 resolution;
+
+
+ivec2 texCoord = ivec2(TexCoords.x*1920*2,TexCoords.y*1080*2);
+
+vec4 objColorAO = texelFetch(gColorSpec, texCoord,4).rgba;
 vec3 objColor = objColorAO.rgb;
 
-vec4 transColorAO = texture(transTexture, TexCoords).rgba;
+vec4 transColorAO = texelFetch(transTexture, texCoord,4).rgba;
 vec3 transColor = transColorAO.rgb;
 float transColorCount = transColorAO.a;
 
 float AO = objColorAO.a;
-vec3 normal = texture(gNormal, TexCoords).rgb;
-vec3 fragPosition = texture(gPosition, TexCoords).rgb;
+vec3 normal = texelFetch(gNormal, texCoord,4).rgb;
+vec3 fragPosition = texelFetch(gPosition,texCoord,4).rgb;
 float fragDepth = length(fragPosition);
 
 
@@ -157,8 +162,8 @@ void main()
 
     float fogMod = max((fragDepth-fog_start)/fog_dist,0);
     //fogMod = 0;
-    vec3 fog = fogMod*vec3(1.0f,1.0f,1.0f);
-    vec3 finColor = fog+objColor*calcDirectionalLight(shadow);
+    vec3 fog = vec3(0.0f,0.0f,0.0f);
+    vec3 finColor = fog*fogMod+(1-fogMod)*objColor*calcDirectionalLight(shadow);
     //vec3 finColor = fog+objColor;
 
     //Pixel has no translucent objects

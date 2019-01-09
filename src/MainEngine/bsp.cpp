@@ -282,24 +282,24 @@ AmbientOcclusion BSP::getAO(const glm::ivec3 &pos, Faces face, TextureSides top,
   {
     switch(face)
     {
-      case(TOPF): side1 = ivec3(0,1,1); break;
+      case(TOPF):    side1 = ivec3(0,1,1); break;
       case(BOTTOMF): side1 = ivec3(0,-1,1); break;
-      case(FRONTF): side1 = ivec3(0,1,-1); break;
-      case(BACKF): side1 = ivec3(0,1,1); break;
-      case(LEFTF): side1 = ivec3(-1,1,0); break;
-      case(RIGHTF): side1 = ivec3(1,1,0); break;
+      case(FRONTF):  side1 = ivec3(0,1,-1); break;
+      case(BACKF):   side1 = ivec3(0,1,1); break;
+      case(LEFTF):   side1 = ivec3(-1,1,0); break;
+      case(RIGHTF):  side1 = ivec3(1,1,0); break;
     }
   }
   else
   {
     switch(face)
     {
-      case(TOPF): side1 = ivec3(0,1,-1); break;
+      case(TOPF):    side1 = ivec3(0,1,-1); break;
       case(BOTTOMF): side1 = ivec3(0,-1,-1); break;
-      case(FRONTF): side1 = ivec3(0,-1,-1); break;
-      case(BACKF): side1 = ivec3(0,-1,1); break;
-      case(LEFTF): side1 = ivec3(-1,-1,0); break;
-      case(RIGHTF): side1 = ivec3(1,-1,0); break;
+      case(FRONTF):  side1 = ivec3(0,-1,-1); break;
+      case(BACKF):   side1 = ivec3(0,-1,1); break;
+      case(LEFTF):   side1 = ivec3(-1,-1,0); break;
+      case(RIGHTF):  side1 = ivec3(1,-1,0); break;
     }
   }
 
@@ -307,24 +307,24 @@ AmbientOcclusion BSP::getAO(const glm::ivec3 &pos, Faces face, TextureSides top,
   {
     switch(face)
     {
-      case(TOPF): side2 = ivec3(1,1,0); break;
+      case(TOPF):    side2 = ivec3(1,1,0); break;
       case(BOTTOMF): side2 = ivec3(1,-1,0); break;
-      case(FRONTF): side2 = ivec3(1,0,-1); break;
-      case(BACKF): side2 = ivec3(1,0,1); break;
-      case(LEFTF): side2 = ivec3(-1,0,1); break;
-      case(RIGHTF): side2 = ivec3(1,0,1); break;
+      case(FRONTF):  side2 = ivec3(1,0,-1); break;
+      case(BACKF):   side2 = ivec3(1,0,1); break;
+      case(LEFTF):   side2 = ivec3(-1,0,1); break;
+      case(RIGHTF):  side2 = ivec3(1,0,1); break;
     }
   }
   else
   {
     switch(face)
     {
-      case(TOPF): side2 = ivec3(-1,1,0); break;
+      case(TOPF):    side2 = ivec3(-1,1,0); break;
       case(BOTTOMF): side2 = ivec3(-1,-1,0); break;
-      case(FRONTF): side2 = ivec3(-1,0,-1); break;
-      case(BACKF): side2 = ivec3(-1,0,1); break;
-      case(LEFTF): side2 = ivec3(-1,0,-1); break;
-      case(RIGHTF): side2 = ivec3(1,0,-1); break;
+      case(FRONTF):  side2 = ivec3(-1,0,-1); break;
+      case(BACKF):   side2 = ivec3(-1,0,1); break;
+      case(LEFTF):   side2 = ivec3(-1,0,-1); break;
+      case(RIGHTF):  side2 = ivec3(1,0,-1); break;
     }
   }
 
@@ -626,7 +626,7 @@ void BSP::build()
      normVec = face;
    };
    vec3 depthoffset = glm::vec3(0,1,0);
-   const float offset = 0.00f;
+   const float offset = 0.005f;
    auto createVertices = [&](bool front)
    {
      bottomright = blockOrigin + depthoffset + (right+offset)*vec3(rightVector) + offset*vec3(-rightVector);

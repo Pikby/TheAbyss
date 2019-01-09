@@ -69,7 +69,7 @@ void draw()
   float deltaTime;
   float lastFrame;
   World::drawer.createDirectionalLight(glm::vec3(-0.1f,-1.0f,-0.1f),glm::vec3(0.4f,0.4f,0.4f));
-  SkyBox skyBox;
+  SkyBox skyBox("../assets/alps");
   Camera* mainCam = &(MainChar::mainCam);
 
   Cube cube;
@@ -81,7 +81,7 @@ void draw()
   World::drawer.addCube(glm::vec3(0,0,0));
     World::drawer.addCube(glm::vec3(0,50,0));
     World::drawer.addCube(glm::vec3(0,70,0));
-    World::drawer.addCube(glm::vec3(0,1500,0));
+    World::drawer.addCube(glm::vec3(0,100,0));
   //World::addLight(glm::vec3(10,50,10));
   while(!glfwWindowShouldClose(window))
   {
@@ -113,18 +113,18 @@ void draw()
     }
 
     World::drawer.drawFinal();
-    //World::drawer.drawObjects();
-    //World::drawer.drawPlayers();
 
     int error = glGetError();
     if(error != 0)
     {
-      std::cout << "OPENGL ERROR" << error << ":" << std::hex << error << std::dec << "\n";
+      //std::cout << "OPENGL ERROR" << error << ":" << std::hex << error << std::dec << "\n";
 
     }
     glEnable(GL_BLEND);
     glm::mat4 view = mainCam->getViewMatrix();
-    skyBox.draw(&view);
+    //skyBox.draw(&view);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     CEGUI::System::getSingleton().renderAllGUIContexts();
     glfwSwapBuffers(window);
 

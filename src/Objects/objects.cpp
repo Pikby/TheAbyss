@@ -189,17 +189,17 @@ void Player::draw(Shader* shader)
   glBindVertexArray(0);
 }
 
-SkyBox::SkyBox()
+SkyBox::SkyBox(const std::string &filePath)
 {
   skyboxShader = Shader("../src/Shaders/skyShader.vs","../src/Shaders/skyShader.fs");
   std::vector<std::string> faces
   {
-    "../assets/alps_ft.tga",
-    "../assets/alps_bk.tga",
-    "../assets/alps_up.tga",
-    "../assets/alps_dn.tga",
-    "../assets/alps_rt.tga",
-    "../assets/alps_lf.tga"
+    filePath + "_ft.tga",
+    filePath + "_bk.tga",
+    filePath + "_up.tga",
+    filePath + "_dn.tga",
+    filePath + "_rt.tga",
+    filePath + "_lf.tga"
   };
 
   glGenTextures(1, &texID);
