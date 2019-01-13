@@ -146,8 +146,8 @@ std::shared_ptr<BSPNode> World::chunkRayCast(const glm::vec3 &pos, const glm::ve
 
 void World::calculateViewableChunks()
 {
-  glm::ivec3 min = toChunkCoords(drawer.viewMin);
-  glm::ivec3 max = toChunkCoords(drawer.viewMax);
+  glm::ivec3 min = toChunkCoords(drawer.viewMin) + glm::ivec3(-1,-1,-1);
+  glm::ivec3 max = toChunkCoords(drawer.viewMax) + glm::ivec3(1,1,1);;
   drawer.chunksToDraw = BSPmap.findAll(min,max);
 
   auto check = [](glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 target)

@@ -100,15 +100,15 @@ float calcDirShadows()
   float shadow = 0;
   vec2 texelSize = 1/textureSize(dirLight.shadow[index],0);
 
-  for(int x = -1;x <=1 ; ++x)
+  for(int x = -2;x <=2 ; ++x)
   {
-    for(int y = -1; y <= 1; ++y)
+    for(int y = -2; y <= 2; ++y)
     {
       float pcfDepth = texture(dirLight.shadow[index], proj.xy + vec2(x,y) * texelSize).r;
       shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
     }
   }
-  return shadow/9.0;
+  return shadow/25.0f;
 
 }
 /*
@@ -153,11 +153,13 @@ void main()
     {
       discard;
     }
-/*
+
+    /*
     if(findCorrectShadowMap() == 0) objColor =  vec3(0.000, 0.500, 1.000);
     else if(findCorrectShadowMap() == 1) objColor = vec3(1,0,0);
     else if(findCorrectShadowMap() == 2) objColor = vec3(0,1,0);
     */
+
     //float maxDistance = dirLight.arrayOfDistances[numbOfCascadedShadows];
 
     float fogMod = max((fragDepth-fog_start)/fog_dist,0);
@@ -167,6 +169,7 @@ void main()
     //vec3 finColor = fog+objColor;
 
     //Pixel has no translucent objects
+    transColor += vec3(1.0f,1.0f,1.0f);
     if(transColor == vec3(0.0f,0.0f,0.0f))
     {
       finalcolor = vec4(finColor,1);
@@ -178,4 +181,6 @@ void main()
       finalcolor = vec4((finTransColor + finColor )/2.0f,1.0f);
 
     }
+    //float shadows = texture(dirLight.shadow[0], TexCoords).r;
+    //finalcolor = vec4(vec3(shadows),1.0f);
 }

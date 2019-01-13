@@ -219,16 +219,15 @@ void Drawer::renderGBuffer()
 
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     drawTerrainOpaque(shader,chunksToDraw);
-    //skyBox.draw(&viewMat);
-    //drawObjects();
-    //drawTerrainTranslucent(shader,chunksToDraw);
+    skyBox.draw(&viewMat);
+    drawObjects();
     //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
   glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //glDisable(GL_DEPTH_TEST);
-    glClearColor(0.0f,0.0f,0.0f,1.0f);
+    glClearColor(-1.0f,-1.0f,-1.0f,1.0f);
     glViewport(0,0,screenWidth*2,screenHeight*2);
 
     depthBufferLoadingShader.use();
@@ -389,7 +388,7 @@ glm::ivec3 toChunkCoords(glm::ivec3 in)
 void Drawer::renderDirectionalShadows()
 {
   const int PI = 3.14159265;
-  int distToSun = (vertRenderDistance)*CHUNKSIZE;
+  int distToSun = (vertRenderDistance*2)*CHUNKSIZE;
   //Makes sure the light is always at the correct angle above the player
   glm::mat4 lightProjection,lightView, lightSpaceMatrix;
 
@@ -403,6 +402,8 @@ void Drawer::renderDirectionalShadows()
     float near = camNear + ((camFar-camNear)/NUMBOFCASCADEDSHADOWS)*x;
     float far = camNear + ((camFar-camNear)/NUMBOFCASCADEDSHADOWS)*(x+1);
     calculateFrustrum(frustrum,viewPos,viewFront,viewRight,viewUp,camZoomInDegrees,(float)screenWidth/(float)screenHeight,near,far);
+
+    // /std::cout << far << "\n";
     dirLight.arrayOfDistances[x] = far;
     glm::vec3 lightTarget(0);
     glm::vec3 lightPos(0);
@@ -414,19 +415,19 @@ void Drawer::renderDirectionalShadows()
     lightTarget /= 8;
 
     glm::vec3 sunAngle = dirLight.direction;
-    lightPos = lightTarget -(sunAngle*((float)distToSun));
-    objList[x]->setPosition(lightPos);
-    objList[x]->setColor(glm::vec3(0.5f,0.5f,0.5f));
-    objList[x]->updateModelMat();
+    lightPos = lightTarget  -(sunAngle*((float)distToSun));
+
+    //objList[x]->setColor(glm::vec3(0.5f,0.5f,0.5f));
+    //objList[x]->updateModelMat();
     //std::cout << glm::to_string(lightTarget) << glm::to_string(sunAngle) << distToSun << "\n";
     //std::cout << "Lightpos"<< glm::to_string(lightPos) << "\n";
 
     //std::cout << "Lightpos::" << glm::to_string(lightPos) << glm::to_string(lightTarget) << "\n";
-    lightView  = glm::lookAt(lightPos,lightTarget,glm::vec3(0.0f,1.0f,0.0f));
+    lightView  = glm::lookAt(lightPos-viewPos,lightTarget-viewPos,glm::vec3(0.0f,1.0f,0.0f));
     //std::cout << "LightView: " << glm::to_string(lightView);
 
     glm::vec3 min,max;
-
+    /*
     for(int i=0;i<8;i++)
     {
       //std::cout << glm::to_string(frustrum[i]) << "\n";
@@ -434,26 +435,53 @@ void Drawer::renderDirectionalShadows()
       frustrum[i] = glm::vec3(lightView*glm::vec4(frustrum[i],1.0f));
       //std::cout << i << glm::to_string(frustrum[i]) << "\n";
     }
-
+*/
     calculateMinandMaxPoints(frustrum,8,&min,&max);
+    if(x == 1)
+    {
+
+
+    objList[x*2]->setPosition(viewMin);
+    objList[x*2+1]->setPosition(viewMax);
+    }
+    /*
+    std::cout << glm::to_string(min) << glm::to_string(max) << "\n";
+    if(x == 0)
+    {
+
+
+    objList[x*2]->setPosition(min);
+    objList[x*2+1]->setPosition(max);
+    }
+    */
     const int buf = 0;
     int factor = x == 0 ? factor = 1 : factor = x*2;
     float viewWidth = directionalShadowResolution/factor;
-    lightProjection = glm::ortho(min.x, max.x, min.y,max.y,-1.0f,shadowFar);
+
+    //std::cout << glm::to_string(lightTarget) << "\n";
+    //s/td::cout << glm::to_string(min) << glm::to_string(max) << "\n";
+
+    glm::vec3 bottomLightTarget = lightTarget;
+    lightProjection = glm::ortho(-abs(lightPos.x - min.x), abs(lightPos.x - max.x), -abs(lightPos.z - min.z),abs(lightPos.z-max.z),-1.0f,shadowFar);
+
     dirLight.lightSpaceMat[x] = lightProjection * lightView;
 
 
 
+    //std::cout << glm::to_string(worldMin) << glm::to_string(worldMax) << "\n";
     dirDepthShader.use();
     dirDepthShader.setMat4("lightSpaceMatrix",dirLight.lightSpaceMat[x]);
 
-    glm::vec3 worldMin = min;
-    glm::vec3 worldMax = max;
+
     //std::cout << glm::to_string(min) << glm::to_string(max) << "\n";
     //std::cout << glm::to_string(worldMin) << glm::to_string(worldMax) << "\n";
     //std::cout << glm::to_string(lightPos) << "\n";
     //calculateMinandMaxPoints(frustrum,8,&min,&max);
-    //auto chunkList = World::BSPmap.findAll(toChunkCoords(worldMin),toChunkCoords(worldMax));
+
+
+    min.y = (lightTarget+(sunAngle*((float)distToSun))).y;
+    max.y = lightPos.y;
+    // /auto chunkList = World::BSPmap.findAll(toChunkCoords(min),toChunkCoords(max));
     auto chunkList = std::make_shared<std::list<std::shared_ptr<BSPNode>>>(World::BSPmap.getFullList());
     glViewport(0,0,viewWidth,viewWidth);
       glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[x]);
@@ -473,23 +501,21 @@ void Drawer::renderDirectionalShadows()
 
 void Drawer::bindDirectionalShadows(Shader* shader)
 {
-
-
   shader->use();
   for(int i=0;i<NUMBOFCASCADEDSHADOWS;i++)
   {
     glActiveTexture(GL_TEXTURE4+i);
     glBindTexture(GL_TEXTURE_2D, dirLight.depthMap[i]);
     shader->setMat4("dirLight.lightSpaceMatrix[" +std::to_string(i) + "]",dirLight.lightSpaceMat[i]);
+    //std::cout << dirLight.arrayOfDistances[0] << "\n";
+    //std::cout << dirLight.arrayOfDistances[1] << "\n";
     shader->setFloat("dirLight.arrayOfDistances[" + std::to_string(i) + "]",dirLight.arrayOfDistances[i]);
   }
-
 }
 
 void Drawer::renderPointShadows()
 {
   pointDepthShader.use();
-
   for(int i=0;i<objList.size();i++)
   {
     PointLight* light = &(lightList[i]);
@@ -521,15 +547,17 @@ void Drawer::bindPointShadows()
 
 void Drawer::drawObjects()
 {
-  glViewport(0,0,screenWidth,screenHeight);
+  glViewport(0,0,screenWidth*MSAA,screenHeight*MSAA);
   objShader.use();
 
   glBindTexture(GL_TEXTURE_CUBE_MAP,0);
   glBindTexture(GL_TEXTURE_2D,0);
   objShader.setMat4("view",viewMat);
+
   for(int i=0;i<objList.size();i++)
   {
-    objList[i]->draw(&objShader);
+    //std::cout << objList.size() << "\n";
+    objList[i]->draw(&objShader,viewPos);
   }
 
 }
@@ -547,7 +575,7 @@ void Drawer::drawPlayers()
 
   for(auto it = playerList.begin(); it != playerList.end();it++)
   {
-    it->second->draw(&objShader);
+    it->second->draw(&objShader,viewPos);
   }
 }
 
@@ -609,6 +637,7 @@ void Drawer::updateCameraMatrices(Camera* cam)
   viewRight = cam->right;
   calculateFrustrum(viewFrustrum,viewPos,viewFront,viewRight,viewUp,camZoomInDegrees,(float)screenWidth/(float)screenHeight,camNear,camFar);
   calculateMinandMaxPoints(viewFrustrum,8,&viewMin,&viewMax);
+
 }
 
 
@@ -657,7 +686,7 @@ void Drawer::calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::ve
 void Drawer::calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin, glm::vec3* finmax)
 {
 
-  glm::vec3 max = glm::vec3(std::numeric_limits<float>::min());
+  glm::vec3 max = -glm::vec3(std::numeric_limits<float>::max());
   glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
 
   for(int i=0;i<arrsize;i++)

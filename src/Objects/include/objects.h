@@ -51,7 +51,8 @@ protected:
   {
     pos = newPos;
   }
-  virtual void draw(Shader* shader){
+  virtual void draw(Shader* shader,const glm::vec3 &viewPos)
+  {
     std::cout << "ERROR DRAWING DEFAULT OBJECT\n";
   }
   virtual void render(){
@@ -74,7 +75,7 @@ private:
 public:
   using Object::Object;
 
-  void draw(Shader* shader);
+  void draw(Shader* shader,const glm::vec3 &viewPos);
   void render();
   bool isCollided(Cube* cube);
 };
@@ -86,7 +87,7 @@ private:
 public:
   using Object::Object;
 
-  void draw(Shader* shader);
+  void draw(Shader* shader,const glm::vec3 &viewPos);
   void render();
   bool isCollided(Cube* cube);
 };

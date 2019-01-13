@@ -139,18 +139,16 @@ void Cube::render()
 }
 
 
-void Cube::draw(Shader* shader)
+void Cube::draw(Shader* shader, const glm::vec3 &viewPos)
 {
+  glm::mat4 model = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f),glm::vec3(pos-viewPos)),angInRads,rotAxis),scale);
   shader->use();
-  shader->setMat4("modelMat",modelMat);
+  shader->setMat4("modelMat",model);
   shader->setVec3("objectColor",glm::vec3(0.5,0.5f,0.5f));
-  glDisable(GL_CULL_FACE);
-  //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
-  //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-  glEnable(GL_CULL_FACE);
+  //std::cout << pos.x <<":"<< pos.y<< ":" << pos.z << "\n";
 }
 
 void Player::render()
@@ -179,7 +177,7 @@ void Player::render()
   glBindVertexArray(0);
 }
 
-void Player::draw(Shader* shader)
+void Player::draw(Shader* shader,const glm::vec3 &viewPos)
 {
   shader->setMat4("model",modelMat);
   shader->setVec3("objectColor",color);

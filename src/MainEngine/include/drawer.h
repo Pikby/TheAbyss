@@ -7,7 +7,7 @@
 #include "../../headers/camera.h"
 #include "../../headers/3dmap.h"
 
-#define NUMBOFCASCADEDSHADOWS 4
+#define NUMBOFCASCADEDSHADOWS 2
 #define MSAA 2
 struct PointLight
 {
@@ -56,7 +56,6 @@ private:
 
   //The camera vectors, extracted from the camera each frame,
   glm::vec3 viewPos, viewFront,viewUp,viewRight;
-
 
   float camZoomInDegrees,camNear, camFar;
   uint gBuffer,gDepth;

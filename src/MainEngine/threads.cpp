@@ -51,7 +51,7 @@ GLFWwindow* createWindow(int width, int height)
 void initWorld(int numbBuildThreads, int width,  int height)
 {
   World::initWorld(numbBuildThreads,width,height);
-  MainChar::initMainChar(1000000,50,1000000);
+  MainChar::initMainChar(0,50,0);
 }
 
 void closeGame()
@@ -68,7 +68,7 @@ void draw()
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
-  World::drawer.createDirectionalLight(glm::vec3(-0.1f,-1.0f,-0.1f),glm::vec3(0.4f,0.4f,0.4f));
+  World::drawer.createDirectionalLight(glm::vec3(-0.0f,-1.0f,-0.0001f),glm::vec3(0.8f,0.8f,0.8f));
   SkyBox skyBox("../assets/alps");
   Camera* mainCam = &(MainChar::mainCam);
 
@@ -79,14 +79,14 @@ void draw()
   player.render();
 
   World::drawer.addCube(glm::vec3(0,0,0));
-    World::drawer.addCube(glm::vec3(0,50,0));
-    World::drawer.addCube(glm::vec3(0,70,0));
-    World::drawer.addCube(glm::vec3(0,100,0));
+  World::drawer.addCube(glm::vec3(0,50,0));
+  World::drawer.addCube(glm::vec3(0,70,0));
+  World::drawer.addCube(glm::vec3(0,100,0));
+
   //World::addLight(glm::vec3(10,50,10));
   while(!glfwWindowShouldClose(window))
   {
 
-    //std::cout << World::drawnChunks << "\n";
     World::drawnChunks = 0;
     World::drawer.chunksToDraw = NULL;
     World::deleteChunksFromQueue();
@@ -94,14 +94,10 @@ void draw()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     MainChar::update();
 
-
     World::drawer.updateCameraMatrices(mainCam);
+    World::calculateViewableChunks();
 
-    //if(std::stoi(Settings::get("unlockCamera")))
-    {
-      World::calculateViewableChunks();
-    }
-    //World::drawer.renderDirectionalShadows();
+    World::drawer.renderDirectionalShadows();
     World::drawer.renderGBuffer();
 
 
@@ -114,15 +110,8 @@ void draw()
 
     World::drawer.drawFinal();
 
-    int error = glGetError();
-    if(error != 0)
-    {
-      //std::cout << "OPENGL ERROR" << error << ":" << std::hex << error << std::dec << "\n";
-
-    }
     glEnable(GL_BLEND);
     glm::mat4 view = mainCam->getViewMatrix();
-    //skyBox.draw(&view);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     CEGUI::System::getSingleton().renderAllGUIContexts();
