@@ -22,7 +22,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
   glBindTexture(GL_TEXTURE_2D, textureAtlas);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   //Load and bind the texture from the class
   int texWidth, texHeight, nrChannels;
@@ -104,9 +104,8 @@ void Drawer::setupShadersAndTextures(int width, int height)
                             "../src/Shaders/pointDepthShader.vs",
                             "../src/Shaders/pointDepthShader.gs");
 
-
   setAllBuffers();
-
+  renderDirectionalDepthMap();
 }
 
 void Drawer::deleteAllBuffers()
@@ -219,7 +218,7 @@ void Drawer::renderGBuffer()
 
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     drawTerrainOpaque(shader,chunksToDraw);
-    skyBox.draw(&viewMat);
+    //skyBox.draw(&viewMat);
     drawObjects();
     //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
@@ -258,24 +257,25 @@ void Drawer::renderDirectionalDepthMap()
 
   for(int i=0;i<NUMBOFCASCADEDSHADOWS;i++)
   {
+    std::cout << "Creating depth map\n";
     glGenFramebuffers(1, &(dirLight.depthMapFBO[i]));
     glGenTextures(1, &(dirLight.depthMap[i]));
 
-    glBindTexture(GL_TEXTURE_2D, dirLight.depthMap[i]);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i]);
     int factor = i == 0 ? factor = 1 : factor = i*2;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_DEPTH_COMPONENT,
                  directionalShadowResolution/factor,directionalShadowResolution/factor, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, borderColor);
 
 
     glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[i]);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dirLight.depthMap[i], 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i], 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -404,7 +404,7 @@ void Drawer::renderDirectionalShadows()
     calculateFrustrum(frustrum,viewPos,viewFront,viewRight,viewUp,camZoomInDegrees,(float)screenWidth/(float)screenHeight,near,far);
 
     // /std::cout << far << "\n";
-    dirLight.arrayOfDistances[x] = far;
+    dirLight.arrayOfDistances[x] = far - 32;
     glm::vec3 lightTarget(0);
     glm::vec3 lightPos(0);
     for(int i=0;i<8;i++)
@@ -427,7 +427,7 @@ void Drawer::renderDirectionalShadows()
     //std::cout << "LightView: " << glm::to_string(lightView);
 
     glm::vec3 min,max;
-    /*
+
     for(int i=0;i<8;i++)
     {
       //std::cout << glm::to_string(frustrum[i]) << "\n";
@@ -435,7 +435,7 @@ void Drawer::renderDirectionalShadows()
       frustrum[i] = glm::vec3(lightView*glm::vec4(frustrum[i],1.0f));
       //std::cout << i << glm::to_string(frustrum[i]) << "\n";
     }
-*/
+
     calculateMinandMaxPoints(frustrum,8,&min,&max);
     if(x == 1)
     {
@@ -445,7 +445,7 @@ void Drawer::renderDirectionalShadows()
     objList[x*2+1]->setPosition(viewMax);
     }
     /*
-    std::cout << glm::to_string(min) << glm::to_string(max) << "\n";
+
     if(x == 0)
     {
 
@@ -458,12 +458,24 @@ void Drawer::renderDirectionalShadows()
     int factor = x == 0 ? factor = 1 : factor = x*2;
     float viewWidth = directionalShadowResolution/factor;
 
+
+    glm::vec3 lightPosLightSpace = glm::vec3(lightView*glm::vec4(lightPos,1.0f));
+
+    float buffer = 0;
+    float l = -buffer -abs(lightPosLightSpace.x - min.x);
+    float r = buffer + abs(lightPosLightSpace.x - max.x);
+    float b = -buffer - abs(lightPosLightSpace.y - min.y);
+    float t = buffer + abs(lightPosLightSpace.y - max.y);
+
+
+    //std::cout << l << ";" << r << ";" <<  b << ";" << t << "\n";
+    //std::cout << glm::to_string(min) << glm::to_string(max) << "\n";
     //std::cout << glm::to_string(lightTarget) << "\n";
     //s/td::cout << glm::to_string(min) << glm::to_string(max) << "\n";
 
     glm::vec3 bottomLightTarget = lightTarget;
-    lightProjection = glm::ortho(-abs(lightPos.x - min.x), abs(lightPos.x - max.x), -abs(lightPos.z - min.z),abs(lightPos.z-max.z),-1.0f,shadowFar);
-
+    lightProjection = glm::ortho(l,r,b,t,-1.0f,shadowFar);
+    //lightProjection = glm::ortho(min.x,max.x,min.y,max.y,-1.0f,shadowFar);
     dirLight.lightSpaceMat[x] = lightProjection * lightView;
 
 
@@ -505,7 +517,7 @@ void Drawer::bindDirectionalShadows(Shader* shader)
   for(int i=0;i<NUMBOFCASCADEDSHADOWS;i++)
   {
     glActiveTexture(GL_TEXTURE4+i);
-    glBindTexture(GL_TEXTURE_2D, dirLight.depthMap[i]);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i]);
     shader->setMat4("dirLight.lightSpaceMatrix[" +std::to_string(i) + "]",dirLight.lightSpaceMat[i]);
     //std::cout << dirLight.arrayOfDistances[0] << "\n";
     //std::cout << dirLight.arrayOfDistances[1] << "\n";
@@ -720,11 +732,15 @@ void Drawer::addLight(glm::vec3 pos,glm::vec3 amb,glm::vec3 spe,glm::vec3 dif,
   renderPointDepthMap(lightList.size()-1);
 }
 
-void Drawer::createDirectionalLight(glm::vec3 dir,glm::vec3 amb,glm::vec3 dif,glm::vec3 spec)
+
+void Drawer::updateDirectionalLight(glm::vec3 dir,glm::vec3 amb,glm::vec3 dif,glm::vec3 spec)
 {
-  dirLight = {dir,amb,dif,spec};
-  renderDirectionalDepthMap();
+  dirLight.direction = dir;
+  dirLight.ambient = amb;
+  dirLight.diffuse = dif;
+  dirLight.specular =spec;
 }
+
 
 void Drawer::drawTerrainOpaque(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
 {

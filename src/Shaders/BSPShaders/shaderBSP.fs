@@ -10,7 +10,7 @@ struct DirLight
   vec3 specular;
   mat4 lightSpaceMatrix[MAXDIRECTIONALLIGHTPARTS];
   float arrayOfDistances[MAXDIRECTIONALLIGHTPARTS];
-  sampler2D shadow[MAXDIRECTIONALLIGHTPARTS];
+  sampler2DMS shadow[MAXDIRECTIONALLIGHTPARTS];
 };
 
 struct PointLight
@@ -95,16 +95,16 @@ float calcDirShadows()
   */
 
 
-  float bias = max(0.0005 * (1.0 - dot(normal, dirLight.direction)), 0.0000005);
-  bias = 0;
+  float bias = max(0.00005 * (1.0 - dot(normal, dirLight.direction)), 0.000005);
+ bias = 0;
   float shadow = 0;
-  vec2 texelSize = 1/textureSize(dirLight.shadow[index],0);
+  //vec2 texelSize = 1/textureSize(dirLight.shadow[index],0);
 
   for(int x = -2;x <=2 ; ++x)
   {
     for(int y = -2; y <= 2; ++y)
     {
-      float pcfDepth = texture(dirLight.shadow[index], proj.xy + vec2(x,y) * texelSize).r;
+      float pcfDepth = texelFetch(dirLight.shadow[index], ivec2(proj.xy*textureSize(dirLight.shadow[index])) + ivec2(x,y),8).r;
       shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
     }
   }
@@ -155,10 +155,10 @@ void main()
     }
 
     /*
-    if(findCorrectShadowMap() == 0) objColor =  vec3(0.000, 0.500, 1.000);
-    else if(findCorrectShadowMap() == 1) objColor = vec3(1,0,0);
+    if(findCorrectShadowMap() == 0) objColor =  vec3(0.000, 0.500, 0.400);
+    else if(findCorrectShadowMap() == 1) objColor = vec3(0.4,0,0);
     else if(findCorrectShadowMap() == 2) objColor = vec3(0,1,0);
-    */
+*/
 
     //float maxDistance = dirLight.arrayOfDistances[numbOfCascadedShadows];
 

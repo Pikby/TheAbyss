@@ -68,7 +68,8 @@ void draw()
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
-  World::drawer.createDirectionalLight(glm::vec3(-0.0f,-1.0f,-0.0001f),glm::vec3(0.8f,0.8f,0.8f));
+  //World::drawer.createDirectionalLight(glm::vec3(-0.0f,-1.0f,-0.0001f),glm::vec3(0.8f,0.8f,0.8f));
+  World::drawer.updateDirectionalLight(glm::vec3(-0.5,-1.0f,-0.5f),glm::vec3(0.8f,0.8f,0.8f));
   SkyBox skyBox("../assets/alps");
   Camera* mainCam = &(MainChar::mainCam);
 
@@ -86,6 +87,10 @@ void draw()
   //World::addLight(glm::vec3(10,50,10));
   while(!glfwWindowShouldClose(window))
   {
+    static glm::vec3 dirLight(0,-1.0f,0);
+    dirLight += glm::vec3(0.0001f,0,0.0001f);
+
+    World::drawer.updateDirectionalLight(dirLight,glm::vec3(0.8f,0.8f,0.8f));
 
     World::drawnChunks = 0;
     World::drawer.chunksToDraw = NULL;

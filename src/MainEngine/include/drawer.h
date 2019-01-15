@@ -104,8 +104,9 @@ public:
   void addLight(glm::vec3 pos, glm::vec3 amb = glm::vec3(0.0f,0.0f,0.0f),
                 glm::vec3 spe = glm::vec3(1.0f,1.0f,1.0f), glm::vec3 dif = glm::vec3(0.5f,0.5f,0.5f),
                 float cons = 1.0f, float lin = 0.14f, float quad = 0.07f);
-  void createDirectionalLight(glm::vec3 dir = glm::vec3(-1.0f,-1.0f,-1.0f),glm::vec3 amb = glm::vec3(0.5f,0.5f,0.5f),
+  void updateDirectionalLight(glm::vec3 dir = glm::vec3(-1.0f,-1.0f,-1.0f),glm::vec3 amb = glm::vec3(0.5f,0.5f,0.5f),
                               glm::vec3 dif = glm::vec3(0.5f,0.5f,0.5f),glm::vec3 spec = glm::vec3(1.0f,1.0f,1.0f));
+
   void drawTerrainOpaque(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);
   void drawTerrainTranslucent(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);
   void drawPlayers(Shader* shader);
