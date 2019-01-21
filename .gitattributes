@@ -1,5 +1,6 @@
 *.vs linguist-language=GLSL
 *.fs linguist-language=GLSL
+*.gs linguist-language=GLSL
 src/TextureLoading/stb_image.h linguist-vendored=true
 src/MainEngine/imgui linguist-vendored=true
 serversrc/TerrainGeneration/include linguist-vendored=true
