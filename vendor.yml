@@ -1,0 +1,4 @@
+src/TextureLoading/stb_image.h linguist-vendored
+src/MainEngine/imgui linguist-vendored
+serversrc/TerrainGeneration/include linguist-vendored
+serversrc/TerrainGeneration/FastNoiseSIMD linguist-vendored
