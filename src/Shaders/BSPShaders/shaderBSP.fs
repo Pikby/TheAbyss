@@ -29,7 +29,7 @@ struct PointLight
 in vec2 TexCoords;
 out vec4 finalcolor;
 
-
+uniform bool shadowsOn;
 uniform sampler2DMS gColorSpec;
 uniform sampler2DMS gNormal;
 uniform sampler2DMS gPosition;
@@ -48,7 +48,7 @@ uniform int numbOfCascadedShadows;
 uniform ivec2 resolution;
 
 
-ivec2 texCoord = ivec2(TexCoords.x*1920*2,TexCoords.y*1080*2);
+ivec2 texCoord = ivec2(TexCoords*textureSize(gColorSpec));
 
 vec4 objColorAO = texelFetch(gColorSpec, texCoord,4).rgba;
 vec3 objColor = objColorAO.rgb;
@@ -126,7 +126,7 @@ float calcPointShadows(PointLight light)
 */
 vec3 calcDirectionalLight(float shadow)
 {
-  vec3 lightDir = normalize(-dirLight.direction);
+  vec3 lightDir = -dirLight.direction;
   float diff = max(dot(normal, lightDir), 0.0);
 
   vec3 viewDir = normalize(-fragPosition);
@@ -144,9 +144,12 @@ vec3 calcDirectionalLight(float shadow)
 
 void main()
 {
-
-    float shadow = 1;
+  float shadow = 1;
+  if(shadowsOn)
+  {
     shadow = 1-calcDirShadows();
+  }
+
 
 
     if(fragPosition == vec3(0,0,0))

@@ -16,6 +16,9 @@ WINSRC = $(wildcard ../src/**/*.cpp)
 CLIENTOBJECTS = $(patsubst %.cpp, %.o, $(wildcard ../src/**/*.cpp))
 CLIENTOBJECTSOURCES = $(CLIENTOBJECTS:$(CLIENTSRCPATH)%=%)
 
+GUIOBJECTS = $(patsubst %.cpp, %.o, $(wildcard ../src/MainEngine/imgui/*.cpp))
+GUIOBJECTSOURCES = $(GUIOBJECTS:$(GUISRCPATH)%=%)
+
 SERVEROBJECTS = $(patsubst %.cpp, %.o, $(wildcard ../serversrc/**/*.cpp))
 SERVEROBJECTSOURCES = $(SERVEROBJECTS:$(SERVERSRCPATH)%=%)
 
@@ -29,7 +32,7 @@ CLIENTFLAGSLINUX  = -I/usr/local/include/freetype2 -I/usr/include/libpng12 \
 					-lglfw3 -lGLEW -lGL -lm -ldl -lXinerama -lXrandr -lXi \
 					-lXcursor -lX11 -lXxf86vm -lpthread -std=c++17 \
 					-L/usr/local/lib -lfreetype -lstdc++fs -lboost_system -lboost_filesystem \
-					-lCEGUIOpenGLRenderer-0 -lCEGUIBase-0 -O3
+					-O3
 
 SERVERFLAGSLINUX = -lpthread -std=c++17 -lstdc++fs -lboost_system -lboost_filesystem -O3\
 
@@ -69,9 +72,9 @@ $(CLIENTOBJECTPATH)%.o: $(CLIENTSRCPATH)%.cpp
 	@echo Compiling $<
 	@$(CC) $(CLIENTFLAGSLINUX) -c $< -o $@
 
-linux: $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES))
+linux: $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES)) $(addprefix $(GUIOBJECTPATH), $(GUIOBJECTSOURCES))
 	@echo Linking objects together, outputting: linux
-	@$(CC) $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES)) $(CLIENTFLAGSLINUX) -o linux
+	@$(CC) $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES)) $(addprefix $(GUIOBJECTPATH), $(GUIOBJECTSOURCES)) $(CLIENTFLAGSLINUX) -o linux
 
 server: $(addprefix $(SERVEROBJECTPATH), $(SERVEROBJECTSOURCES)) $(addprefix $(NOISEOBJECTPATH), $(NOISEOBJECTSOURCES))
 	@echo Linking objects together, outputting: server

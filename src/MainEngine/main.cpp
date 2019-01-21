@@ -6,6 +6,33 @@
 #include "include/threads.h"
 #include "../InputHandling/include/inputhandling.h"
 #include "../Settings/settings.h"
+
+
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_glfw.h"
+
+void GLAPIENTRY
+MessageCallback( GLenum source,
+                 GLenum type,
+                 GLuint id,
+                 GLenum severity,
+                 GLsizei length,
+                 const GLchar* message,
+                 const void* userParam )
+{
+  if(severity == GL_DEBUG_SEVERITY_LOW || severity == GL_DEBUG_SEVERITY_NOTIFICATION)
+  {
+    return;
+  }
+  fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+            type, severity, message );
+}
+
+// During init, enable debug output
+
+
 int main()
 {
   glfwInit();
@@ -25,6 +52,13 @@ int main()
   glfwSwapInterval(0);//FPS Capping
   //Intialize glew and all related settings
 
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.WantCaptureMouse = true;
+  ImGui::StyleColorsDark();
+  ImGui_ImplGlfw_InitForOpenGL(newWindow, true);
+  ImGui_ImplOpenGL3_Init("#version 330");
+
 
   glewExperimental = GL_TRUE;
   glewInit();
@@ -43,7 +77,8 @@ int main()
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
+  glEnable              ( GL_DEBUG_OUTPUT );
+  glDebugMessageCallback( MessageCallback, 0 );
   //Enable antialiasing
   //glEnable(GL_MULTISAMPLE);
 

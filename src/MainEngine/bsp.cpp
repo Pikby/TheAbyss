@@ -149,6 +149,10 @@ void BSPNode::addBlock(const glm::ivec3 &pos, char id)
   std::lock_guard<std::recursive_mutex> lock(BSPMutex);
   curBSP.addBlock(pos,id);
 }
+uchar BSPNode::getBlock(const glm::ivec3 &pos)
+{
+  return curBSP.getBlock(pos);
+}
 
 RenderType BSPNode::blockVisibleType(const glm::ivec3 &pos)
 {
@@ -492,51 +496,103 @@ void BSP::build()
 
          bool defaultNull = true;
 
-         auto check = [&](Faces face,const glm::ivec3& pos,bool* flag)
+
+
+         if(renderType == OPAQUE)
          {
-           auto neigh = parent->getNeighbour(face);
-           if(neigh != NULL)
+          auto check = [&](Faces face,const glm::ivec3& pos,bool* flag)
+          {
+            auto neigh = parent->getNeighbour(face);
+            if(neigh != NULL)
+            {
+              if(neigh->blockVisibleType(pos) == OPAQUE) *flag = true;
+            }
+            else if(defaultNull) *flag = true;
+          };
+          if(x+1 >= CHUNKSIZE)
+          {
+            check(RIGHTF,glm::ivec3(0,y,z),&rightNeigh);
+          }
+          else if(blockVisibleType(glm::ivec3(x+1,y,z)) == OPAQUE) rightNeigh = true;
+
+          if(x-1 < 0)
+          {
+            check(LEFTF,glm::ivec3(CHUNKSIZE-1,y,z),&leftNeigh);
+          }
+          else if(blockVisibleType(glm::ivec3(x-1,y,z)) == OPAQUE) leftNeigh = true;
+
+          if(y+1 >= CHUNKSIZE)
+          {
+            check(TOPF,glm::ivec3(x,0,z),&topNeigh);
+          }
+          else if(blockVisibleType(glm::ivec3(x,y+1,z)) == OPAQUE) topNeigh = true;
+
+          if(y-1 < 0)
+          {
+            check(BOTTOMF,glm::ivec3(x,CHUNKSIZE-1,z),&bottomNeigh);
+          }
+          else if(blockVisibleType(glm::ivec3(x,y-1,z)) == OPAQUE) bottomNeigh = true;
+
+          if(z+1 >= CHUNKSIZE)
+          {
+            check(BACKF,glm::ivec3(x,y,0),&backNeigh);
+          }
+          else if(blockVisibleType(glm::ivec3(x,y,z+1)) == OPAQUE) backNeigh = true;
+
+          if(z-1 < 0)
+          {
+            check(FRONTF,glm::ivec3(x,y,CHUNKSIZE-1),&frontNeigh);
+          }
+          else if(blockVisibleType(glm::ivec3(x,y,z-1))==OPAQUE) frontNeigh = true;
+         }
+         else if(renderType == TRANSLUCENT)
+         {
+           uchar id = getBlock(chunkLocalPos);
+           auto check = [&](Faces face,const glm::ivec3& pos,bool* flag)
            {
-             if(renderType == neigh->blockVisibleType(pos)) *flag = true;
+             auto neigh = parent->getNeighbour(face);
+             if(neigh != NULL)
+             {
+               if(neigh->getBlock(pos) == id) *flag = true;
+             }
+             else if(defaultNull) *flag = true;
+           };
+           if(x+1 >= CHUNKSIZE)
+           {
+             check(RIGHTF,glm::ivec3(0,y,z),&rightNeigh);
            }
-           else if(defaultNull) *flag = true;
-         };
-         if(x+1 >= CHUNKSIZE)
-         {
-           check(RIGHTF,glm::ivec3(0,y,z),&rightNeigh);
-         }
-         else if(renderType == blockVisibleType(glm::ivec3(x+1,y,z))) rightNeigh = true;
+           else if(getBlock(glm::ivec3(x+1,y,z)) == id) rightNeigh = true;
 
-         if(x-1 < 0)
-         {
-           check(LEFTF,glm::ivec3(CHUNKSIZE-1,y,z),&leftNeigh);
-         }
-         else if(renderType == blockVisibleType(glm::ivec3(x-1,y,z))) leftNeigh = true;
+           if(x-1 < 0)
+           {
+             check(LEFTF,glm::ivec3(CHUNKSIZE-1,y,z),&leftNeigh);
+           }
+           else if(getBlock(glm::ivec3(x-1,y,z)) == id) leftNeigh = true;
 
-         if(y+1 >= CHUNKSIZE)
-         {
-           check(TOPF,glm::ivec3(x,0,z),&topNeigh);
-         }
-         else if(renderType == blockVisibleType(glm::ivec3(x,y+1,z))) topNeigh = true;
+           if(y+1 >= CHUNKSIZE)
+           {
+             check(TOPF,glm::ivec3(x,0,z),&topNeigh);
+           }
+           else if(getBlock(glm::ivec3(x,y+1,z)) == id) topNeigh = true;
 
-         if(y-1 < 0)
-         {
-           check(BOTTOMF,glm::ivec3(x,CHUNKSIZE-1,z),&bottomNeigh);
-         }
-         else if(renderType == blockVisibleType(glm::ivec3(x,y-1,z))) bottomNeigh = true;
+           if(y-1 < 0)
+           {
+             check(BOTTOMF,glm::ivec3(x,CHUNKSIZE-1,z),&bottomNeigh);
+           }
+           else if(getBlock(glm::ivec3(x,y-1,z)) == id) bottomNeigh = true;
 
-         if(z+1 >= CHUNKSIZE)
-         {
-           check(BACKF,glm::ivec3(x,y,0),&backNeigh);
-         }
-         else if(renderType == blockVisibleType(glm::ivec3(x,y,z+1))) backNeigh = true;
+           if(z+1 >= CHUNKSIZE)
+           {
+             check(BACKF,glm::ivec3(x,y,0),&backNeigh);
+           }
+           else if(getBlock(glm::ivec3(x,y,z+1)) == id) backNeigh = true;
 
-         if(z-1 < 0)
-         {
-           check(FRONTF,glm::ivec3(x,y,CHUNKSIZE-1),&frontNeigh);
+           if(z-1 < 0)
+           {
+             check(FRONTF,glm::ivec3(x,y,CHUNKSIZE-1),&frontNeigh);
+           }
+           else if(getBlock(glm::ivec3(x,y,z-1)) == id) frontNeigh = true;
          }
-         else if(renderType == blockVisibleType(glm::ivec3(x,y,z-1))) frontNeigh = true;
-
          BlockFace& curFace = arrayFaces.get(chunkLocalPos);
          if(!frontNeigh)  curFace.setFace(FRONTF);
          if(!backNeigh)   curFace.setFace(BACKF);
@@ -558,11 +614,9 @@ void BSP::build()
    glm::vec3 topleft, bottomleft,topright,bottomright;
    glm::vec3 tempVec;
    Faces normVec;
-   char top;
-   char right;
+   char top, right;
    RenderType renderType;
-   glm::ivec3 rightVector;
-   glm::ivec3 topVector;
+   glm::ivec3 rightVector, topVector;
    using namespace glm;
    int x,y,z;
    auto calcFace = [&](Faces face)

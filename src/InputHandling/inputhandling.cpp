@@ -5,13 +5,12 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <math.h>
-#include <CEGUI/CEGUI.h>
 
 #include "../Character/include/mainchar.h"
 #include "../MainEngine/include/world.h"
 #include "../MainEngine/include/threads.h"
 #include "../Settings/settings.h"
-
+#include "../MainEngine/imgui/imgui.h"
 // timing
 static float deltaTime = 0.0f;	// time between current frame and last frame
 static float lastFrame = 0.0f;
@@ -22,40 +21,41 @@ static float lastY = 300;
 static bool firstMouse = true;
 std::map<int,int> keyMap;
 
-CEGUI::Key::Scan translateGLFWtoCEGUI(int key)
-{
-	//using namespace CEGUI;
-	switch(key)
-	{
-		case GLFW_KEY_W: return CEGUI::Key::Scan::W;
-		case GLFW_KEY_A: return CEGUI::Key::Scan::A;
-		case GLFW_KEY_S: return CEGUI::Key::Scan::S;
-		case GLFW_KEY_D: return CEGUI::Key::Scan::D;
-		case GLFW_KEY_P: return CEGUI::Key::Scan::P;
-		case GLFW_KEY_ESCAPE: return CEGUI::Key::Escape;
-		case GLFW_KEY_SPACE: return CEGUI::Key::Space;
-	}
-}
 
+int inMenu = false;
 void updateInputs()
 {
 	for(std::map<int,int>::iterator it=keyMap.begin(); it!=keyMap.end(); ++it)
 	{
 
 		int key = it->first;
-		MainChar::handleKeyHold(key);
+		if(!inMenu) MainChar::handleKeyHold(key);
 	}
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
+
+	if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	{
+		if(inMenu)
+		{
+			inMenu = false;
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		}
+		else
+		{
+			inMenu = true;
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		}
+	}
 	if(action == GLFW_PRESS || action == GLFW_REPEAT)
 	{
-		MainChar::handleKeyPress(key);
+		if(!inMenu) MainChar::handleKeyPress(key);
 	}
 	else if(action == GLFW_RELEASE)
 	{
-		MainChar::handleKeyRelease(key);
+		if(!inMenu) MainChar::handleKeyRelease(key);
 	}
 
 	if(keyMap.count(key) == 1)
@@ -87,47 +87,34 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	lastX = xpos;
 	lastY = ypos;
 
-	MainChar::processMouseMovement(xoffset, yoffset);
+	ImGuiIO& io = ImGui::GetIO();
+	double mouse_x, mouse_y;
+	glfwGetCursorPos(window, &mouse_x, &mouse_y);
+	io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
+	if(!inMenu)	MainChar::processMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	MainChar::mainCam.processMouseScroll(yoffset);
+	if(!inMenu) MainChar::mainCam.processMouseScroll(yoffset);
 }
 
 void mousekey_callback(GLFWwindow* window, int button, int action, int mods)
 {
 
-	CEGUI::GUIContext& context = CEGUI::System::getSingleton().getDefaultGUIContext();
   if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
 	{
-    MainChar::handleMouseClick(GLFW_MOUSE_BUTTON_LEFT);
-
-		context.injectMouseButtonDown(CEGUI::LeftButton);
+    if(!inMenu) MainChar::handleMouseClick(GLFW_MOUSE_BUTTON_LEFT);
 	}
 	if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
 	{
-		CEGUI::GUIContext& context = CEGUI::System::getSingleton().getDefaultGUIContext();
-		context.injectMouseButtonUp(CEGUI::LeftButton);
 	}
 
   if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 	{
-		MainChar::handleMouseClick(GLFW_MOUSE_BUTTON_RIGHT);
-		CEGUI::GUIContext& context = CEGUI::System::getSingleton().getDefaultGUIContext();
-		context.injectMouseButtonDown(CEGUI::RightButton);
+		if(!inMenu) MainChar::handleMouseClick(GLFW_MOUSE_BUTTON_RIGHT);
 	}
 	if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE)
 	{
-		CEGUI::GUIContext& context = CEGUI::System::getSingleton().getDefaultGUIContext();
-		context.injectMouseButtonUp(CEGUI::RightButton);
 	}
-}
-
-void moveForward(bool isOn)
-{
-	static bool on = false;
-	on = isOn;
-
-	if(on) MainChar::moveForward();
 }

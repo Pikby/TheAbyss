@@ -10,7 +10,7 @@
 #include "../headers/shaders.h"
 #include "../Settings/settings.h"
 #include "include/mainchar.h"
-
+#include "../MainEngine/imgui/imgui.h"
 #define PI 3.14159265
 std::string MainChar::userName;
 Menu MainChar::curMenu;
@@ -22,7 +22,7 @@ int MainChar::reach;
 bool MainChar::shiftHeld, MainChar::grounded,MainChar::controlHeld,MainChar::inInventory;
 Camera MainChar::mainCam;
 std::atomic<float> MainChar::xpos,MainChar::ypos,MainChar::zpos;
-
+char MainChar::heldItem;
 
 template <typename T> int sign(T val)
 {
@@ -40,6 +40,7 @@ float max(float a, float b, float c)
 
 void MainChar::initMainChar(float x, float y, float z)
 {
+  heldItem = 1;
   shiftHeld = false;
   curMenu = WORLDMENU;
   xpos = x;
@@ -103,7 +104,6 @@ void MainChar::handleKeyPress(int key)
       {
         case GLFW_KEY_ESCAPE: closeChat(); break;
         case GLFW_KEY_ENTER: sendMessage(); break;
-        default: addCharacterToChat(key); break;
       }
       break;
     default:
@@ -120,7 +120,7 @@ void MainChar::handleKeyPress(int key)
 
 void MainChar::addCharacterToChat(int key)
 {
-  gui.chatConsole.addCharacterToChat(key,shiftHeld);
+
 }
 
 void MainChar::update()
@@ -144,23 +144,6 @@ void MainChar::update()
   deltay /= 5;
   deltaz /= 5;
   mainCam.setPosition((float)xpos,(float)ypos,(float)zpos);
-  gui.chatConsole.update();
-
-  static double lastFrame = 0;
-  static double curFrame = 0;
-  static double lastfps = 0;
-  curFrame = glfwGetTime();
-  double curfps = 1.0f/(curFrame - lastFrame);
-  const double smoothing = 0.999;
-  double fps = lastfps*smoothing + curfps*(1-smoothing);
-  lastFrame = curFrame;
-  lastfps = fps;
-  std::string line = "[colour='FF000000']FPS: " + std::to_string(fps);
-  gui.gameWindow->getChild("FPS")->setText(line);
-  line = "[colour='FF000000']ChunksLoaded: " + std::to_string(BSPNode::totalChunks);
-  gui.gameWindow->getChild("Chunks")->setText(line);
-  line = "[colour='FF000000']Chunks In Queue 0: " + std::to_string(World::buildQueue.size());
-  gui.gameWindow->getChild("ChunksQueue")->setText(line);
 }
 
 void MainChar::moveRight()
@@ -203,7 +186,7 @@ void MainChar::moveDown()
 void MainChar::moveUp()
 {
   deltay += moveSpeed;
-}
+}  static char heldItem=1;
 
 void MainChar::jump()
 {
@@ -253,8 +236,7 @@ void MainChar::processMouseMovement(float xoffset, float yoffset)
     case WORLDMENU: mainCam.processMouseMovement(xoffset,yoffset,true); break;
     case INVENTORYMENU:
     {
-      CEGUI::GUIContext& context = CEGUI::System::getSingleton().getDefaultGUIContext();
-      context.injectMouseMove(xoffset,-yoffset);
+
     }
   }
 
@@ -265,7 +247,7 @@ void MainChar::handleMouseClick(int key)
   switch(key)
   {
     case GLFW_MOUSE_BUTTON_LEFT: destroyBlock() ; break;
-    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(1); break;
+    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(heldItem); break;
 
   }
 
@@ -288,23 +270,15 @@ void MainChar::switchInventoryMode()
 void MainChar::openChat()
 {
   curMenu = CHATMENU;
-  gui.chatConsole.open(true);
 }
 
 void MainChar::closeChat()
 {
   curMenu = WORLDMENU;
-  gui.chatConsole.open(false);
 }
 
 void MainChar::sendMessage()
 {
   curMenu = WORLDMENU;
-  gui.chatConsole.open(false);
-  if(gui.chatConsole.curMsg != "")
-  {
-    World::messenger.createChatMessage(gui.chatConsole.curMsg);
-    gui.chatConsole.sendCurrentMessage();
-  }
 
 }

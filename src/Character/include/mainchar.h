@@ -31,6 +31,7 @@ private:
 
   static bool inInventory;
 public:
+  static char heldItem;
   static Camera mainCam;
   static std::atomic<float> xpos,ypos,zpos;
 
@@ -61,8 +62,4 @@ public:
   static void draw();
   //Hud functions
   static void addCharacterToChat(int key);
-  static void addChatLine(std::string line)
-  {
-    gui.chatConsole.incomingMessages->push(line);
-  }
 };

@@ -13,10 +13,13 @@
 #include "../TextureLoading/textureloading.h"
 #include "include/world.h"
 
+#define IMGUI_IMPL_OPENGL_LOADER_GLEW
+
+
+
 void Drawer::setupShadersAndTextures(int width, int height)
 {
-
-
+  MSAA = 1;
   const char* texture = "../assets/textures/atlas.png";
   glGenTextures(1, &textureAtlas);
   glBindTexture(GL_TEXTURE_2D, textureAtlas);
@@ -26,7 +29,10 @@ void Drawer::setupShadersAndTextures(int width, int height)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   //Load and bind the texture from the class
   int texWidth, texHeight, nrChannels;
+
+
   unsigned char* image = loadTexture(texture, &texWidth,&texHeight,&nrChannels);
+  textureAtlasDimensions = glm::ivec2(texWidth,texHeight);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight,0,GL_RGBA, GL_UNSIGNED_BYTE, image);
   glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -71,6 +77,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader.setFloat("fog_start",CHUNKSIZE*(horzRenderDistance-2));
   blockShader.setFloat("fog_dist",CHUNKSIZE);
   blockShader.setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
+  blockShader.setBool("shadowsOn",true);
   gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.vs");
 
   int cellWidth = 128;
@@ -90,7 +97,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
   transShader.setInt("textureAtlasHeightInCells",texHeight/cellWidth);
   transShader.setInt("cellWidth",cellWidth);
   transShader.setInt("curTexture",0);
-  transShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+  transShader.setVec3("objectColor", 1.0f, 1.0f, 1.0f);
 
 
   //std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
@@ -118,50 +125,57 @@ void Drawer::deleteAllBuffers()
 
   glDeleteBuffers(1,&transBuffer);
   glDeleteTextures(1,&transTexture);
+  glDeleteTextures(1,&transDepth);
+
+
+  int error = glGetError();
+  if(error != 0)
+  {
+    std::cout << "Delete Buffers error:" << error << ":" << std::hex << error << "\n";
+  }
 }
 
 void Drawer::setAllBuffers()
 {
+    std::cout << "Creating g-buffers\n";
   glGenFramebuffers(1, &gBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
 
-    // - position color buffer
     glGenTextures(1, &gPosition);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gPosition);
     glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGB16F, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGB, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, gPosition, 0);
 
-    // - normal color buffer
+
     glGenTextures(1, &gNormal);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gNormal);
     glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGB16F, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGB, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, gNormal, 0);
 
-    // - color + specular color buffer
+
     glGenTextures(1, &gColorSpec);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gColorSpec);
     glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGBA, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, gColorSpec, 0);
 
 
-    // - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
     unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
     glDrawBuffers(3, attachments);
 
     glGenTextures(1, &gDepth);
     glBindTexture(GL_TEXTURE_2D, gDepth);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth*MSAA,screenHeight*MSAA, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gDepth, 0);
 
@@ -169,28 +183,40 @@ void Drawer::setAllBuffers()
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
+
+  std::cout << "Creating trans buffer\n";
   glGenFramebuffers(1, &transBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
 
     glGenTextures(1, &transTexture);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, transTexture);
     glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE,0,GL_RGBA16F,screenWidth*MSAA,screenHeight*MSAA,0,GL_RGBA,GL_FLOAT,0);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, transTexture, 0);
 
-    uint transDepth;
      glGenTextures(1, &transDepth);
      glBindTexture(GL_TEXTURE_2D, transDepth);
      glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth*MSAA,screenHeight*MSAA, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, transDepth, 0);
   glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+  std::cout << "Done creating buffers\n";
+
+
 }
 
+
+void Drawer::updateAntiAliasing(float msaa)
+{
+  MSAA = msaa;
+  deleteAllBuffers();
+  setAllBuffers();
+}
 
 void Drawer::setRenderDistances(int vert, int horz, int buffer)
 {
@@ -208,7 +234,7 @@ void Drawer::renderGBuffer()
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport(0,0,screenWidth*2,screenHeight*2);
+    glViewport(0,0,screenWidth*MSAA,screenHeight*MSAA);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureAtlas);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
@@ -227,7 +253,7 @@ void Drawer::renderGBuffer()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //glDisable(GL_DEPTH_TEST);
     glClearColor(-1.0f,-1.0f,-1.0f,1.0f);
-    glViewport(0,0,screenWidth*2,screenHeight*2);
+    glViewport(0,0,screenWidth*MSAA,screenHeight*MSAA);
 
     depthBufferLoadingShader.use();
     glActiveTexture(GL_TEXTURE0);
@@ -266,12 +292,8 @@ void Drawer::renderDirectionalDepthMap()
 
     glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_DEPTH_COMPONENT,
                  directionalShadowResolution/factor,directionalShadowResolution/factor, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     float borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-    glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, borderColor);
+    //glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, borderColor);
 
 
     glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[i]);
@@ -404,7 +426,7 @@ void Drawer::renderDirectionalShadows()
     calculateFrustrum(frustrum,viewPos,viewFront,viewRight,viewUp,camZoomInDegrees,(float)screenWidth/(float)screenHeight,near,far);
 
     // /std::cout << far << "\n";
-    dirLight.arrayOfDistances[x] = far - 32;
+    dirLight.arrayOfDistances[x] = far;
     glm::vec3 lightTarget(0);
     glm::vec3 lightPos(0);
     for(int i=0;i<8;i++)
@@ -735,7 +757,7 @@ void Drawer::addLight(glm::vec3 pos,glm::vec3 amb,glm::vec3 spe,glm::vec3 dif,
 
 void Drawer::updateDirectionalLight(glm::vec3 dir,glm::vec3 amb,glm::vec3 dif,glm::vec3 spec)
 {
-  dirLight.direction = dir;
+  dirLight.direction = glm::normalize(dir);
   dirLight.ambient = amb;
   dirLight.diffuse = dif;
   dirLight.specular =spec;
@@ -761,4 +783,10 @@ void Drawer::drawTerrainTranslucent(Shader* shader,std::shared_ptr<std::list<std
     std::shared_ptr<BSPNode> curNode = (*it);
     curNode->drawTranslucent(shader,viewPos);
   }
+}
+
+void Drawer::setTerrainColor(const glm::vec3 &color)
+{
+  gBufferShader.use();
+  gBufferShader.setVec3("objectColor", color);
 }

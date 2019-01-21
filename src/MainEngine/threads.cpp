@@ -18,11 +18,11 @@
 #include "../InputHandling/include/inputhandling.h"
 #include "../Objects/include/objects.h"
 #include "../Settings/settings.h"
-
-
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_glfw.h"
 
 static GLFWwindow* window;
-
 
 
 
@@ -84,25 +84,113 @@ void draw()
   World::drawer.addCube(glm::vec3(0,70,0));
   World::drawer.addCube(glm::vec3(0,100,0));
 
+  bool show_demo_window = true;
+  bool show_another_window = false;
   //World::addLight(glm::vec3(10,50,10));
+  glm::vec3 terrainColor = glm::vec3(0.5f,0.5f,0.5f);
+  float sunX=0.01,sunZ=0.01;
+  bool shadowsOn = true;
   while(!glfwWindowShouldClose(window))
   {
-    static glm::vec3 dirLight(0,-1.0f,0);
-    dirLight += glm::vec3(0.0001f,0,0.0001f);
+    static const char* current_item = "1.0";
+    static const char* old_item = "1.0";
+    if(current_item!=old_item)
+    {
+      old_item = current_item;
+      std::cout << "Updating to " << std::stof(current_item) << "\n";
+      World::drawer.updateAntiAliasing(std::stof(current_item));
+    }
+    World::drawer.setTerrainColor(terrainColor);
+    glm::vec3 dirLight(sunX,-1.0f,sunZ);
+
 
     World::drawer.updateDirectionalLight(dirLight,glm::vec3(0.8f,0.8f,0.8f));
 
     World::drawnChunks = 0;
     World::drawer.chunksToDraw = NULL;
+
     World::deleteChunksFromQueue();
+    ImGui::GetIO().WantCaptureMouse = true;
     glfwPollEvents();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+
+    {
+        static float f = 0.0f;
+        static int counter = 0;
+
+        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+        ImGui::SliderFloat("SunX", &sunX, -10.0f, 10.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::SliderFloat("SunZ", &sunZ, -10.0f, 10.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::ColorEdit3("Terrain Color", (float*)&terrainColor); // Edit 3 floats representing a color
+
+        char heldBlock = MainChar::heldItem;
+
+
+
+
+        static uint id = 1;
+        if(ImGui::Button("<"))
+        {
+          id--;
+          if(id <= 0) id = 1;
+        }
+        uint texId  = World::drawer.getTextureAtlasID();
+
+        int blkId = ItemDatabase::blockDictionary[heldBlock].getTop();
+        int width = World::drawer.textureAtlasDimensions.x/128;
+        int height = World::drawer.textureAtlasDimensions.y/128;
+        int xcoord = (blkId % width);
+        int ycoord = (blkId/height);
+        ImGui::SameLine();
+        ImGui::Image((void*)(intptr_t)texId,ImVec2(128,128),ImVec2(xcoord/3.0f,ycoord/3.0f),ImVec2(xcoord/3.0f + 1/3.0f,ycoord/3.0f + 1.0f/3.0f));
+        ImGui::SameLine();
+        if(ImGui::Button(">"))
+        {
+          id++;
+        }
+
+        MainChar::heldItem = id;
+        std::string buttonStr = shadowsOn ? "On" : "Off";
+        if (ImGui::Button(std::string("Shadows" + buttonStr).c_str()))     // Buttons return true when clicked (most widgets return true when edited/activated)
+        {
+          if(shadowsOn) shadowsOn = false;
+          else shadowsOn = true;
+          World::drawer.updateShadows(shadowsOn);
+        }
+        ImGui::Text("MSAA: ");
+
+        const char* items[] = {"0.0625","0.125","0.25" ,"0.5", "1.0", "2.0", "4.0","8.0"};
+
+        if (ImGui::BeginCombo("##combo", current_item)) // The second parameter is the label previewed before opening the combo.
+        {
+            for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+            {
+                bool is_selected = (current_item == items[n]); // You can store your selection however you want, outside or inside your objects
+                if (ImGui::Selectable(items[n], is_selected)) current_item = items[n];
+                if (is_selected) ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+            }
+            ImGui::EndCombo();
+        }
+
+
+        glm::vec3 pos = mainCam->getPosition();
+        ImGui::Text("WorldInfo:\nPlayerPos: x:%.2f y:%.2f z:%2.f",pos.x,pos.y,pos.z);
+        ImGui::Text("Chunks Loaded:%d",BSPNode::totalChunks);
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::End();
+    }
+
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     MainChar::update();
 
     World::drawer.updateCameraMatrices(mainCam);
     World::calculateViewableChunks();
 
-    World::drawer.renderDirectionalShadows();
+    if(shadowsOn) World::drawer.renderDirectionalShadows();
     World::drawer.renderGBuffer();
 
 
@@ -112,14 +200,15 @@ void draw()
 
       BSP::geometryChanged = false;
     }
-
+    glDisable(GL_BLEND);
     World::drawer.drawFinal();
 
-    glEnable(GL_BLEND);
-    glm::mat4 view = mainCam->getViewMatrix();
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    CEGUI::System::getSingleton().renderAllGUIContexts();
+    ImGui::Render();
+
+    //glActiveTexture(GL_TEXTURE0);
+    //glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    //CEGUI::System::getSingleton().renderAllGUIContexts();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     glfwSwapBuffers(window);
 
   }
@@ -289,7 +378,7 @@ void receive()
           World::messenger.receiveMessage(buf,msg.length);
           std::string line = "(Server): ";
           line.append(buf);
-          MainChar::addChatLine(line);
+          //MainChar::addChatLine(line);
           delete[] buf;
         }
         break;
@@ -299,7 +388,7 @@ void receive()
           World::messenger.receiveMessage(buf,msg.length);
           std::string line = std::string(buf,msg.length);
           std::cout << line;
-          MainChar::addChatLine(line);
+          //MainChar::addChatLine(line);
           delete[] buf;
           break;
         }

@@ -8,7 +8,6 @@
 #include "../../headers/3dmap.h"
 
 #define NUMBOFCASCADEDSHADOWS 2
-#define MSAA 2
 struct PointLight
 {
   glm::vec3 position;
@@ -44,6 +43,9 @@ class Drawer
 private:
   SkyBox skyBox;
   uint textureAtlas;
+
+
+  float MSAA = 2;
   int vertRenderDistance, horzRenderDistance,renderBuffer;
   std::vector<std::shared_ptr<Object>> objList;
   std::vector<PointLight> lightList;
@@ -60,7 +62,7 @@ private:
   float camZoomInDegrees,camNear, camFar;
   uint gBuffer,gDepth;
   uint gPosition, gNormal, gColorSpec;
-  uint transBuffer, transTexture;
+  uint transBuffer, transTexture, transDepth;;
   Shader objShader,dirDepthShader,pointDepthShader,blockShader,gBufferShader;
   Shader transShader;
   Shader quadShader;
@@ -69,6 +71,8 @@ private:
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
   void renderQuad();
 public:
+  glm::ivec2 textureAtlasDimensions;
+  uint getTextureAtlasID(){return textureAtlas;}
   //Plane goes bottomleft,topleft,topright,bottomright;
   //0-3 is near 4-7 is far
   glm::vec3 viewFrustrum[8];
@@ -86,11 +90,12 @@ public:
   void startPointShadowDraw(Shader* shader, int id);
   void renderDirectionalShadows();
   void bindDirectionalShadows(Shader* shader);
-
   void deleteAllBuffers();
   void setAllBuffers();
+  void setTerrainColor(const glm::vec3 &color);
 
-
+  void updateShadows(bool val) {blockShader.use();blockShader.setBool("shadowsOn",val);}
+  void updateAntiAliasing(float MSAA);
   void renderPointShadows();
   void renderGBuffer();
   void bindPointShadows();
