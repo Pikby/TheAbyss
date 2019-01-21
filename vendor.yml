@@ -1,7 +1,0 @@
-src/TextureLoading/stb_image.h linguist-vendored
-src/MainEngine/imgui/* linguist-vendored
-serversrc/TerrainGeneration/include/* linguist-vendored
-serversrc/TerrainGeneration/FastNoiseSIMD/* linguist-vendored
-*.vs linguist-language=GLSL
-*.fs linguist-language=GLSL
-*.gs linguist-language=GLSL
