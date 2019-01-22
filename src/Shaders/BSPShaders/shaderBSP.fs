@@ -62,7 +62,9 @@ vec3 normal = texelFetch(gNormal, texCoord,4).rgb;
 vec3 fragPosition = texelFetch(gPosition,texCoord,4).rgb;
 float fragDepth = length(fragPosition);
 
-
+float linstep(float low, float high, float v){
+    return clamp((v-low)/(high-low), 0.0, 1.0);
+}
 
 
 int findCorrectShadowMap()
@@ -76,6 +78,24 @@ int findCorrectShadowMap()
     }
   }
   return numbOfCascadedShadows-1;
+}
+
+
+
+
+float VSM(float compare)
+{
+    int index = findCorrectShadowMap();
+    vec4 fragPosLightSpace = dirLight.lightSpaceMatrix[index]*vec4(fragPosition,1.0f);
+    vec3 proj = fragPosLightSpace.xyz/fragPosLightSpace.w;
+    proj = proj*0.5+0.5;
+
+    vec2 moments = texelFetch(dirLight.shadow[index], ivec2(proj.xy*textureSize(dirLight.shadow[index])),8).rg;
+    float p = smoothstep(compare-0.02, compare, moments.x);
+    float variance = max(moments.y - moments.x*moments.x, -0.001);
+    float d = compare - moments.x;
+    float p_max = linstep(0.2, 1.0, variance / (variance + d*d));
+    return clamp(max(p, p_max), 0.0, 1.0);
 }
 
 float calcDirShadows()
@@ -152,10 +172,7 @@ void main()
 
 
 
-    if(fragPosition == vec3(0,0,0))
-    {
-      discard;
-    }
+
 
     /*
     if(findCorrectShadowMap() == 0) objColor =  vec3(0.000, 0.500, 0.400);
@@ -169,9 +186,11 @@ void main()
     //fogMod = 0;
     vec3 fog = vec3(0.0f,0.0f,0.0f);
     vec3 finColor = fog*fogMod+(1-fogMod)*objColor*calcDirectionalLight(shadow);
+    finColor = clamp(finColor,0,1);
     //vec3 finColor = fog+objColor;
 
     //Pixel has no translucent objects
+
     transColor += vec3(1.0f,1.0f,1.0f);
     if(transColor == vec3(0.0f,0.0f,0.0f))
     {
@@ -180,7 +199,7 @@ void main()
     else
     {
       //Pixel has translucent object, so calculate it
-      vec3 finTransColor = transColor/((transColorCount-0.5));
+      vec3 finTransColor = transColor/((transColorCount-0.8f));
       finalcolor = vec4((finTransColor + finColor )/2.0f,1.0f);
 
     }

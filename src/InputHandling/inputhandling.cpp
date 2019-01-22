@@ -90,8 +90,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	ImGuiIO& io = ImGui::GetIO();
 	double mouse_x, mouse_y;
 	glfwGetCursorPos(window, &mouse_x, &mouse_y);
-	io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
-	if(!inMenu)	MainChar::processMouseMovement(xoffset, yoffset);
+	if(inMenu)io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
+	else MainChar::processMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)

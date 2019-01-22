@@ -174,8 +174,8 @@ void Drawer::setAllBuffers()
     glGenTextures(1, &gDepth);
     glBindTexture(GL_TEXTURE_2D, gDepth);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth*MSAA,screenHeight*MSAA, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gDepth, 0);
 
@@ -199,8 +199,8 @@ void Drawer::setAllBuffers()
      glGenTextures(1, &transDepth);
      glBindTexture(GL_TEXTURE_2D, transDepth);
      glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth*MSAA,screenHeight*MSAA, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, transDepth, 0);
   glBindFramebuffer(GL_FRAMEBUFFER,0);
@@ -251,16 +251,14 @@ void Drawer::renderGBuffer()
 
   glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //glDisable(GL_DEPTH_TEST);
     glClearColor(-1.0f,-1.0f,-1.0f,1.0f);
     glViewport(0,0,screenWidth*MSAA,screenHeight*MSAA);
 
     depthBufferLoadingShader.use();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, gDepth);
-
-
     renderQuad();
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureAtlas);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
@@ -268,13 +266,14 @@ void Drawer::renderGBuffer()
     shader->use();
     shader->setMat4("view", viewMat);
     glDepthMask(GL_FALSE);
+    //glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE,GL_ONE);
     drawTerrainTranslucent(shader,chunksToDraw);
     glDepthMask(GL_TRUE);
     //glEnable(GL_DEPTH_TEST);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+  //std::cout << GL_DEPTH_SCALE << ":"<< GL_DEPTH_BIAS <<"\n";
 
 }
 
@@ -285,21 +284,17 @@ void Drawer::renderDirectionalDepthMap()
   {
     std::cout << "Creating depth map\n";
     glGenFramebuffers(1, &(dirLight.depthMapFBO[i]));
-    glGenTextures(1, &(dirLight.depthMap[i]));
-
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i]);
-    int factor = i == 0 ? factor = 1 : factor = i*2;
-
-    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_DEPTH_COMPONENT,
-                 directionalShadowResolution/factor,directionalShadowResolution/factor, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    float borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-    //glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-
     glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[i]);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i], 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
+
+      glGenTextures(1, &(dirLight.depthMap[i]));
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i]);
+      int factor = i == 0 ? factor = 1 : factor = i*2;
+      glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_DEPTH_COMPONENT,
+                   directionalShadowResolution/factor,directionalShadowResolution/factor, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+      float borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+      //glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i], 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
 
@@ -459,35 +454,20 @@ void Drawer::renderDirectionalShadows()
     }
 
     calculateMinandMaxPoints(frustrum,8,&min,&max);
-    if(x == 1)
-    {
-
-
-    objList[x*2]->setPosition(viewMin);
-    objList[x*2+1]->setPosition(viewMax);
-    }
-    /*
-
-    if(x == 0)
-    {
-
-
-    objList[x*2]->setPosition(min);
-    objList[x*2+1]->setPosition(max);
-    }
-    */
     const int buf = 0;
     int factor = x == 0 ? factor = 1 : factor = x*2;
     float viewWidth = directionalShadowResolution/factor;
 
 
-    glm::vec3 lightPosLightSpace = glm::vec3(lightView*glm::vec4(lightPos,1.0f));
-
-    float buffer = 0;
+    glm::vec3 lightPosLightSpace = glm::vec3(lightView*glm::vec4(lightTarget,1.0f));
+    glm::vec3 test = glm::vec3(lightView*glm::vec4((lightTarget-viewPos)*sunAngle,1.0f));
+    // /std::cout << glm::to_string(lightPosLightSpace) << glm::to_string(test) << "\n";
+    float buffer = 32;
     float l = -buffer -abs(lightPosLightSpace.x - min.x);
     float r = buffer + abs(lightPosLightSpace.x - max.x);
     float b = -buffer - abs(lightPosLightSpace.y - min.y);
     float t = buffer + abs(lightPosLightSpace.y - max.y);
+
 
 
     //std::cout << l << ";" << r << ";" <<  b << ";" << t << "\n";
@@ -519,7 +499,7 @@ void Drawer::renderDirectionalShadows()
     auto chunkList = std::make_shared<std::list<std::shared_ptr<BSPNode>>>(World::BSPmap.getFullList());
     glViewport(0,0,viewWidth,viewWidth);
       glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[x]);
-        glClear(GL_DEPTH_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glCullFace(GL_FRONT);
         drawTerrainOpaque(&dirDepthShader,chunkList);

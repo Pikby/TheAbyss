@@ -387,14 +387,14 @@ int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face, Textur
   char compactFace;
   switch(face)
   {
-    case (FRONTF):   compactFace = 0; break;
-    case (BACKF):    compactFace = 1; break;
-    case (TOPF):     compactFace = 2; break;
-    case (BOTTOMF):  compactFace = 3; break;
-    case (RIGHTF):   compactFace = 4; break;
-    case (LEFTF):    compactFace = 5; break;
+    case (FRONTF):   compactFace = 0b1001; break;
+    case (BACKF):    compactFace = 0b0001; break;
+    case (TOPF):     compactFace = 0b0010; break;
+    case (BOTTOMF):  compactFace = 0b1010; break;
+    case (RIGHTF):   compactFace = 0b0100; break;
+    case (LEFTF):    compactFace = 0b1100; break;
   }
-  char normandtex = compactFace | (ao << 3)| top | right;
+  char normandtex = compactFace | (ao << 4)| top | right;
   char texId = curBlockid;
   char xtextcount = xdist;
   char ytextcount = ydist;
@@ -789,12 +789,6 @@ void BSP::build()
 
 void BSP::setupBufferObjects(RenderType type)
 {
-  int error = glGetError();
-  if(error != 0)
-  {
-    std::cout << "OPENGL ERRORBEFORE BUFFESETUP" << error << ": in chunk pos"<< glm::to_string(parent->chunkPos) << "\n";
-    std::cout << oVAO << ":" << oIndicesSize << "\n";
-  }
   std::vector<float>* curVert;
   std::vector<uint>* curInd;
   uint *VBO;
@@ -872,13 +866,6 @@ void BSP::drawOpaque(Shader* shader, const glm::vec3 &pos)
     glBindVertexArray(oVAO);
     glDrawElements(GL_TRIANGLES, oIndicesSize, GL_UNSIGNED_INT,0);
     glBindVertexArray(0);
-
-    int error = glGetError();
-    if(error != 0)
-    {
-      std::cout << "OPENGL ERROR" << error << ": in chunk pos"<< glm::to_string(parent->chunkPos) << "\n";
-      //std::cout << oVAO << ":" << oIndicesSize << "\n";
-    }
 
   }
 }

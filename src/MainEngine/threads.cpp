@@ -64,7 +64,7 @@ void closeGame()
 
 void draw()
 {
-
+  
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
@@ -177,7 +177,8 @@ void draw()
 
 
         glm::vec3 pos = mainCam->getPosition();
-        ImGui::Text("WorldInfo:\nPlayerPos: x:%.2f y:%.2f z:%2.f",pos.x,pos.y,pos.z);
+
+        ImGui::Text("WorldInfo:\nPlayerPos: x:%.2f y:%.2f z:%.2f",pos.x,pos.y,pos.z);
         ImGui::Text("Chunks Loaded:%d",BSPNode::totalChunks);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
@@ -204,11 +205,9 @@ void draw()
     World::drawer.drawFinal();
 
     ImGui::Render();
-
-    //glActiveTexture(GL_TEXTURE0);
-    //glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    //CEGUI::System::getSingleton().renderAllGUIContexts();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+
     glfwSwapBuffers(window);
 
   }

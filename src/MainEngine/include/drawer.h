@@ -65,6 +65,7 @@ private:
   uint transBuffer, transTexture, transDepth;;
   Shader objShader,dirDepthShader,pointDepthShader,blockShader,gBufferShader;
   Shader transShader;
+
   Shader quadShader;
   Shader depthBufferLoadingShader;
   static void calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::vec3 &front,const glm::vec3 &right,const glm::vec3 &up, float camZoomInDegrees,float ar,float near, float far);

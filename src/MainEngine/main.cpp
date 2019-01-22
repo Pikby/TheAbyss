@@ -1,4 +1,12 @@
 #define GLEW_STATIC
+
+
+#include <stdio.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <thread>
@@ -30,11 +38,28 @@ MessageCallback( GLenum source,
             type, severity, message );
 }
 
+
+void handler(int sig)
+{
+  void *array[10];
+  size_t size;
+
+  // get void*'s for all entries on the stack
+  size = backtrace(array, 10);
+
+  // print out all the frames to stderr
+  fprintf(stderr, "Error: signal %d:\n", sig);
+  backtrace_symbols_fd(array, size, STDERR_FILENO);
+  exit(1);
+}
 // During init, enable debug output
 
 
 int main()
 {
+
+  signal(SIGSEGV, handler);
+
   glfwInit();
   const int numbBuildThreads = 2;
   int winWidth = std::stoi(Settings::get("windowWidth"));
@@ -71,6 +96,8 @@ int main()
     //return;
   }}
   glViewport(0, 0, winWidth, winHeight);
+
+
 
 
   glEnable(GL_DEPTH_TEST);

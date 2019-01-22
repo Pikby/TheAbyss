@@ -45,7 +45,6 @@ protected:
   void setModelMatrix(const glm::mat4 &newModel)
   {
     modelMat = newModel;
-    //updateModelMat();
   }
   void setPosition(const glm::vec3 &newPos)
   {
