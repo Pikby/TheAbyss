@@ -24,7 +24,7 @@ struct PointLight
   float constant;
   float linear;
   float quadratic;
-  samplerCube shadow;
+  //samplerCube shadow;
 };
 in vec2 TexCoords;
 out vec4 finalcolor;
@@ -41,7 +41,7 @@ uniform float fog_start;
 uniform float fog_dist;
 
 uniform DirLight dirLight;
-uniform PointLight pointLights[20];
+uniform PointLight pointLights[99];
 uniform int numbOfLights;
 uniform int numbOfCascadedShadows;
 
@@ -161,9 +161,40 @@ vec3 calcDirectionalLight(float shadow)
   return (ambient + shadow*(diffuse + specular));
 }
 
+vec3 calcPointLights()
+{
+  vec3 total = vec3(0);
+  for(int i=0;i<numbOfLights;i++)
+  {
+    PointLight light = pointLights[i];
+
+    vec3 lightDir = normalize(light.position-fragPosition);
+    vec3 viewDir = normalize(-fragPosition);
+
+    float diff = max(dot(normal,lightDir),0.0);
+
+    vec3 reflectDir = reflect(-lightDir,normal);
+    float spec = pow(max(dot(viewDir,reflectDir),0.0),64);
+
+
+    float dist = length(light.position-fragPosition);
+
+    float attenuation = 1.0 / (light.constant + light.linear * dist + light.quadratic * (dist * dist));
+
+    vec3 ambient = light.ambient*attenuation;
+    vec3 diffuse = light.diffuse*diff*attenuation;
+    vec3 specular = light.specular*spec*attenuation;
+
+    total += ambient+diffuse+specular;
+  }
+  return total;
+}
 
 void main()
 {
+
+  finalcolor = vec4(normal,1.0f);
+
   float shadow = 1;
   if(shadowsOn)
   {
@@ -185,7 +216,9 @@ void main()
     float fogMod = max((fragDepth-fog_start)/fog_dist,0);
     //fogMod = 0;
     vec3 fog = vec3(0.0f,0.0f,0.0f);
-    vec3 finColor = fog*fogMod+(1-fogMod)*objColor*calcDirectionalLight(shadow);
+
+    vec3 lights = objColor*(calcPointLights()+calcDirectionalLight(shadow));
+    vec3 finColor = fog*fogMod+(1-fogMod)*lights;
     finColor = clamp(finColor,0,1);
     //vec3 finColor = fog+objColor;
 
@@ -203,6 +236,7 @@ void main()
       finalcolor = vec4((finTransColor + finColor )/2.0f,1.0f);
 
     }
+      return;
     //float shadows = texture(dirLight.shadow[0], TexCoords).r;
     //finalcolor = vec4(vec3(shadows),1.0f);
 }

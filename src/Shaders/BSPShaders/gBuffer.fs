@@ -21,6 +21,11 @@ uniform vec3 objectColor;
 
 uniform int textureAtlasWidthInCells;
 uniform int textureAtlasHeightInCells;
+
+
+
+
+
 vec4 getTexture()
 {
   vec2 temp;

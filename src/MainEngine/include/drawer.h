@@ -7,7 +7,8 @@
 #include "../../headers/camera.h"
 #include "../../headers/3dmap.h"
 
-#define NUMBOFCASCADEDSHADOWS 2
+
+#define NUMBOFCASCADEDSHADOWS 1
 struct PointLight
 {
   glm::vec3 position;
@@ -44,7 +45,6 @@ private:
   SkyBox skyBox;
   uint textureAtlas;
 
-
   float MSAA = 2;
   int vertRenderDistance, horzRenderDistance,renderBuffer;
   std::vector<std::shared_ptr<Object>> objList;
@@ -71,6 +71,7 @@ private:
   static void calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::vec3 &front,const glm::vec3 &right,const glm::vec3 &up, float camZoomInDegrees,float ar,float near, float far);
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
   void renderQuad();
+  void createTextureAtlas(const char* texture, int cellWidth);
 public:
   glm::ivec2 textureAtlasDimensions;
   uint getTextureAtlasID(){return textureAtlas;}
@@ -107,7 +108,7 @@ public:
   void drawPlayers();
   void drawFinal();
   void updateCameraMatrices(Camera* cam);
-  void addLight(glm::vec3 pos, glm::vec3 amb = glm::vec3(0.0f,0.0f,0.0f),
+  void addLight(glm::vec3 pos, glm::vec3 amb = glm::vec3(1.0f,1.0f,1.0f),
                 glm::vec3 spe = glm::vec3(1.0f,1.0f,1.0f), glm::vec3 dif = glm::vec3(0.5f,0.5f,0.5f),
                 float cons = 1.0f, float lin = 0.14f, float quad = 0.07f);
   void updateDirectionalLight(glm::vec3 dir = glm::vec3(-1.0f,-1.0f,-1.0f),glm::vec3 amb = glm::vec3(0.5f,0.5f,0.5f),

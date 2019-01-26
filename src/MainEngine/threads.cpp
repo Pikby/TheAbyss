@@ -64,7 +64,7 @@ void closeGame()
 
 void draw()
 {
-  
+
   glfwMakeContextCurrent(window);
   float deltaTime;
   float lastFrame;
@@ -79,11 +79,12 @@ void draw()
   Player player;
   player.render();
 
-  World::drawer.addCube(glm::vec3(0,0,0));
-  World::drawer.addCube(glm::vec3(0,50,0));
-  World::drawer.addCube(glm::vec3(0,70,0));
-  World::drawer.addCube(glm::vec3(0,100,0));
 
+  World::drawer.addCube(glm::vec3(0,50,0));
+  World::drawer.addCube(glm::vec3(0,0,0));
+
+  World::drawer.addLight(glm::vec3(0,50,0),glm::vec3(1.0f,1.0f,1.0f));
+  World::drawer.addLight(glm::vec3(0,0,0),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.5f,0.5f,0.5f),1.0,0.045,0.0075);
   bool show_demo_window = true;
   bool show_another_window = false;
   //World::addLight(glm::vec3(10,50,10));
@@ -181,6 +182,11 @@ void draw()
         ImGui::Text("WorldInfo:\nPlayerPos: x:%.2f y:%.2f z:%.2f",pos.x,pos.y,pos.z);
         ImGui::Text("Chunks Loaded:%d",BSPNode::totalChunks);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+        if(ImGui::Button("Exit Game"))
+        {
+          closeGame();
+        }
         ImGui::End();
     }
 

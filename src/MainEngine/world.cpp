@@ -544,7 +544,11 @@ void World::addBlock(const glm::ivec3 &pos,uchar id)
     addToBuildQueueFront(tempChunk);
     checkForUpdates(local,tempChunk);
   }
-
+  if(ItemDatabase::blockDictionary[id].isLightSource)
+  {
+    drawer.addLight(pos,glm::vec3(1.0f,1.0f,1.0f),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.5f,0.5f,0.5f),1.0,0.045,0.0075);
+    std::cout << "Adding light\n";
+  }
 }
 
 
