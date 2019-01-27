@@ -354,13 +354,26 @@ void Drawer::setLights(Shader* shader)
   shader->setVec3("dirLight.specular", dirLight.specular);
 
   shader->setInt("numbOfCascadedShadows",NUMBOFCASCADEDSHADOWS);
-  unsigned int numbOfLights = lightList.size();
-  shader->setInt("numbOfLights",numbOfLights);
-  for(uint i=0;i<numbOfLights;i++)
-  {
-    //std::cout << "setting light" << i<<"\n";
+  //unsigned int numbOfLights = lightList.size();
 
-    PointLight curLight = lightList[i];
+
+  std::list<Light> list=World::findAllLights(viewPos,100);
+
+  uint numbOfLights = list.size();
+
+  shader->setInt("numbOfLights",numbOfLights);
+  //std::cout << "numboflights" << numbOfLights << "\n";
+  int i =0;
+  for(auto itr = list.begin();itr != list.end();itr++)
+  {
+    // /std::cout << i << "\n";
+    Light light = *itr;
+    //std::cout << glm::to_string(light.pos) << "\n";
+    PointLight curLight =
+    {
+      light.pos,glm::vec3(1.0f,1.0f,1.0f),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.5f,0.5f,0.5f),1.0,0.045,0.0075
+    };
+    //PointLight curLight = lightList[i];
     //std::cout << glm::to_string(curLight.position) << "\n";
     shader->setVec3("pointLights[" + std::to_string(i) + "].position",curLight.position-viewPos);
     shader->setVec3("pointLights[" + std::to_string(i) + "].ambient",curLight.ambient);
@@ -369,6 +382,7 @@ void Drawer::setLights(Shader* shader)
     shader->setFloat("pointLights[" + std::to_string(i) + "].constant",curLight.constant);
     shader->setFloat("pointLights[" + std::to_string(i) + "].linear",curLight.linear);
     shader->setFloat("pointLights[" + std::to_string(i) + "].quadratic",curLight.quadratic);
+    i++;
   }
 }
 

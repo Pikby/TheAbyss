@@ -363,6 +363,46 @@ std::shared_ptr<BSPNode>  World::getChunk(const glm::ivec3 &pos)
   return BSPmap.get(pos);
 }
 
+std::list<Light> World::findAllLights(const glm::vec3 &playerPos,int count)
+{
+  int total = 0;
+  std::list<Light> lightList;
+  for(int x =0;x<horzRenderDistance*2;x++)
+  {
+    for(int z=0;z<horzRenderDistance*2;z++)
+    {
+      for(int y=0;y<vertRenderDistance*2;y++)
+      {
+        int horzSquared = horzRenderDistance*horzRenderDistance;
+        int vertSquared = vertRenderDistance*vertRenderDistance;
+        int curx = (x%2 == 0) ? x/2 : -(x/2+1);
+        int cury = (y%2 == 0) ? y/2 : -(y/2+1);
+        int curz = (z%2 == 0) ? z/2 : -(z/2+1);
+
+        if((curx*curx)/horzSquared + (cury*cury)/vertSquared + (curz*curz)/horzSquared > 1) continue;
+        int xchunk = round(playerPos.x);
+        int ychunk = round(playerPos.y);
+        int zchunk = round(playerPos.z);
+        xchunk/= CHUNKSIZE;
+        ychunk/= CHUNKSIZE;
+        zchunk/= CHUNKSIZE;
+        if(chunkExists(glm::ivec3(xchunk+curx,ychunk+cury,zchunk+curz)))
+        {
+          auto curChunk = getChunk(glm::ivec3(xchunk+curx,ychunk+cury,zchunk+curz));
+          std::list<Light> lights = curChunk->getFromLightList(count - total);
+          if(lights.size() == 0)
+          {
+            continue;
+          }
+          total += lights.size();
+          lightList.insert(lightList.end(),lights.begin(),lights.end());
+        }
+      }
+    }
+  }
+  return lightList;
+}
+
 void World::deleteChunksFromQueue()
 {
   while(!chunkDeleteQueue.empty())

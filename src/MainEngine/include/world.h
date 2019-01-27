@@ -42,13 +42,15 @@ public:
 
   //The name of the world, for saving and loading
   static std::string worldName;
-
   static void calculateViewableChunks();
   static bool blockExists(const glm::ivec3 &pos);
   static bool blockExists(const glm::vec3 &pos)
   {
     return blockExists(glm::ivec3(floor(pos)));
   }
+
+
+
   static int anyExists(const glm::vec3 &pos);
   static bool entityExists(const glm::vec3 &pos);
 
@@ -67,6 +69,10 @@ public:
   static void addPlayer(const glm::vec3 &pos, uchar id);
   static void removePlayer(uchar id);
   static void movePlayer(const glm::vec3 &pos, uchar id);
+
+  static std::list<Light> findAllLights(const glm::vec3 &playerPos,int count);
+
+
 
   static void delBlock(const glm::ivec3 &pos);
   static void delChunk(const glm::ivec3 &pos);

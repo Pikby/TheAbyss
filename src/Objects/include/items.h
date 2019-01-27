@@ -77,7 +77,7 @@ public:
   RenderType visibleType;
   bool isLightSource;
   glm::vec3 lightColor;
-  int lightSize;
+  double lightRadius;
   Block(std::string newName, int newId, int* array,RenderType newVisibleType)
   {
     visibleType = newVisibleType;

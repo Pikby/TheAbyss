@@ -67,7 +67,10 @@ void BSPNode::drawTranslucent(Shader* shader, const glm::vec3 &pos)
 {
   curBSP.drawTranslucent(shader,pos);
 }
-
+std::list<Light> BSPNode::getFromLightList(int count)
+{
+  return curBSP.getFromLightList(count);
+}
 
 void BSPNode::del()
 {
@@ -449,11 +452,38 @@ void BSP::addBlock(const glm::ivec3 &pos, char id)
   Block curBlock = ItemDatabase::blockDictionary[getBlock(pos)];
   if(curBlock.isLightSource)
   {
-    //LightSource light;
-    //light.color = curBlock.lightColor;
-    //light.lightSize = curBlock.lightSize;
-    //lightSources.add(pos,light);
+    Light tempLight = {pos+(parent->chunkPos)*32,curBlock.lightColor,curBlock.lightRadius};
+    addToLightList(pos,tempLight);
   }
+}
+
+void BSP::addToLightList(const glm::ivec3 &localPos,const Light& light)
+{
+  lightList[localPos.x*CHUNKSIZE*CHUNKSIZE+localPos.z*CHUNKSIZE+localPos.y] = light;
+}
+
+bool BSP::lightExists(const glm::ivec3 &localPos)
+{
+  return lightList.count(localPos.x*CHUNKSIZE*CHUNKSIZE+localPos.z*CHUNKSIZE+localPos.y);
+}
+void BSP::removeFromLightList(const glm::ivec3 &localPos)
+{
+  std::cout << "Erasing from map\n";
+  lightList.erase(localPos.x*CHUNKSIZE*CHUNKSIZE+localPos.z*CHUNKSIZE+localPos.y);
+}
+
+std::list<Light> BSP::getFromLightList(int count)
+{
+  std::list<Light> list;
+  int counter = 0;
+  for(auto iter = lightList.begin();iter != lightList.end();iter++)
+  {
+    list.push_back(iter->second);
+    counter++;
+    if(counter + 1 >= count) break;
+  }
+
+  return list;
 }
 
 inline void BSP::delBlock(const glm::ivec3 &pos)
@@ -601,6 +631,20 @@ void BSP::build()
          if(!leftNeigh)   curFace.setFace(LEFTF);
          if(!rightNeigh)  curFace.setFace(RIGHTF);
 
+         uchar blockId = getBlock(chunkLocalPos);
+         Block curBlock = ItemDatabase::blockDictionary[blockId];
+
+
+         if(curBlock.isLightSource)
+         {
+           if(!lightExists(chunkLocalPos))
+           {
+             std::cout << "Adding lightsource in chunk" << glm::to_string(parent->chunkPos) << "at" << glm::to_string(chunkLocalPos) << "\n";
+             Light tempLight = {chunkLocalPos+(parent->chunkPos)*32,curBlock.lightColor,curBlock.lightRadius};
+             addToLightList( chunkLocalPos,tempLight);
+           }
+
+         }
        }
      }
    }

@@ -35,16 +35,24 @@ struct BlockFace
   }
   bool isEmpty()
   {
-    return (faceData != 0);
+    return (faceData == 0);
   }
   BlockFace(){faceData = 0;}
+};
+
+struct Light
+{
+  glm::vec3 pos;
+  glm::vec3 color;
+  double radius;
 };
 
 class BSP
 {
   private:
-    glm::mat4 modelMat;
+    std::map<int,Light> lightList;
 
+    glm::mat4 modelMat;
     static std::string worldName;
     Array3D<uchar, CHUNKSIZE> worldArray;
     BSPNode* parent;
@@ -54,8 +62,9 @@ class BSP
     char ydist;
     glm::ivec3 curLocalPos;
 
-    enum TextureSides {BOTTOM  = 0,TOP = 1 << 6, RIGHT = 1 << 7, LEFT = 0};
 
+
+    enum TextureSides {BOTTOM  = 0,TOP = 1 << 6, RIGHT = 1 << 7, LEFT = 0};
     //The temporary vectors to hold the vertex data until its passed onto the GPU
     std::vector<float> oVertices,tVertices;
     std::vector<uint> oIndices,tIndices;
@@ -73,6 +82,10 @@ class BSP
 
 
   public:
+    void addToLightList(const glm::ivec3 &localPos,const Light& light);
+    bool lightExists(const glm::ivec3 &localPos);
+    void removeFromLightList(const glm::ivec3 &localPos);
+    std::list<Light> getFromLightList(int count);
     static bool geometryChanged;
     RenderType blockVisibleType(const glm::ivec3 &pos);
 
@@ -112,7 +125,7 @@ class BSPNode
     RenderType blockVisibleTypeOOB(const glm::ivec3 &pos);
     RenderType blockVisibleType(const glm::ivec3 &pos);
 
-
+    std::list<Light> getFromLightList(int count);
     void build();
     void drawOpaque(Shader* shader, const glm::vec3 &pos);
     void drawTranslucent(Shader* shader, const glm::vec3 &pos);

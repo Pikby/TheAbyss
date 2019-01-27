@@ -51,11 +51,16 @@ Block ItemDatabase::parseBlock(std::vector<std::string> lines)
 
   if(dictionary.count("isLightSource"))
   {
+    //std::cout << newBlock.name << "Is a light source\n";
     newBlock.isLightSource = true;
     newBlock.lightColor = parseVec(dictionary["lightColor"]);
-    newBlock.lightSize  = std::stoi(dictionary["lightSize"]);
+    newBlock.lightRadius  = std::stof(dictionary["lightRadius"]);
   }
-
+  else
+  {
+    //std::cout << newBlock.name << "Is not a light source\n";
+    newBlock.isLightSource = false;
+  }
 
   return newBlock;
 }
