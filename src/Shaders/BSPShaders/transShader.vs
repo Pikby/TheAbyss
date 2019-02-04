@@ -1,5 +1,5 @@
 #version 330 core
-layout (location = 0) in vec3 position;
+layout (location = 0) in float positionPackage;
 layout (location = 1) in float packagef;
 
 out VS_OUT
@@ -11,9 +11,10 @@ out VS_OUT
 
 
 
-uniform mat4 model;
+
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 model;
 
 uniform int textureAtlasWidthInCells;
 uniform int textureAtlasHeightInCells;
@@ -21,9 +22,14 @@ uniform int textureAtlasHeightInCells;
 void main()
 {
 
+  int xPos = floatBitsToInt(positionPackage) & 0x3f;
+  int yPos = (floatBitsToInt(positionPackage) >> 6) & 0x3f;
+  int zPos = (floatBitsToInt(positionPackage) >> 12)& 0x3f;
+
+  vec3 position = vec3(xPos,yPos,zPos);
   int package = floatBitsToInt(packagef);
-  int norm = ((package >> 24) & 0x7);
-  int ao = ((package >> 24) & 0x38);
+  int norm = ((package >> 24) & 0xF);
+  int ao = ((package >> 24) & 0x30);
   int texCoord = ((package >> 24) & 0xC0);
   int texId = (package >> 16) & 0xFF;
   int yblocks = (package >> 8) & 0xFF;
@@ -31,10 +37,37 @@ void main()
 
   float cellWidth = 1.0f/textureAtlasWidthInCells;
   float cellHeight = 1.0f/textureAtlasHeightInCells;
-  vec3 normVec = vec3(0.0f,1.0f,0.0f);
+  vec3 normVec = vec3(0.0f,0.0f,0.0f);
 
   vs_out.TexCells.x = xblocks;
   vs_out.TexCells.y = yblocks;
+
+  ao = (ao >> 4) ;
+  texCoord = (texCoord >> 6);
+
+  const float AOArr[4] = float[4](1.0f,0.8f,0.5f,0.3f);
+  /*
+  switch(ao)
+  {
+    case(0): vs_out.AO = 1.0; break;
+    case(1): vs_out.AO = 0.8; break;
+    case(2): vs_out.AO = 0.5; break;
+    case(3): vs_out.AO = 0.3; break;
+  }
+  */
+  //vs_out.AO = 1.0f - ao*0.22f;
+
+
+
+  //An attempt and removing all brances from the shaders, its essentially the same as the switch statement
+  //But should run faster
+
+  vec3 normBits;
+  normBits.z = norm & 0x1;
+  normBits.y = (norm >> 1) & 0x1;
+  normBits.x = (norm >> 2) & 0x1;
+  float modNorm = (norm >> 3) & 0x1;
+  normVec = normBits -modNorm*normBits*2.0f;
 
 
   vec2 origin;
@@ -43,17 +76,16 @@ void main()
 
   vs_out.TexOrigin = origin;
   //origin = vec2(0.0f,0.0f);
-  if((texCoord & (1<<6)) != 0)
-  {
-    vs_out.TexCoord.y = origin.y + cellHeight;
-  }
-  else vs_out.TexCoord.y = origin.y;
+  //More one liners that used to be branches, kills readibility but it works
+  float texCoordx = texCoord & 0x1;
+  float texCoordy = (texCoord >> 1) & 0x1;
+  vs_out.TexCoord.y = origin.y + texCoordx*cellHeight;
+  vs_out.TexCoord.x = origin.x + texCoordy*cellWidth;
 
-  if((texCoord & (1<<7)) != 0)
-  {
-    vs_out.TexCoord.x = origin.x + cellWidth;
-  }
-  else vs_out.TexCoord.x = origin.x;
+
+
+
+
 
 
   gl_Position = projection*view*model*vec4(position, 1.0f);

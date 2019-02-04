@@ -17,6 +17,8 @@ struct PointLight
   glm::vec3 specular;
   glm::vec3 diffuse;
 
+
+  float radius;
   float constant;
   float linear;
   float quadratic;
@@ -62,9 +64,16 @@ private:
   float camZoomInDegrees,camNear, camFar;
   uint gBuffer,gDepth;
   uint gPosition, gNormal, gColorSpec;
-  uint transBuffer, transTexture, transDepth;;
+  uint transBuffer, transTexture, transDepth;
+  uint PPBuffer,PPTexture,PPTextureBright;
+  uint pingPongFBO[2],pingPongTexture[2];
+  Shader PPShader;
+
   Shader objShader,dirDepthShader,pointDepthShader,blockShader,gBufferShader;
   Shader transShader;
+
+  Shader GBlurShader;
+
 
   Shader quadShader;
   Shader depthBufferLoadingShader;
@@ -84,6 +93,9 @@ public:
   glm::vec3 viewMax;
   float directionalShadowResolution;
   int screenWidth,screenHeight;
+
+
+  void setExposure(float exp);
   void updateViewProjection(float camZoom,float near=0, float far=0);
   void setupShadersAndTextures(int screenWidth, int screenHeight);
   void setRenderDistances(int vert,int horz,int buffer);

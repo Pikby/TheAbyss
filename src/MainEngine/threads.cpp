@@ -110,7 +110,26 @@ void draw()
     World::drawnChunks = 0;
     World::drawer.chunksToDraw = NULL;
 
+
+
+
+
     World::deleteChunksFromQueue();
+
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    MainChar::update();
+
+    World::drawer.updateCameraMatrices(mainCam);
+
+    float findstart = glfwGetTime();
+    World::calculateViewableChunks();
+    float findend = glfwGetTime();
+
+    float directstart = glfwGetTime();
+    if(shadowsOn) World::drawer.renderDirectionalShadows();
+    float directend = glfwGetTime();
+
     ImGui::GetIO().WantCaptureMouse = true;
     glfwPollEvents();
     ImGui_ImplOpenGL3_NewFrame();
@@ -179,25 +198,45 @@ void draw()
 
         glm::vec3 pos = mainCam->getPosition();
 
+        static float exposure = 1.0f;
+        ImGui::SliderFloat("Exposure:", &exposure, 0.0f, 10.0f);
+        World::drawer.setExposure(exposure);
+
+
         ImGui::Text("WorldInfo:\nPlayerPos: x:%.2f y:%.2f z:%.2f",pos.x,pos.y,pos.z);
         ImGui::Text("Chunks Loaded:%d",BSPNode::totalChunks);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Text("Took %.6f ms to find all viewable chunks",1000.0f*(findend-findstart));
+        ImGui::Text("Took %.6f ms to render directional shadows",1000.0f*(directend-directstart));
+        static int curText = 9;
 
+
+        if(ImGui::Button("<-"))
+        {
+          curText--;
+          if(curText <= 0) curText = 1;
+          std::cout << curText << "\n";
+        }
+        ImGui::SameLine();
+        ImGui::Image((void*)(intptr_t)curText,ImVec2(128,128),ImVec2(0.0f,1.0f),ImVec2(1.0f,0.0f));
+        ImGui::SameLine();
+        if(ImGui::Button("->"))
+        {
+          curText++;
+          std::cout << curText << "\n";
+        }
+        ImGui::Text("Current texturd Id: %d",curText);
         if(ImGui::Button("Exit Game"))
         {
           closeGame();
         }
+
         ImGui::End();
     }
 
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    MainChar::update();
 
-    World::drawer.updateCameraMatrices(mainCam);
-    World::calculateViewableChunks();
 
-    if(shadowsOn) World::drawer.renderDirectionalShadows();
     World::drawer.renderGBuffer();
 
 

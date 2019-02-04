@@ -76,7 +76,7 @@ class BSP
 
 
     AmbientOcclusion getAO(const glm::ivec3 &pos, Faces face, TextureSides top, TextureSides right);
-    int addVertex(RenderType renderType, const glm::vec3 &pos,Faces face, TextureSides texX, TextureSides texY, char* AOvalue);
+    int addVertex(RenderType renderType, const glm::ivec3 &pos,Faces face, TextureSides texX, TextureSides texY, char* AOvalue);
     void addIndices(RenderType renderType,int index1, int index2, int index3, int index4);
     void setupBufferObjects(RenderType type);
 

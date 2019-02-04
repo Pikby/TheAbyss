@@ -1,5 +1,5 @@
 #version 330 core
-layout (location = 0) in vec3 position;
+layout (location = 0) in float positionPackage;
 layout (location = 1) in float packagef;
 
 out VS_OUT
@@ -25,6 +25,11 @@ uniform int textureAtlasHeightInCells;
 void main()
 {
 
+  int xPos = floatBitsToInt(positionPackage) & 0x3f;
+  int yPos = (floatBitsToInt(positionPackage) >> 6) & 0x3f;
+  int zPos = (floatBitsToInt(positionPackage) >> 12)& 0x3f;
+
+  vec3 position = vec3(xPos,yPos,zPos);
   int package = floatBitsToInt(packagef);
   int norm = ((package >> 24) & 0xF);
   int ao = ((package >> 24) & 0x30);
@@ -84,6 +89,9 @@ void main()
 
   vs_out.FinNormal = normVec;
   vs_out.FragPos = vec3(model*vec4(position,1.0f));
+
+
+
 
   gl_Position = projection*view*model*vec4(position, 1.0f);
 }

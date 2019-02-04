@@ -362,7 +362,7 @@ AmbientOcclusion BSP::getAO(const glm::ivec3 &pos, Faces face, TextureSides top,
   return static_cast<AmbientOcclusion> (side1Opacity+side2Opacity+cornerOpacity);
 }
 
-int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face, TextureSides top, TextureSides right, char* AOvalue)
+int BSP::addVertex(RenderType renderType,const glm::ivec3 &pos,Faces face, TextureSides top, TextureSides right, char* AOvalue)
 {
   std::vector<float>* curBuffer;
   if(renderType == OPAQUE)
@@ -378,12 +378,15 @@ int BSP::addVertex(RenderType renderType,const glm::vec3 &pos,Faces face, Textur
     std::cout << "Error\n";
     return 0;
   }
-  int numbVert = curBuffer->size()/4;
+  int numbVert = curBuffer->size()/2;
   //Adds position vector
-  curBuffer->push_back(pos.x);
-  curBuffer->push_back(pos.y);
-  curBuffer->push_back(pos.z);
 
+  int fullPos = 0;
+  fullPos = pos.x;
+  fullPos |= (pos.y << 6);
+  fullPos |= (pos.z << 12);
+
+  curBuffer->push_back(*(float*)&fullPos);
   AmbientOcclusion ao = getAO(curLocalPos,face,top,right);
   *AOvalue = ao;
   //Add the normal and texture ids
@@ -450,11 +453,6 @@ void BSP::addBlock(const glm::ivec3 &pos, char id)
 {
   worldArray.set(pos,id);
   Block curBlock = ItemDatabase::blockDictionary[getBlock(pos)];
-  if(curBlock.isLightSource)
-  {
-    Light tempLight = {pos+(parent->chunkPos)*32,curBlock.lightColor,curBlock.lightRadius};
-    addToLightList(pos,tempLight);
-  }
 }
 
 void BSP::addToLightList(const glm::ivec3 &localPos,const Light& light)
@@ -503,6 +501,8 @@ void BSP::build()
   tVertices = std::vector<float>();
   tIndices = std::vector<uint>();
 
+
+  lightList.clear();
   oVertices.reserve(20000);
   oIndices.reserve(10000);
   Array3D<BlockFace,32> arrayFaces;
@@ -649,16 +649,16 @@ void BSP::build()
      }
    }
 
-   glm::vec3 blockOrigin;
+   glm::ivec3 blockOrigin;
    char ao00,ao01,ao11,ao10;
    BlockFace curFace;
    char blockId;
    Block tempBlock;
    curLocalPos;
-   glm::vec3 topleft, bottomleft,topright,bottomright;
-   glm::vec3 tempVec;
+   glm::ivec3 topleft, bottomleft,topright,bottomright;
+   glm::ivec3 tempVec;
    Faces normVec;
-   char top, right;
+   int top, right;
    RenderType renderType;
    glm::ivec3 rightVector, topVector;
    using namespace glm;
@@ -723,14 +723,14 @@ void BSP::build()
      curBlockid = tempBlock.getFace(face);
      normVec = face;
    };
-   vec3 depthoffset = glm::vec3(0,1,0);
-   const float offset = 0.005f;
+   ivec3 depthoffset = glm::ivec3(0,1,0);
+   const float offset = 0.000f;
    auto createVertices = [&](bool front)
    {
-     bottomright = blockOrigin + depthoffset + (right+offset)*vec3(rightVector) + offset*vec3(-rightVector);
-     topright = blockOrigin + depthoffset + (top+offset)*vec3(topVector) + (right+offset)*vec3(rightVector);
-     bottomleft = blockOrigin + depthoffset + offset*vec3(-rightVector) + offset*vec3(-topVector);
-     topleft = blockOrigin + depthoffset + (top+offset)*vec3(topVector) + offset*vec3(-rightVector);
+     bottomright = blockOrigin + depthoffset + (right)*(rightVector);
+     topright = blockOrigin + depthoffset + (top)*(topVector) + (right)*(rightVector);
+     bottomleft = blockOrigin + depthoffset;
+     topleft = blockOrigin + depthoffset + (top)*(topVector);
 
      int index4 = addVertex(renderType,bottomright,normVec,BOTTOM,RIGHT,&ao10);
      int index3 = addVertex(renderType,topright,normVec,TOP,RIGHT,&ao11);
@@ -879,11 +879,11 @@ void BSP::setupBufferObjects(RenderType type)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,*EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, curInd->size()*sizeof(uint),&curInd->front(), GL_DYNAMIC_DRAW);
 
-    int vertexSize = 4*sizeof(float);
-    glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE,vertexSize, (void*)0);
+    int vertexSize = 2*sizeof(float);
+    glVertexAttribPointer(0,1,GL_FLOAT, GL_FALSE,vertexSize, (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(3*sizeof(float)));
+    glVertexAttribPointer(1,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(sizeof(float)));
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);

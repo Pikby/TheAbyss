@@ -62,7 +62,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
 
   depthBufferLoadingShader = Shader("../src/Shaders/depthBufferLoadingShader.vs","../src/Shaders/depthBufferLoadingShader.fs");
   depthBufferLoadingShader.use();
-  depthBufferLoadingShader.setInt("depthTexture",0);
+
 
   quadShader = Shader("../src/Shaders/old/debugQuad.vs","../src/Shaders/old/debugQuad.fs");
   quadShader.use();
@@ -95,7 +95,19 @@ void Drawer::setupShadersAndTextures(int width, int height)
   gBufferShader.setVec3("objectColor", 0.5f, 0.5f, 0.31f);
 
 
+  PPShader = Shader("../src/Shaders/PPShaders/PPShader.fs","../src/Shaders/PPShaders/PPShader.vs");
+  PPShader.use();
+  PPShader.setInt("curTexture",0);
+  PPShader.setInt("bloomTexture",1);
+  PPShader.setFloat("exposure",1.0f);
+
+
   transShader = Shader("../src/Shaders/BSPShaders/transShader.fs","../src/Shaders/BSPShaders/transShader.vs");
+
+  GBlurShader = Shader("../src/Shaders/PPShaders/GBlurShader.fs","../src/Shaders/PPShaders/GBlurShader.vs");
+  GBlurShader.use();
+  GBlurShader.setInt("image",0);
+
 
 
   transShader.use();
@@ -133,17 +145,10 @@ void Drawer::deleteAllBuffers()
   glDeleteTextures(1,&transTexture);
   glDeleteTextures(1,&transDepth);
 
-
-  int error = glGetError();
-  if(error != 0)
-  {
-    std::cout << "Delete Buffers error:" << error << ":" << std::hex << error << "\n";
-  }
 }
 
 void Drawer::setAllBuffers()
 {
-    std::cout << "Creating g-buffers\n";
   glGenFramebuffers(1, &gBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
@@ -151,32 +156,24 @@ void Drawer::setAllBuffers()
     glGenTextures(1, &gPosition);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gPosition);
     glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGB16F, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGB, GL_FLOAT, NULL);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, gPosition, 0);
 
 
     glGenTextures(1, &gNormal);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gNormal);
     glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGB16F, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGB, GL_FLOAT, NULL);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, gNormal, 0);
 
 
     glGenTextures(1, &gColorSpec);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gColorSpec);
     glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGBA, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, gColorSpec, 0);
 
-
-    unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-    glDrawBuffers(3, attachments);
-
+    {
+      unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+      glDrawBuffers(3, attachments);
+    }
     glGenTextures(1, &gDepth);
     glBindTexture(GL_TEXTURE_2D, gDepth);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth*MSAA,screenHeight*MSAA, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -184,21 +181,16 @@ void Drawer::setAllBuffers()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gDepth, 0);
-
-
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 
-  std::cout << "Creating trans buffer\n";
   glGenFramebuffers(1, &transBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
 
     glGenTextures(1, &transTexture);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, transTexture);
     glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE,0,GL_RGBA16F,screenWidth*MSAA,screenHeight*MSAA,0,GL_RGBA,GL_FLOAT,0);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, transTexture, 0);
 
@@ -211,7 +203,49 @@ void Drawer::setAllBuffers()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, transDepth, 0);
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
-  std::cout << "Done creating buffers\n";
+
+  glGenFramebuffers(1,&PPBuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
+    glGenTextures(1, &PPTexture);
+    glBindTexture(GL_TEXTURE_2D,PPTexture);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA16F,screenWidth,screenHeight,0,GL_RGBA,GL_FLOAT,0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, PPTexture, 0);
+
+    glGenTextures(1, &PPTextureBright);
+    glBindTexture(GL_TEXTURE_2D,PPTextureBright);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA16F,screenWidth,screenHeight,0,GL_RGBA,GL_FLOAT,0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, PPTextureBright, 0);
+
+    {
+      unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+      glDrawBuffers(2, attachments);
+    }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+  glGenFramebuffers(2,pingPongFBO);
+  glGenTextures(2,pingPongTexture);
+  for (unsigned int i = 0; i < 2; i++)
+{
+    std::cout << pingPongTexture[i] << "\n";
+    glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[i]);
+    glBindTexture(GL_TEXTURE_2D, pingPongTexture[i]);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL
+    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingPongTexture[i], 0
+    );
+}
+
 
 
 }
@@ -235,6 +269,11 @@ void Drawer::addCube(Cube newCube)
   objList.push_back(std::make_shared<Cube>(newCube));
 }
 
+void Drawer::setExposure(float exposure)
+{
+  PPShader.use();
+  PPShader.setFloat("exposure",exposure);
+}
 void Drawer::renderGBuffer()
 {
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
@@ -347,6 +386,7 @@ void Drawer::renderPointDepthMap(int id)
 
 void Drawer::setLights(Shader* shader)
 {
+  float start = glfwGetTime();
   shader->use();
   shader->setVec3("dirLight.direction", dirLight.direction);
   shader->setVec3("dirLight.ambient", dirLight.ambient);
@@ -355,8 +395,6 @@ void Drawer::setLights(Shader* shader)
 
   shader->setInt("numbOfCascadedShadows",NUMBOFCASCADEDSHADOWS);
   //unsigned int numbOfLights = lightList.size();
-
-
   std::list<Light> list=World::findAllLights(viewPos,100);
 
   uint numbOfLights = list.size();
@@ -371,7 +409,7 @@ void Drawer::setLights(Shader* shader)
     //std::cout << glm::to_string(light.pos) << "\n";
     PointLight curLight =
     {
-      light.pos,glm::vec3(1.0f,1.0f,1.0f),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.5f,0.5f,0.5f),1.0,0.045,0.0075
+      light.pos,glm::vec3(1.0f,1.0f,1.0f),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.5f,0.5f,0.5f),30.0f,1.0,0.045,0.0075
     };
     //PointLight curLight = lightList[i];
     //std::cout << glm::to_string(curLight.position) << "\n";
@@ -379,11 +417,14 @@ void Drawer::setLights(Shader* shader)
     shader->setVec3("pointLights[" + std::to_string(i) + "].ambient",curLight.ambient);
     shader->setVec3("pointLights[" + std::to_string(i) + "].specular",curLight.specular);
     shader->setVec3("pointLights[" + std::to_string(i) + "].diffuse",curLight.diffuse);
+    shader->setFloat("pointLights[" + std::to_string(i) + "].radius",curLight.radius);
     shader->setFloat("pointLights[" + std::to_string(i) + "].constant",curLight.constant);
     shader->setFloat("pointLights[" + std::to_string(i) + "].linear",curLight.linear);
     shader->setFloat("pointLights[" + std::to_string(i) + "].quadratic",curLight.quadratic);
     i++;
   }
+  float end = glfwGetTime();
+  //std::cout << "light setup took: " << 1000*(end-start) << "ms\n";
 }
 
 unsigned int quadVAO = 0;
@@ -427,6 +468,7 @@ glm::ivec3 toChunkCoords(glm::ivec3 in)
 
 void Drawer::renderDirectionalShadows()
 {
+
   const int PI = 3.14159265;
   float distToSun = (vertRenderDistance*2)*CHUNKSIZE;
   //Makes sure the light is always at the correct angle above the player
@@ -437,6 +479,7 @@ void Drawer::renderDirectionalShadows()
   glm::vec3 sunAngle = dirLight.direction;
   for(int x = 0;x<NUMBOFCASCADEDSHADOWS;x++)
   {
+    float start = glfwGetTime();
     //if(x>=1) break;
     glm::vec3 frustrum[8];
     float near = camNear + ((camFar-camNear)/NUMBOFCASCADEDSHADOWS)*x;
@@ -513,40 +556,73 @@ void Drawer::renderDirectionalShadows()
     lightProjection = glm::ortho(l,r,b,t,-1.0f,shadowFar);
     dirLight.lightSpaceMat[x] = lightProjection * lightView;
     glm::mat4 invLight = glm::inverse(dirLight.lightSpaceMat[x]);
-    finalMax = invLight*glm::vec4(1.0f,1.0f,1.0f,1.0f);
-    finalMin = invLight*glm::vec4(-1.0f,-1.0f,-1.0f,1.0f);
-    finalMax += viewPos;
-    finalMin += viewPos;
 
     const glm::vec3 squareFrustrum[8]=
     {
-      glm::vec3(1.0f,1.0f,1.0f),
-      glm::vec3(-1.0f,1.0f,1.0f),
-      glm::vec3(1.0f,-1.0f,1.0f),
-      glm::vec3(-1.0f,-1.0f,1.0f),
-
-      glm::vec3(1.0f,1.0f,-1.0f),
+      glm::vec3(-1.0f,-1.0f,-1.0f),
       glm::vec3(-1.0f,1.0f,-1.0f),
+      glm::vec3(1.0f,1.0f,-1.0f),
       glm::vec3(1.0f,-1.0f,-1.0f),
-      glm::vec3(-1.0f,-1.0f,-1.0f)
+
+      glm::vec3(-1.0f,-1.0f,1.0f),
+      glm::vec3(-1.0f,1.0f,1.0f),
+      glm::vec3(1.0f,1.0f,1.0f),
+      glm::vec3(1.0f,-1.0f,1.0f),
 
     };
 
     glm::vec3 lightFrustrum[8];
     for(int i=0;i<8;i++)
     {
-      lightFrustrum[i] = glm::vec3(invLight*glm::vec4(squareFrustrum[i],1.0f));
+      lightFrustrum[i] = viewPos + glm::vec3(invLight*glm::vec4(squareFrustrum[i],1.0f));
+      //std::cout <<i << " : " << glm::to_string(lightFrustrum[i]) << "\n";
     }
 
 
     calculateMinandMaxPoints(lightFrustrum,8,&finalMin,&finalMax);
-    finalMax += viewPos;
-    finalMin += viewPos;
     dirDepthShader.use();
     dirDepthShader.setMat4("lightSpaceMatrix",dirLight.lightSpaceMat[x]);
 
+
+    auto check = [](glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 target)
+    {
+        glm::vec3 U = b - a;
+        glm::vec3 V = c - a;
+        glm::vec3 UVCross = glm::cross(U,V);
+        glm::vec3 chunkVec = target - a;
+        return (glm::dot(chunkVec,UVCross) < 0);
+    };
     //auto chunkList = std::make_shared<std::list<std::shared_ptr<BSPNode>>>(World::BSPmap.getFullList());
     auto chunkList = World::BSPmap.findAll(toChunkCoords(finalMin),toChunkCoords(finalMax));
+
+    /*
+    if(chunkList->empty()) return;
+    for(auto it = chunkList->cbegin();it != chunkList->cend();)
+    {
+      std::shared_ptr<BSPNode> curNode = (*it);
+      glm::vec3 chunkVec = curNode->getRealWorldPosition();
+      if(
+         !check(lightFrustrum[3],lightFrustrum[6],lightFrustrum[7],chunkVec)
+         && !check(lightFrustrum[3],lightFrustrum[0],lightFrustrum[2],chunkVec)
+         && !check(lightFrustrum[0],lightFrustrum[4],lightFrustrum[5],chunkVec)
+         && !check(lightFrustrum[2],lightFrustrum[5],lightFrustrum[6],chunkVec)
+         && !check(lightFrustrum[3],lightFrustrum[7],lightFrustrum[4],chunkVec)
+       )
+      {
+        //std::cout << glm::to_string(chunkVec) << "Is in\n";
+        ++it;
+      }
+      else
+      {
+        //std::cout << glm::to_string(chunkVec) << "Is out\n";
+        it = (chunkList->erase(it));
+      }
+
+    }
+    //std::cout << chunkList->size() << "\n";
+
+    */
+
     glViewport(0,0,viewWidth,viewWidth);
       glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[x]);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -556,9 +632,11 @@ void Drawer::renderDirectionalShadows()
         glCullFace(GL_BACK);
       glBindFramebuffer(GL_FRAMEBUFFER,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    float end = glfwGetTime();
+
+    //std::cout << "Calculating took" << 1000*(end-start) << "\n";
   }
   glViewport(0,0,screenWidth,screenHeight);
-
 
 }
 
@@ -571,8 +649,6 @@ void Drawer::bindDirectionalShadows(Shader* shader)
     glActiveTexture(GL_TEXTURE4+i);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i]);
     shader->setMat4("dirLight.lightSpaceMatrix[" +std::to_string(i) + "]",dirLight.lightSpaceMat[i]);
-    //std::cout << dirLight.arrayOfDistances[0] << "\n";
-    //std::cout << dirLight.arrayOfDistances[1] << "\n";
     shader->setFloat("dirLight.arrayOfDistances[" + std::to_string(i) + "]",dirLight.arrayOfDistances[i]);
   }
 }
@@ -650,25 +726,85 @@ void Drawer::drawFinal()
   Shader* shader = &blockShader;
   shader->use();
 
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gPosition);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gNormal);
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gColorSpec);
-  glActiveTexture(GL_TEXTURE3);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,transTexture);
+ glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gPosition);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gNormal);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gColorSpec);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,transTexture);
 
-  setLights(shader);
-  shader->setVec3("viewPos", viewPos);
-  bindDirectionalShadows(shader);
+    setLights(shader);
+    shader->setVec3("viewPos", viewPos);
+    bindDirectionalShadows(shader);
+    glDisable(GL_DEPTH_TEST);
+    renderQuad();
+    glEnable(GL_DEPTH_TEST);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
+
+
+  float blurStart = glfwGetTime();
+  bool horizontal = false;
+  const int amount = 10;
+
+  GBlurShader.use();
+  glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[0]);
+    GBlurShader.setBool("horizontal",true);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, PPTextureBright);
+    renderQuad();
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
+  for(int i = 0;i<amount;i++)
+  {
+
+    if(horizontal)
+    {
+      glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[0]);
+        GBlurShader.setBool("horizontal",true);
+        glBindTexture(GL_TEXTURE_2D, pingPongTexture[1]);
+        renderQuad();
+        horizontal = false;
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+    else
+    {
+      glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[1]);
+        GBlurShader.setBool("horizontal",false);
+        glBindTexture(GL_TEXTURE_2D,pingPongTexture[0]);
+        renderQuad();
+        horizontal = true;
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+  }
+
+  float blurEnd = glfwGetTime();
+
+  std::cout << "blurring takes " << (blurEnd - blurStart) *1000.0f << " ms\n";
+
+  shader = &PPShader;
+  shader->use();
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D,PPTexture);
+
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D,pingPongTexture[0]);
+
+
+
   glDisable(GL_DEPTH_TEST);
   renderQuad();
   glEnable(GL_DEPTH_TEST);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glBlitFramebuffer(0, 0, screenWidth*MSAA, screenHeight*MSAA, 0, 0, screenWidth, screenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
 
 }
 

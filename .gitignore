@@ -10,3 +10,4 @@ src/FastNoise.cpp
 *.o
 *.rdc
 *.log
+.*

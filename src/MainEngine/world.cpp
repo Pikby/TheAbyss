@@ -367,11 +367,11 @@ std::list<Light> World::findAllLights(const glm::vec3 &playerPos,int count)
 {
   int total = 0;
   std::list<Light> lightList;
-  for(int x =0;x<horzRenderDistance*2;x++)
+  for(int x =0;x<horzRenderDistance;x++)
   {
-    for(int z=0;z<horzRenderDistance*2;z++)
+    for(int z=0;z<horzRenderDistance;z++)
     {
-      for(int y=0;y<vertRenderDistance*2;y++)
+      for(int y=0;y<vertRenderDistance;y++)
       {
         int horzSquared = horzRenderDistance*horzRenderDistance;
         int vertSquared = vertRenderDistance*vertRenderDistance;

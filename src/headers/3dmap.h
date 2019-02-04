@@ -4,6 +4,7 @@
 #include <mutex>
 #include <glm/glm.hpp>
 #include <list>
+#include "RWLock.h"
 
 using namespace std;
 
@@ -16,7 +17,7 @@ class Map3D
     T data;
   };
   private:
-    std::mutex mapMutex;
+    RWLock lock;
     std::list<T> fullList;
     typename std::list<T>::iterator addToList(const T& data)
     {
@@ -44,17 +45,18 @@ class Map3D
 template <class T>
 void Map3D<T>::add(const glm::ivec3 &pos,T data)
 {
-  std::lock_guard<std::mutex> lock(mapMutex);
+  lock.ReadLock();
   auto itr = addToList(data);
   Node tmp = {itr,data};
   map3D[pos.x][pos.y][pos.z] = tmp;
   size++;
+  lock.ReadUnlock();
 }
 
 template <class T>
 bool Map3D<T>::exists(const glm::ivec3 &pos)
 {
-  std::lock_guard<std::mutex> lock(mapMutex);
+  lock.ReadLock();
   if(map3D.count(pos.x) == 1)
   {
     auto &xMaps = map3D[pos.x];
@@ -62,17 +64,19 @@ bool Map3D<T>::exists(const glm::ivec3 &pos)
     {
       if(xMaps[pos.y].count(pos.z) == 1)
       {
+        lock.ReadUnlock();
         return true;
       }
     }
   }
+  lock.ReadUnlock();
   return false;
 }
 
 template <class T>
 T Map3D<T>::get(const glm::ivec3 &pos)
 {
-  std::lock_guard<std::mutex> lock(mapMutex);
+  lock.ReadLock();
   if(map3D.count(pos.x) == 1)
    {
      auto &xMaps = map3D[pos.x];
@@ -82,17 +86,19 @@ T Map3D<T>::get(const glm::ivec3 &pos)
        if(yMaps.count(pos.z) == 1)
        {
          T tmp = yMaps[pos.z].data;
+         lock.ReadUnlock();
          return tmp;
        }
      }
    }
+  lock.ReadUnlock();
   return NULL;
 }
 
 template <class T>
 void Map3D<T>::del(const glm::ivec3 &pos)
 {
-  std::lock_guard<std::mutex> lock(mapMutex);
+  lock.WriteLock();
   auto &xMaps = map3D[pos.x];
   auto &yMaps = xMaps[pos.y];
   auto &node  = yMaps[pos.z];
@@ -108,12 +114,14 @@ void Map3D<T>::del(const glm::ivec3 &pos)
     }
   }
   size--;
+
+  lock.WriteUnlock();
 }
 
 template <class T>
 std::shared_ptr<std::list<T>> Map3D<T>::findAll(const glm::ivec3 &min,const glm::ivec3 &max)
 {
-  std::lock_guard<std::mutex> lock(mapMutex);
+  lock.ReadLock();
   std::shared_ptr<std::list<T>> partList(new std::list<T>);
   for(auto itx = map3D.lower_bound(min.x); itx->first <= max.x && itx !=map3D.end();++itx)
   {
@@ -125,6 +133,7 @@ std::shared_ptr<std::list<T>> Map3D<T>::findAll(const glm::ivec3 &min,const glm:
       }
     }
   }
+  lock.ReadUnlock();
   return partList;
 }
 

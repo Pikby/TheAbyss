@@ -27,7 +27,8 @@ struct PointLight
   //samplerCube shadow;
 };
 in vec2 TexCoords;
-out vec4 finalcolor;
+layout (location = 0) out vec4 finalColor;
+layout (location = 1) out vec4 brightColor;
 
 uniform bool shadowsOn;
 uniform sampler2DMS gColorSpec;
@@ -193,7 +194,6 @@ vec3 calcPointLights()
 void main()
 {
 
-  finalcolor = vec4(normal,1.0f);
 
   float shadow = 1;
   if(shadowsOn)
@@ -227,16 +227,24 @@ void main()
     transColor += vec3(1.0f,1.0f,1.0f);
     if(transColor == vec3(0.0f,0.0f,0.0f))
     {
-      finalcolor = vec4(finColor,1);
+      finalColor = vec4(finColor,1);
     }
     else
     {
       //Pixel has translucent object, so calculate it
       vec3 finTransColor = transColor/((transColorCount-0.8f));
-      finalcolor = vec4((finTransColor + finColor )/2.0f,1.0f);
+      finalColor = vec4((finTransColor + finColor )/2.0f,1.0f);
 
     }
-      return;
-    //float shadows = texture(dirLight.shadow[0], TexCoords).r;
-    //finalcolor = vec4(vec3(shadows),1.0f);
+    float brightness = dot(finalColor.rgb,vec3(0.2126, 0.7152, 0.122));
+    if(brightness > 1.0f)
+    {
+      brightColor = vec4(finalColor.rgb,1);
+    }
+    else
+    {
+      brightColor = vec4(vec3(0.0f),1.0f);
+    }
+
+
 }

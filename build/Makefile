@@ -32,7 +32,7 @@ CLIENTFLAGSLINUX  = -I/usr/local/include/freetype2 -I/usr/include/libpng12 \
 					-lglfw3 -lGLEW -lGL -lm -ldl -lXinerama -lXrandr -lXi \
 					-lXcursor -lX11 -lXxf86vm -lpthread -std=c++17 \
 					-L/usr/local/lib -lfreetype -lstdc++fs -lboost_system -lboost_filesystem \
-					-O3 -g -rdynamic
+					-O3 -g -rdynamic -ffast-math
 
 SERVERFLAGSLINUX = -lpthread -std=c++17 -lstdc++fs -lboost_system -lboost_filesystem -O3\
 
