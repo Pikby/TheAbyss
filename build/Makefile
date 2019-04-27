@@ -8,16 +8,18 @@ NOISEOBJECTPATH = ../bin/noise/
 NOISESRCPATH = ../serversrc/TerrainGeneration/FastNoiseSIMD/
 
 
+
+CPPV = -std=c++17
+
 CC = g++
 WCC = /mnt/WorkSpace/MXE/mxe/usr/bin/x86_64-w64-mingw32.static.posix-g++
 
 
 WINSRC = $(wildcard ../src/**/*.cpp)
-CLIENTOBJECTS = $(patsubst %.cpp, %.o, $(wildcard ../src/**/*.cpp))
+
+CLIENTOBJECTS = $(patsubst %.cpp, %.o, $(shell find ../src/ -name "*.cpp"))
 CLIENTOBJECTSOURCES = $(CLIENTOBJECTS:$(CLIENTSRCPATH)%=%)
 
-GUIOBJECTS = $(patsubst %.cpp, %.o, $(wildcard ../src/MainEngine/imgui/*.cpp))
-GUIOBJECTSOURCES = $(GUIOBJECTS:$(GUISRCPATH)%=%)
 
 SERVEROBJECTS = $(patsubst %.cpp, %.o, $(wildcard ../serversrc/**/*.cpp))
 SERVEROBJECTSOURCES = $(SERVEROBJECTS:$(SERVERSRCPATH)%=%)
@@ -27,14 +29,13 @@ NOISEOBJECTSOURCES = $(NOISEOBJECTS:$(NOISESRCPATH)%=%)
 
 
 
+LIBRARYLIST = glfw3 freetype2 glew glfw3
+CLIENTFLAGSLINUX = $(shell pkg-config --cflags $(LIBRARYLIST)) $(shell pkg-config --libs $(LIBRARYLIST)) \
+									 -lpthread -lboost_system -lboost_filesystem $(CPPV) -O3
 
-CLIENTFLAGSLINUX  = -I/usr/local/include/freetype2 -I/usr/include/libpng12 \
-					-lglfw3 -lGLEW -lGL -lm -ldl -lXinerama -lXrandr -lXi \
-					-lXcursor -lX11 -lXxf86vm -lpthread -std=c++17 \
-					-L/usr/local/lib -lfreetype -lstdc++fs -lboost_system -lboost_filesystem \
-					-O3 -g -rdynamic -ffast-math
 
-SERVERFLAGSLINUX = -lpthread -std=c++17 -lstdc++fs -lboost_system -lboost_filesystem -O3\
+
+SERVERFLAGSLINUX = -lpthread $(CPPV) -lstdc++fs -lboost_system -lboost_filesystem -O3\
 
 #core-avx2 is very volatile flag, only use it on files that can use it
 NOISEFLAGSLINUX = -std=c++17 -march=core-avx2
@@ -59,22 +60,30 @@ CFLAGSWINDOWS =-I/usr/local/include/freetype2 -I/usr/include/libpng12  \
 
 
 $(NOISEOBJECTPATH)%.o: $(NOISESRCPATH)%.cpp
+	@rm -f $@
+	@mkdir -p $@
+	@rmdir $@
 	@echo Compiling terrain $<
 	@$(CC) $(NOISEFLAGSLINUX) -c $< -o $@
 
 $(SERVEROBJECTPATH)%.o: $(SERVERSRCPATH)%.cpp
+	@mkdir -p $@
+	@rmdir $@
 	@echo Compiling $<
 	@$(CC) $(SERVERFLAGSLINUX) -c $< -o $@
 
 
 
 $(CLIENTOBJECTPATH)%.o: $(CLIENTSRCPATH)%.cpp
+	@rm -f $@
+	@mkdir -p $@
+	@rmdir $@
 	@echo Compiling $<
 	@$(CC) $(CLIENTFLAGSLINUX) -c $< -o $@
 
-linux: $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES)) $(addprefix $(GUIOBJECTPATH), $(GUIOBJECTSOURCES))
+linux: $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES))
 	@echo Linking objects together, outputting: linux
-	@$(CC) $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES)) $(addprefix $(GUIOBJECTPATH), $(GUIOBJECTSOURCES)) $(CLIENTFLAGSLINUX) -o linux
+	@$(CC) $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES)) $(CLIENTFLAGSLINUX) -o linux
 
 server: $(addprefix $(SERVEROBJECTPATH), $(SERVEROBJECTSOURCES)) $(addprefix $(NOISEOBJECTPATH), $(NOISEOBJECTSOURCES))
 	@echo Linking objects together, outputting: server
@@ -91,5 +100,4 @@ cleanserver:
 	cd ../bin/noise && find . -type f -name '*.o' -delete
 
 test:
-	@echo $(NOISEOBJECTS)
-	@echo $(NOISEOBJECTSOURCES)
+	@echo Flags are $(CLIENTFLAGSLINUX)

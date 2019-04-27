@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DRAWERHEADER
+#define DRAWERHEADER
 
 #include "bsp.h"
 #include <list>
@@ -133,3 +134,4 @@ public:
 
 
 };
+#endif

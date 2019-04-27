@@ -96,10 +96,10 @@ InMessage Messenger::receiveAndDecodeMessage()
 {
   int buf[5];
   receiveMessage(buf,sizeof(int)*5);
-  uchar opcode = (buf[0] >> 24) & 0xFF;
-  uchar ext1 = (buf[0] >> 16) & 0xFF;
-  uchar ext2 = (buf[0] >> 8) & 0xFF;
-  uchar ext3 = buf[0] & 0xFF;
+  uint8_t opcode = (buf[0] >> 24) & 0xFF;
+  uint8_t ext1 = (buf[0] >> 16) & 0xFF;
+  uint8_t ext2 = (buf[0] >> 8) & 0xFF;
+  uint8_t ext3 = buf[0] & 0xFF;
   InMessage msg = InMessage(opcode,ext1,ext2,ext3,buf[1],buf[2],buf[3],buf[4]);
   return msg;
 
@@ -113,7 +113,7 @@ void Messenger::createChatMessage(const std::string& msg)
 
 void Messenger::requestChunk(int x, int y, int z)
 {
-  int request[5];
+  int32_t request[5];
   request[0] = 0;
   request[1] = x;
   request[2] = y;
@@ -131,7 +131,7 @@ void Messenger::requestChunk(int x, int y, int z)
 
 void Messenger::sendChatMessage(std::shared_ptr<std::string> msg)
 {
-  int request[5];
+  int32_t request[5];
   request[0] = pack4chars(100,0,0,0);
   request[1] = 0;
   request[2] = 0;
@@ -154,15 +154,15 @@ void Messenger::createMoveRequest(float x, float y, float z)
   messageQueue.push(tmp);
 }
 
-void Messenger::createAddBlockRequest(int x, int y, int z, uchar id)
+void Messenger::createAddBlockRequest(int x, int y, int z, uint8_t id)
 {
   OutMessage tmp = OutMessage(2,id,0,0,x,y,z,0);
   messageQueue.push(tmp);
 }
 
-void Messenger::requestAddBlock(int x, int y, int z, uchar id)
+void Messenger::requestAddBlock(int x, int y, int z, uint8_t id)
 {
-  int request[5];
+  int32_t request[5];
   request[0] = pack4chars(2,id,0,0);
   request[1] = x;
   request[2] = y;
@@ -186,7 +186,7 @@ void Messenger::createDelBlockRequest(int x, int y, int z)
 }
 void Messenger::requestDelBlock(int x, int y, int z)
 {
-  int request[5];
+  int32_t request[5];
   request[0] = pack4chars(1,0,0,0);
   request[1] = x;
   request[2] = y;
@@ -204,7 +204,7 @@ void Messenger::requestDelBlock(int x, int y, int z)
 
 void Messenger::requestMove(float x, float y, float z)
 {
-  int request[5];
+  int32_t request[5];
   request[0] = pack4chars(91,0,0,0);
   request[1] = floatBitsToInt(x);
   request[2] = floatBitsToInt(y);
@@ -223,7 +223,7 @@ void Messenger::requestMove(float x, float y, float z)
 
 void Messenger::requestExit()
 {
-  int request[5];
+  int32_t request[5];
   request[0] = 0xFFFFFFFF;
   sendMessage(request,sizeof(request));
   std::cout << "exit message Sent\n";
@@ -232,7 +232,7 @@ void Messenger::requestExit()
 
 void Messenger::receiveMessage(void *buffer,int length)
 {
-  char* buf = (char*)buffer;
+  uint8_t* buf = (uint8_t*)buffer;
   int totalReceived = 0;
   while(totalReceived<length)
   {
@@ -248,7 +248,7 @@ void Messenger::receiveMessage(void *buffer,int length)
 
 void Messenger::sendMessage(const void* buffer, int length)
 {
-  char* buf = (char*)buffer;
+  uint8_t* buf = (uint8_t*)buffer;
   int totalSent = 0;
   while(totalSent<length)
   {

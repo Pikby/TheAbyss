@@ -81,7 +81,7 @@ bool ItemDatabase::loadBlockDictionary(const char* file)
       getline(dictionaryf,line);
       int visibleType = stoi(line);
       getline(dictionaryf,line);
-      int width = stoi(line);
+      int width = stoi(line); 
       getline(dictionaryf,line);
       int height = stoi(line);
       getline(dictionaryf,line);

@@ -726,7 +726,7 @@ void Drawer::drawFinal()
   Shader* shader = &blockShader;
   shader->use();
 
- glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
+ //glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gPosition);
     glActiveTexture(GL_TEXTURE1);
@@ -743,11 +743,11 @@ void Drawer::drawFinal()
     renderQuad();
     glEnable(GL_DEPTH_TEST);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 
-
+  /*
 
   float blurStart = glfwGetTime();
   bool horizontal = false;
@@ -805,7 +805,7 @@ void Drawer::drawFinal()
   renderQuad();
   glEnable(GL_DEPTH_TEST);
 
-
+  */
 }
 
 void Drawer::updateViewProjection(float camZoom,float near,float far)

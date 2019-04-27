@@ -14,27 +14,17 @@
 #include <glm/gtx/string_cast.hpp>
 #include <iostream>
 #include <boost/filesystem.hpp>
+
+#define WORLDIMPLEMENTATION
 #include "include/world.h"
 #include "include/bsp.h"
-#include "../Settings/settings.h"
-
-
-#include "../TextureLoading/textureloading.h"
-
 #include "include/messenger.h"
+#include "../Settings/settings.h"
+#include "../TextureLoading/textureloading.h"
 #include "../Objects/include/items.h"
 
 //Initialize all the static objects for world
-Messenger World::messenger;
-Drawer World::drawer;
-Map3D<std::shared_ptr<BSPNode>> World::BSPmap;
-char World::mainId;
-TSafeQueue<std::shared_ptr<BSPNode>> World::buildQueue;
-TSafeQueue<std::shared_ptr<BSPNode>> World::chunkDeleteQueue;
-int World::horzRenderDistance,World::vertRenderDistance,World::renderBuffer;
-int World::drawnChunks;
-int World::numbOfBuildThreads;
-std::string World::worldName;
+
 
 
 void World::initWorld(int NumbBuildThreads,int width,int height)

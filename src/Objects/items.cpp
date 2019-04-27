@@ -149,10 +149,11 @@ bool ItemDatabase::loadBlockDictionary(const char* filePath)
     return false;
   }
 
+
+
   string line;
   while(getline(file,line))
   {
-
     int brace = line.find('{');
     if(brace != std::string::npos)
     {
@@ -168,6 +169,9 @@ bool ItemDatabase::loadBlockDictionary(const char* filePath)
       blockDictionary[newBlock.id] = newBlock;
     }
   }
+
+  return true;
+
 }
 
 bool ItemDatabase::loadItemDictionary(const char* filePath)
@@ -202,4 +206,6 @@ bool ItemDatabase::loadItemDictionary(const char* filePath)
       itemDictionary[newItem->id] = newItem;
     }
   }
+
+  return true;
 }

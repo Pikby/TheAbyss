@@ -1,5 +1,6 @@
+#ifndef WORLDHEADER
+#define WOLRDHEADER
 
-#pragma once
 typedef unsigned char uchar;
 typedef unsigned int uint;
 #define CHUNKSIZE 32
@@ -49,8 +50,6 @@ public:
     return blockExists(glm::ivec3(floor(pos)));
   }
 
-
-
   static int anyExists(const glm::vec3 &pos);
   static bool entityExists(const glm::vec3 &pos);
 
@@ -71,9 +70,6 @@ public:
   static void movePlayer(const glm::vec3 &pos, uchar id);
 
   static std::list<Light> findAllLights(const glm::vec3 &playerPos,int count);
-
-
-
   static void delBlock(const glm::ivec3 &pos);
   static void delChunk(const glm::ivec3 &pos);
   static void deleteChunksFromQueue();
@@ -82,5 +78,19 @@ public:
   static void updateBlock(const glm::ivec3 &pos);
   static void delScan(float mainx, float mainy, float mainz);
   static void generateChunkFromString(const glm::ivec3 &pos,const char* val);
-
 };
+#ifdef WORLDIMPLEMENTATION
+Messenger World::messenger;
+Drawer World::drawer;
+Map3D<std::shared_ptr<BSPNode>> World::BSPmap;
+char World::mainId;
+TSafeQueue<std::shared_ptr<BSPNode>> World::buildQueue;
+TSafeQueue<std::shared_ptr<BSPNode>> World::chunkDeleteQueue;
+int World::horzRenderDistance,World::vertRenderDistance,World::renderBuffer;
+int World::drawnChunks;
+int World::numbOfBuildThreads;
+std::string World::worldName;
+#endif
+
+
+#endif

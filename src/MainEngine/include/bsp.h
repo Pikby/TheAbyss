@@ -1,4 +1,8 @@
-#pragma once
+#ifndef BSPHEADER
+#define BSPHEADER
+
+
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <list>
 #include <memory>
@@ -12,11 +16,12 @@
 #include "../../headers/shaders.h"
 #include "../../headers/3darray.h"
 #include "../../Objects/include/items.h"
-typedef unsigned char uchar;
+typedef unsigned char uint8_t;
 #define CHUNKSIZE 32
 //Class which holds the data for each individual chunk
 class BSPNode;
 enum AmbientOcclusion {NOAO = 0, SINGLE = 1, CONNECTED = 2, FULLCOVER = 3};
+enum TextureSides {BOTTOMTS  = 0,TOPTS = 1 << 6, RIGHTTS = 1 << 7, LEFTTS = 0};
 
 struct BlockFace
 {
@@ -40,6 +45,26 @@ struct BlockFace
   BlockFace(){faceData = 0;}
 };
 
+struct FaceData
+{
+  uint8_t blockId;
+  RenderType renderType;
+  glm::ivec3 pos;
+  glm::ivec2 textCount;
+  Faces face;
+};
+
+struct VertexData
+{
+  uint8_t blockId;
+  RenderType renderType;
+  glm::ivec3 pos;
+  Faces face;
+  AmbientOcclusion ao;
+  TextureSides tb,rl;
+};
+
+
 struct Light
 {
   glm::vec3 pos;
@@ -51,20 +76,12 @@ class BSP
 {
   private:
     std::map<int,Light> lightList;
-
     glm::mat4 modelMat;
     static std::string worldName;
-    Array3D<uchar, CHUNKSIZE> worldArray;
+    Array3D<uint8_t, CHUNKSIZE> worldArray;
     BSPNode* parent;
-    //Variables for use when adding new vertices to the stack
-    uchar curBlockid;
-    char xdist;
-    char ydist;
-    glm::ivec3 curLocalPos;
 
 
-
-    enum TextureSides {BOTTOM  = 0,TOP = 1 << 6, RIGHT = 1 << 7, LEFT = 0};
     //The temporary vectors to hold the vertex data until its passed onto the GPU
     std::vector<float> oVertices,tVertices;
     std::vector<uint> oIndices,tIndices;
@@ -72,30 +89,27 @@ class BSP
     int oIndicesSize,tIndicesSize;
     uint oVBO, oEBO, oVAO, tVBO, tEBO, tVAO;
 
-
-
-
     AmbientOcclusion getAO(const glm::ivec3 &pos, Faces face, TextureSides top, TextureSides right);
-    int addVertex(RenderType renderType, const glm::ivec3 &pos,Faces face, TextureSides texX, TextureSides texY, char* AOvalue);
+    int addVertex(const VertexData& vertex);
     void addIndices(RenderType renderType,int index1, int index2, int index3, int index4);
     void setupBufferObjects(RenderType type);
 
 
   public:
+    BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent);
+    static bool geometryChanged;
+
     void addToLightList(const glm::ivec3 &localPos,const Light& light);
     bool lightExists(const glm::ivec3 &localPos);
     void removeFromLightList(const glm::ivec3 &localPos);
     std::list<Light> getFromLightList(int count);
-    static bool geometryChanged;
+
     RenderType blockVisibleType(const glm::ivec3 &pos);
-
-
-    BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent);
     void render();
     void freeGL();
     void addBlock(const glm::ivec3 &pos,char id);
     bool blockExists(const glm::ivec3 &pos);
-    uchar getBlock(const glm::ivec3 &pos);
+    uint8_t getBlock(const glm::ivec3 &pos);
     void delBlock(const glm::ivec3 &pos);
 
     void build();
@@ -135,11 +149,11 @@ class BSPNode
     void del();
     void disconnect();
     glm::ivec3 getRealWorldPosition();
-    uchar getBlock(const glm::ivec3 &pos);
+    uint8_t getBlock(const glm::ivec3 &pos);
 
     std::shared_ptr<BSPNode> getNeighbour(Faces face);
     void setNeighbour(Faces face, std::shared_ptr<BSPNode> neighbour);
 
 
-
 };
+#endif

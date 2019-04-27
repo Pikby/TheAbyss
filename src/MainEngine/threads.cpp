@@ -1,5 +1,4 @@
 //OpenGL libraries
-#include <CEGUI/CEGUI.h>
 #define GLEW_STATIC
 #define PI 3.14159265
 
@@ -127,7 +126,7 @@ void draw()
     float findend = glfwGetTime();
 
     float directstart = glfwGetTime();
-    if(shadowsOn) World::drawer.renderDirectionalShadows();
+    //if(shadowsOn) World::drawer.renderDirectionalShadows();
     float directend = glfwGetTime();
 
     ImGui::GetIO().WantCaptureMouse = true;
