@@ -144,7 +144,7 @@ void BSPNode::delBlock(const glm::ivec3 &pos)
   curBSP.delBlock(pos);
 }
 
-void BSPNode::addBlock(const glm::ivec3 &pos, char id)
+void BSPNode::addBlock(const glm::ivec3 &pos, uint8_t id)
 {
   std::lock_guard<std::recursive_mutex> lock(BSPMutex);
   curBSP.addBlock(pos,id);
@@ -276,32 +276,6 @@ void BSP::freeGL()
 
 }
 
-void BSP::addIndices(RenderType renderType,int index1, int index2, int index3, int index4)
-{
-  std::vector<uint>* curBuffer;
-  if(renderType == OPAQUE)
-  {
-    curBuffer = &oIndices;
-  }
-  else if(renderType == TRANSLUCENT)
-  {
-    curBuffer = &tIndices;
-  }
-  else
-  {
-    std::cout << "Indices error\n";
-    return;
-  }
-  //Add the First triangle of the square
-  curBuffer->push_back(index1);
-  curBuffer->push_back(index2);
-  curBuffer->push_back(index3);
-
-  //Add the second triangle of the square
-  curBuffer->push_back(index4);
-  curBuffer->push_back(index1);
-  curBuffer->push_back(index3);
-}
 
 
 bool BSP::blockExists(const glm::ivec3 &pos)

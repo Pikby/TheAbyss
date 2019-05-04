@@ -25,11 +25,12 @@ uniform int textureAtlasHeightInCells;
 void main()
 {
 
-  int xPos = floatBitsToInt(positionPackage) & 0x3f;
-  int yPos = (floatBitsToInt(positionPackage) >> 6) & 0x3f;
-  int zPos = (floatBitsToInt(positionPackage) >> 12)& 0x3f;
+  int xPos = floatBitsToInt(positionPackage) & 0x3FF;
+  int yPos = (floatBitsToInt(positionPackage) >> 10) & 0x3FF;
+  int zPos = (floatBitsToInt(positionPackage) >> 20) & 0x3FF;
 
   vec3 position = vec3(xPos,yPos,zPos);
+  position = floor(position/16.0f);
   int package = floatBitsToInt(packagef);
   int norm = ((package >> 24) & 0xF);
   int ao = ((package >> 24) & 0x30);

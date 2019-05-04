@@ -8,7 +8,6 @@ enum RenderType{OPAQUE = 0, TRANSLUCENT = 1, TRANSPARENT = 2};
 #include <iostream>
 #include <algorithm>
 #include <map>
-typedef unsigned char uchar;
 
 class Block;
 
@@ -73,7 +72,7 @@ public:
 
   std::string name;
   int id;
-  uchar texArray[6];
+  uint8_t texArray[6];
   RenderType visibleType;
   bool isLightSource;
   glm::vec3 lightColor;
@@ -102,7 +101,7 @@ public:
     std::cout << "\n";
   }
 
-  uchar getFace(Faces face)
+  uint8_t getFace(Faces face)
   {
     switch(face)
     {
@@ -112,35 +111,36 @@ public:
       case(TOPF): return getTop(); break;
       case(LEFTF): return getLeft(); break;
       case(RIGHTF): return getRight(); break;
+      default : return false; break;
     }
   }
 
-  uchar getTop()
+  uint8_t getTop()
   {
     return texArray[0];
   };
 
-  uchar getBottom()
+  uint8_t getBottom()
   {
     return texArray[1];
   };
 
-  uchar getLeft()
+  uint8_t getLeft()
   {
     return texArray[2];
   };
 
-  uchar getRight()
+  uint8_t getRight()
   {
     return texArray[3];
   };
 
-  uchar getFront()
+  uint8_t getFront()
   {
     return texArray[4];
   };
 
-  uchar getBack()
+  uint8_t getBack()
   {
     return texArray[5];
   };

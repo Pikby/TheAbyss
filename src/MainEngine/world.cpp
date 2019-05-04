@@ -562,7 +562,7 @@ bool World::blockExists(const glm::ivec3 &pos)
   return false;
 }
 
-void World::addBlock(const glm::ivec3 &pos,uchar id)
+void World::addBlock(const glm::ivec3 &pos,uint8_t id)
 {
   glm::ivec3 local = toLocalCoords(pos);
   glm::ivec3 chunk = toChunkCoords(pos);

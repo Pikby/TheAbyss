@@ -89,6 +89,15 @@ class Shader
       if(shader2 != "") compileShader(shader2);
       if(shader3 != "") compileShader(shader3);
       glLinkProgram(id);
+
+      int success;
+     char infoLog[512];
+     glGetProgramiv(id, GL_LINK_STATUS, &success);
+          if(!success)
+          {
+              glGetProgramInfoLog(id, 1024, NULL, infoLog);
+              std::cout << "ERROR::PROGRAM_LINKING_ERROR"<< "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            }
     }
 
     void use()

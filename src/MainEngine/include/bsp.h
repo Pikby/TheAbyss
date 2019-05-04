@@ -58,7 +58,7 @@ struct VertexData
 {
   uint8_t blockId;
   RenderType renderType;
-  glm::ivec3 pos;
+  glm::vec3 pos;
   Faces face;
   AmbientOcclusion ao;
   TextureSides tb,rl;
@@ -145,7 +145,7 @@ class BSPNode
     void drawTranslucent(Shader* shader, const glm::vec3 &pos);
     std::string getCompressedChunk();
     void delBlock(const glm::ivec3 &pos);
-    void addBlock(const glm::ivec3 &pos, char id);
+    void addBlock(const glm::ivec3 &pos, uint8_t id);
     void del();
     void disconnect();
     glm::ivec3 getRealWorldPosition();

@@ -89,7 +89,7 @@ public:
   //0-3 is near 4-7 is far
   glm::vec3 viewFrustrum[8];
   std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> chunksToDraw;
-  std::map<uchar, std::shared_ptr<Player>> playerList;
+  std::map<uint8_t, std::shared_ptr<Player>> playerList;
   glm::vec3 viewMin;
   glm::vec3 viewMax;
   float directionalShadowResolution;

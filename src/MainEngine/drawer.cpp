@@ -84,7 +84,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader.setFloat("fog_dist",CHUNKSIZE);
   blockShader.setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
   blockShader.setBool("shadowsOn",true);
-  gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.vs");
+  gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.vs","../src/Shaders/BSPShaders/gBuffer.gs");
 
   int cellWidth = 128;
   gBufferShader.use();

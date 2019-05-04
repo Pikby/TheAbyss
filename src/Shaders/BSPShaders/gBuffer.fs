@@ -5,7 +5,7 @@ layout (location = 1) out vec3 gNormal;
 layout (location = 2) out vec4 gColorSpec;
 
 
-in VS_OUT
+in GS_OUT
 {
   vec2 TexCoord;
   vec2 TexCells;
@@ -13,7 +13,7 @@ in VS_OUT
   vec3 FinNormal;
   vec3 FragPos;
   float AO;
-} vs_out;
+} gs_out;
 
 uniform sampler2D curTexture;
 uniform vec3 objectColor;
@@ -29,8 +29,8 @@ uniform int textureAtlasHeightInCells;
 vec4 getTexture()
 {
   vec2 temp;
-  temp.x = mod(vs_out.TexCoord.x*vs_out.TexCells.x,1.0f/textureAtlasWidthInCells)+vs_out.TexOrigin.x;
-  temp.y = mod(vs_out.TexCoord.y*vs_out.TexCells.y,1.0f/textureAtlasHeightInCells)+vs_out.TexOrigin.y;
+  temp.x = mod(gs_out.TexCoord.x*gs_out.TexCells.x,1.0f/textureAtlasWidthInCells)+gs_out.TexOrigin.x;
+  temp.y = mod(gs_out.TexCoord.y*gs_out.TexCells.y,1.0f/textureAtlasHeightInCells)+gs_out.TexOrigin.y;
   return texture(curTexture,temp).rgba;
 }
 
@@ -42,8 +42,8 @@ void main()
 
 
 
-  gPosition = vs_out.FragPos;
-  gNormal = vs_out.FinNormal;
-  gColorSpec = vec4(finColor,vs_out.AO);
+  gPosition = gs_out.FragPos;
+  gNormal = gs_out.FinNormal;
+  gColorSpec = vec4(finColor,gs_out.AO);
 
 }
