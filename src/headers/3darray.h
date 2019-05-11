@@ -9,10 +9,20 @@ class Array3D
     {
       memset(array,0,sizeof(array));
     }
+    T &get(const int x,const int y,const int z)
+    {
+        return get(glm::ivec3(x,y,z));
+    }
+
     T &get(const glm::ivec3 &pos)
     {
       //if(x >= N || y >= N || z >= N) std::cout << "OUTOF ARRAY RANGE" << x << ":" << y << ":" << z << "\n";
       return array[pos.x*N*N+pos.z*N+pos.y];
+    }
+
+    void set(const int x, const int y ,const int z)
+    {
+        return set(glm::ivec3(x,y,z));
     }
     void set(const glm::ivec3 &pos, T value)
     {

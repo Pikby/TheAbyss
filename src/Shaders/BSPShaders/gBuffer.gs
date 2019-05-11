@@ -5,9 +5,11 @@ layout (triangle_strip, max_vertices = 3) out;
 
 out GS_OUT
 {
+  vec3 TexWeights;
+  vec3 TriPos;
   vec2 TexCoord;
   vec2 TexCells;
-  vec2 TexOrigin;
+  vec2 TexOrigins[3];
   vec3 FinNormal;
   vec3 FragPos;
   float AO;
@@ -16,9 +18,11 @@ gs_out;
 
 in VS_OUT
 {
+
+  vec3 TriPos;
   vec2 TexCoord;
   vec2 TexCells;
-  vec2 TexOrigin;
+  vec2 TexOrigins[3];
   vec3 FinNormal;
   vec3 FragPos;
   float AO;
@@ -27,9 +31,13 @@ in VS_OUT
 
 void passData(int index)
 {
+  gs_out.TriPos = vs_out[index].TriPos;
   gs_out.TexCoord = vs_out[index].TexCoord;
   gs_out.TexCells = vs_out[index].TexCells;
-  gs_out.TexOrigin = vs_out[index].TexOrigin;
+  for(int i=0;i<3;i++)
+  {
+    gs_out.TexOrigins[i] = vs_out[index].TexOrigins[i];
+  }
   //gs_out.FinNormal = vs_out[index].FinNormal;
   gs_out.FragPos = vs_out[index].FragPos;
   gs_out.AO = vs_out[index].AO;
@@ -46,14 +54,17 @@ void main()
 
   gl_Position = gl_in[0].gl_Position;
   passData(0);
+  gs_out.TexWeights = vec3(0,0,1);
   EmitVertex();
 
   gl_Position = gl_in[1].gl_Position;
   passData(1);
+  gs_out.TexWeights = vec3(0,1,0);
   EmitVertex();
 
   gl_Position = gl_in[2].gl_Position;
   passData(2);
+  gs_out.TexWeights = vec3(1,0,0);
   EmitVertex();
   EndPrimitive();
 }

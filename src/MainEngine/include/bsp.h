@@ -56,7 +56,7 @@ struct FaceData
 
 struct VertexData
 {
-  uint8_t blockId;
+  uint8_t ids[3];
   RenderType renderType;
   glm::vec3 pos;
   Faces face;
@@ -138,6 +138,8 @@ class BSPNode
     bool blockExists(const glm::ivec3 &pos);
     RenderType blockVisibleTypeOOB(const glm::ivec3 &pos);
     RenderType blockVisibleType(const glm::ivec3 &pos);
+    uint8_t getBlockOOB(const glm::ivec3 &pos);
+
 
     std::list<Light> getFromLightList(int count);
     void build();

@@ -87,7 +87,7 @@ void draw()
   bool show_demo_window = true;
   bool show_another_window = false;
   //World::addLight(glm::vec3(10,50,10));
-  glm::vec3 terrainColor = glm::vec3(0.5f,0.5f,0.5f);
+  glm::vec3 terrainColor = glm::vec3(1.0f);
   float sunX=0.01,sunZ=0.01;
   bool shadowsOn = true;
   while(!glfwWindowShouldClose(window))

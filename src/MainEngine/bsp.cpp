@@ -132,6 +132,40 @@ RenderType BSPNode::blockVisibleTypeOOB(const glm::ivec3 &pos)
   else return blockVisibleType(pos);
 }
 
+uint8_t BSPNode::getBlockOOB(const glm::ivec3 &pos)
+{
+  //std::lock_guard<std::mutex> lock(BSPMutex);
+  auto check = [&](std::shared_ptr<BSPNode> chunk,const glm::ivec3 &norm)
+  {
+    return chunk != NULL ? chunk->getBlockOOB(pos+CHUNKSIZE*norm) : 0;
+  };
+  if(pos.x >= CHUNKSIZE)
+  {
+    return check(rightChunk,glm::ivec3(-1,0,0));
+  }
+  else if(pos.x < 0)
+  {
+    return check(leftChunk,glm::ivec3(1,0,0));
+  }
+  else if(pos.y >= CHUNKSIZE)
+  {
+    return check(topChunk,glm::ivec3(0,-1,0));
+  }
+  else if(pos.y < 0)
+  {
+    return check(bottomChunk,glm::ivec3(0,1,0));
+  }
+  else if(pos.z >= CHUNKSIZE)
+  {
+    return check(backChunk,glm::ivec3(0,0,-1));
+  }
+  else if(pos.z < 0)
+  {
+    return check(frontChunk,glm::ivec3(0,0,1));
+  }
+  else return getBlock(pos);
+}
+
 bool BSPNode::blockExists(const glm::ivec3 &pos)
 {
   std::lock_guard<std::recursive_mutex> lock(BSPMutex);
@@ -379,12 +413,17 @@ void BSP::setupBufferObjects(RenderType type)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,*EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, curInd->size()*sizeof(uint),&curInd->front(), GL_DYNAMIC_DRAW);
 
-    int vertexSize = 2*sizeof(float);
-    glVertexAttribPointer(0,1,GL_FLOAT, GL_FALSE,vertexSize, (void*)0);
+    int vertexSize = 5*sizeof(float);
+    glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE,vertexSize, (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(sizeof(float)));
+    glVertexAttribPointer(1,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(4*sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

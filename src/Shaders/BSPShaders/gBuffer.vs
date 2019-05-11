@@ -1,12 +1,20 @@
 #version 330 core
-layout (location = 0) in float positionPackage;
-layout (location = 1) in float packagef;
+layout (location = 0) in vec3 position;
+layout (location = 1) in float texIds;
+layout (location = 2) in float packagef;
+
+
+
+
+
+
 
 out VS_OUT
 {
+  vec3 TriPos;
   vec2 TexCoord;
   vec2 TexCells;
-  vec2 TexOrigin;
+  vec2 TexOrigins[3];
   vec3 FinNormal;
   vec3 FragPos;
   float AO;
@@ -25,12 +33,15 @@ uniform int textureAtlasHeightInCells;
 void main()
 {
 
-  int xPos = floatBitsToInt(positionPackage) & 0x3FF;
-  int yPos = (floatBitsToInt(positionPackage) >> 10) & 0x3FF;
-  int zPos = (floatBitsToInt(positionPackage) >> 20) & 0x3FF;
+  int textures[3];
 
-  vec3 position = vec3(xPos,yPos,zPos);
-  position = floor(position/16.0f);
+  int iTexIds = floatBitsToInt(texIds);
+  textures[0] = iTexIds & 0xff;
+  textures[1] = (iTexIds >> 8) & 0xff;
+  textures[2] = (iTexIds >> 16) & 0xff;
+
+
+
   int package = floatBitsToInt(packagef);
   int norm = ((package >> 24) & 0xF);
   int ao = ((package >> 24) & 0x30);
@@ -75,19 +86,26 @@ void main()
   normVec = normBits -modNorm*normBits*2.0f;
 
 
-  vec2 origin;
-  origin.x = (texId % textureAtlasWidthInCells)*cellWidth;
-  origin.y = (texId/textureAtlasHeightInCells)*cellHeight;
 
-  vs_out.TexOrigin = origin;
+
+  for(int i=0;i<3;i++)
+  {
+    vec2 origin;
+    origin.x = (textures[i] % textureAtlasWidthInCells)*cellWidth;
+    origin.y = (textures[i]/textureAtlasHeightInCells)*cellHeight;
+
+    vs_out.TexOrigins[i] = origin;
+
+  }
   //origin = vec2(0.0f,0.0f);
   //More one liners that used to be branches, kills readibility but it works
   float texCoordx = texCoord & 0x1;
   float texCoordy = (texCoord >> 1) & 0x1;
-  vs_out.TexCoord.y = origin.y + texCoordx*cellHeight;
-  vs_out.TexCoord.x = origin.x + texCoordy*cellWidth;
+  //vs_out.TexCoord.y = origin.y + texCoordx*cellHeight;
+  //vs_out.TexCoord.x = origin.x + texCoordy*cellWidth;
 
 
+  vs_out.TriPos = position;
   vs_out.FinNormal = normVec;
   vs_out.FragPos = vec3(model*vec4(position,1.0f));
 

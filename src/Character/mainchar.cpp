@@ -198,9 +198,42 @@ void MainChar::destroyBlock()
   glm::vec4 block = World::rayCast(mainCam.position,mainCam.front,reach);
 
   if(block.w == NOTHING) return;
+
+/*
+  glm::vec3 pos = floor(block);
+  glm::vec3 norm = mainCam.position - block;
+  glm::vec3 dir;
+
+  if(norm.x >= norm.y && norm.x >= norm.z)
+  {
+    dir = norm.x > 0 ? glm::vec3(1,0,0) : glm::vec3(-1,0,0);
+  }
+  else if(norm.y >= norm.x && norm.y >= norm.z)
+  {
+    dir = norm.y > 0 ? glm::vec3(0,1,0) : glm::vec3(0,-1,0);
+  }
+  else if(norm.z >= norm.y && norm.z >= norm.x)
+  {
+    dir = norm.z > 0 ? glm::vec3(0,0,1) : glm::vec3(0,0,-1);
+  }
+*/
+
+
   std::cout << "Destroying blocks\n";
   World::messenger.createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
 
+/*
+  for(int x = -1; x<=1 ;x++)
+  {
+    for(int y = -1; y<=1 ;y++)
+    {
+      for(int z = -1; z<= 1;z++)
+      {
+        World::messenger.createDelBlockRequest(floor(block.x+x),floor(block.y+y),floor(block.z+z));
+      }
+    }
+  }
+*/
 }
 void MainChar::addBlock(int id)
 {
