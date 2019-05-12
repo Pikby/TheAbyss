@@ -34,11 +34,13 @@ void main()
 {
 
   int textures[3];
+  textures[1] = 0;
 
   int iTexIds = floatBitsToInt(texIds);
   textures[0] = iTexIds & 0xff;
-  textures[1] = (iTexIds >> 8) & 0xff;
-  textures[2] = (iTexIds >> 16) & 0xff;
+  textures[1] = ((iTexIds >> 8) & 0xff);
+  textures[2] = ((iTexIds >> 16) & 0xff);
+
 
 
 
@@ -97,12 +99,7 @@ void main()
     vs_out.TexOrigins[i] = origin;
 
   }
-  //origin = vec2(0.0f,0.0f);
-  //More one liners that used to be branches, kills readibility but it works
-  float texCoordx = texCoord & 0x1;
-  float texCoordy = (texCoord >> 1) & 0x1;
-  //vs_out.TexCoord.y = origin.y + texCoordx*cellHeight;
-  //vs_out.TexCoord.x = origin.x + texCoordy*cellWidth;
+
 
 
   vs_out.TriPos = position;

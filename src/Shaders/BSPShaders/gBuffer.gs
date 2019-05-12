@@ -46,15 +46,15 @@ void passData(int index)
 void main()
 {
 
-  vec3 p1 = vs_out[0].FragPos;
-  vec3 p2 = vs_out[1].FragPos;
-  vec3 p3 = vs_out[2].FragPos;
+  vec3 p1 = vs_out[0].TriPos;
+  vec3 p2 = vs_out[1].TriPos;
+  vec3 p3 = vs_out[2].TriPos;
   vec3 norm = normalize(cross(p1-p2,p1-p3));
   gs_out.FinNormal = norm;
 
   gl_Position = gl_in[0].gl_Position;
   passData(0);
-  gs_out.TexWeights = vec3(0,0,1);
+  gs_out.TexWeights = vec3(1,0,0);
   EmitVertex();
 
   gl_Position = gl_in[1].gl_Position;
@@ -64,7 +64,7 @@ void main()
 
   gl_Position = gl_in[2].gl_Position;
   passData(2);
-  gs_out.TexWeights = vec3(1,0,0);
+  gs_out.TexWeights = vec3(0,0,1);
   EmitVertex();
   EndPrimitive();
 }

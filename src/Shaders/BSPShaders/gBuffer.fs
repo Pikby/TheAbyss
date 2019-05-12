@@ -68,7 +68,7 @@ void main()
                 + gs_out.TexWeights.z*getTextureAlbedo(2));
 
 
-
+  //finColor = getTextureAlbedo(1);
   gPosition = gs_out.FragPos;
   gNormal = gs_out.FinNormal;
   gColorSpec = vec4(finColor,gs_out.AO);
