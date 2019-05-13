@@ -288,6 +288,7 @@ void Drawer::renderGBuffer()
     shader->setMat4("view", viewMat);
 
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    //glDisable(GL_CULL_FACE);
     drawTerrainOpaque(shader,chunksToDraw);
     //skyBox.draw(&viewMat);
     drawObjects();
