@@ -9,113 +9,57 @@
 #include "../MainEngine/include/world.h"
 #include "../headers/shaders.h"
 #include "../Settings/settings.h"
+
+#define MAINCHARIMPLEMENTATION
 #include "include/mainchar.h"
 #include "../MainEngine/imgui/imgui.h"
 #define PI 3.14159265
-std::string MainChar::userName;
-Menu MainChar::curMenu;
-GUIRenderer MainChar::gui;
-int MainChar::screenWidth, MainChar::screenHeight;
-std::deque<std::string> MainChar::chatLog;
-float MainChar::gravity, MainChar::moveSpeed,MainChar::deltax,MainChar::deltay,MainChar::deltaz;
-int MainChar::reach;
-bool MainChar::shiftHeld, MainChar::grounded,MainChar::controlHeld,MainChar::inInventory;
-Camera MainChar::mainCam;
-std::atomic<float> MainChar::xpos,MainChar::ypos,MainChar::zpos;
-char MainChar::heldItem;
+
 
 template <typename T> int sign(T val)
 {
   return (T(0) < val) - (val < T(0));
 }
 
-float max(float a, float b, float c)
-{
-  float m = a;
-  if(m<b) m = b;
-  if(m<c) m = c;
-  return m;
-
-}
 
 void MainChar::initMainChar(float x, float y, float z)
 {
-  heldItem = 1;
-  shiftHeld = false;
-  curMenu = WORLDMENU;
+
   xpos = x;
   ypos = y;
   zpos = z;
-  deltax = 0;
-  deltay = 0;
-  deltaz = 0;
-  reach = 200;
-  moveSpeed = 0.2f;
   mainCam = Camera(glm::vec3((float)xpos,(float)ypos,(float)zpos));
   screenWidth = World::drawer.screenWidth;
   screenHeight = World::drawer.screenHeight;
   userName = Settings::get("userName");
-  gui = GUIRenderer(screenWidth,screenHeight,userName);
 
 
 }
 void MainChar::handleKeyHold(int key)
 {
-  switch(curMenu)
-  {
-    case CHATMENU: break;
-    default:
+
       switch(key)
       {
         case GLFW_KEY_W:			moveForward(); 					break;
-        case GLFW_KEY_Q:		  moveDown();							break;
+        case GLFW_KEY_LEFT_SHIFT:		  moveDown();							break;
         case GLFW_KEY_A:			moveLeft();							break;
         case GLFW_KEY_D:			moveRight();						break;
         case GLFW_KEY_S:			moveBackward();					break;
         case GLFW_KEY_SPACE:	moveUp();								break;
       }
-      break;
-  }
+
+
 }
 
 void MainChar::handleKeyRelease(int key)
 {
-  switch(key)
-  {
-    case GLFW_KEY_LEFT_SHIFT : shiftHeld = false; break;
-    case GLFW_KEY_LEFT_CONTROL : controlHeld = false; break;
-  }
+  keyMap.erase(key);
 }
 
 void MainChar::handleKeyPress(int key)
 {
-  //guiRenderer.handleKeyPress(int key);
-  //Universal keys
-  switch(key)
-  {
-    case GLFW_KEY_LEFT_SHIFT:   shiftHeld = true; return; break;
-    case GLFW_KEY_LEFT_CONTROL: controlHeld = true; return; break;
-  }
+	keyMap[key] = GLFW_PRESS;
 
-  switch(curMenu)
-  {
-    case CHATMENU:
-      switch(key)
-      {
-        case GLFW_KEY_ESCAPE: closeChat(); break;
-        case GLFW_KEY_ENTER: sendMessage(); break;
-      }
-      break;
-    default:
-      switch(key)
-      {
-        case GLFW_KEY_N: std::cout << xpos << ":" << ypos << ":" << zpos << "\n"; break;
-        case GLFW_KEY_E: switchInventoryMode(); break;
-        case GLFW_KEY_T: openChat(); break;
-      }
-      break;
-
-  }
 }
 
 void MainChar::addCharacterToChat(int key)
@@ -125,6 +69,11 @@ void MainChar::addCharacterToChat(int key)
 
 void MainChar::update()
 {
+  for(auto it = keyMap.begin();it!= keyMap.end();++it)
+  {
+    handleKeyHold(it->first);
+  }
+
   if(!World::blockExists(glm::ivec3(floor(xpos+deltax),floor(ypos),floor(zpos))))
   {
     xpos = xpos + deltax;
@@ -264,19 +213,10 @@ void MainChar::addBlock(int id)
 
 void MainChar::processMouseMovement(float xoffset, float yoffset)
 {
-  switch(curMenu)
-  {
-    case WORLDMENU: mainCam.processMouseMovement(xoffset,yoffset,true); break;
-    case INVENTORYMENU:
-    {
-
-    }
-  }
-
+  mainCam.processMouseMovement(xoffset,yoffset,true);
 }
 void MainChar::handleMouseClick(int key)
 {
-  if(curMenu!= WORLDMENU) return;
   switch(key)
   {
     case GLFW_MOUSE_BUTTON_LEFT: destroyBlock() ; break;
@@ -288,30 +228,20 @@ void MainChar::handleMouseClick(int key)
 
 void MainChar::switchInventoryMode()
 {
-  if(curMenu == INVENTORYMENU)
-  {
-    gui.closeInventoryGUI();
-    curMenu = WORLDMENU;
-  }
-  else
-  {
-    gui.openInventoryGUI();
-    curMenu = INVENTORYMENU;
-  }
+
 }
 
 void MainChar::openChat()
 {
-  curMenu = CHATMENU;
+
 }
 
 void MainChar::closeChat()
 {
-  curMenu = WORLDMENU;
+
 }
 
 void MainChar::sendMessage()
 {
-  curMenu = WORLDMENU;
 
 }

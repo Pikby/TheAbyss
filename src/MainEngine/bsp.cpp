@@ -2,6 +2,15 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <memory>
+#include <atomic>
+#include <list>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/transform.hpp>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -18,20 +27,9 @@ BSPNode::~BSPNode()
   totalChunks--;
 }
 
-BSPNode::BSPNode(const glm::ivec3 &pos,const char *val) : curBSP(val,pos,this)
+BSPNode::BSPNode(const glm::ivec3 &pos,const char *val) : curBSP(val,pos,this),chunkPos(pos)
 {
-  chunkPos = pos;
   totalChunks++;
-  toRender = false;
-  toBuild = false;
-  toDelete = false;
-
-  leftChunk = NULL;
-  rightChunk = NULL;
-  frontChunk = NULL;
-  backChunk = NULL;
-  topChunk = NULL;
-  bottomChunk = NULL;
 }
 
 void BSPNode::build()
@@ -94,42 +92,6 @@ void BSPNode::disconnect()
   bottomChunk = NULL;
   BSPMutex.unlock();
 
-}
-
-#define DEFAULTBLOCKMODE TRANSLUCENT;
-//If looking for a block outside of a chunks local coordinates use this;
-RenderType BSPNode::blockVisibleTypeOOB(const glm::ivec3 &pos)
-{
-  //std::lock_guard<std::mutex> lock(BSPMutex);
-  auto check = [&](std::shared_ptr<BSPNode> chunk,const glm::ivec3 &norm)
-  {
-    return chunk != NULL ? chunk->blockVisibleTypeOOB(pos+CHUNKSIZE*norm) : DEFAULTBLOCKMODE;
-  };
-  if(pos.x >= CHUNKSIZE)
-  {
-    return check(rightChunk,glm::ivec3(-1,0,0));
-  }
-  else if(pos.x < 0)
-  {
-    return check(leftChunk,glm::ivec3(1,0,0));
-  }
-  else if(pos.y >= CHUNKSIZE)
-  {
-    return check(topChunk,glm::ivec3(0,-1,0));
-  }
-  else if(pos.y < 0)
-  {
-    return check(bottomChunk,glm::ivec3(0,1,0));
-  }
-  else if(pos.z >= CHUNKSIZE)
-  {
-    return check(backChunk,glm::ivec3(0,0,-1));
-  }
-  else if(pos.z < 0)
-  {
-    return check(frontChunk,glm::ivec3(0,0,1));
-  }
-  else return blockVisibleType(pos);
 }
 
 uint8_t BSPNode::getBlockOOB(const glm::ivec3 &pos)
@@ -238,29 +200,18 @@ void BSPNode::setNeighbour(Faces face, std::shared_ptr<BSPNode> neighbour)
   }
 }
 
-//Get real world position
+
 glm::ivec3 BSPNode::getRealWorldPosition()
 {
   return (CHUNKSIZE*chunkPos) + glm::ivec3(CHUNKSIZE/2);
 }
 
-BSP::BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent)
+BSP::BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent) : parent(Parent)
 {
   //blockOrigin = chunkLocalPos + CHUNKSIZE*(parent->chunkPos);
   modelMat = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*pos));
-  oIndicesSize = 0;
-  tIndicesSize = 0;
-  parent = Parent;
 
   using namespace std;
-
-  oVBO = 0;
-  oEBO = 0;
-  oVAO = 0;
-  tVBO = 0;
-  tEBO = 0;
-  tVAO = 0;
-
   const int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
   int i = 0;
   char curId = 0;
@@ -281,7 +232,7 @@ BSP::BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent)
     {
       if(i+j>numbOfBlocks)
       {
-        std::cout << "ERROR CORRUPTED CHUNK AT " << glm::to_string(parent->chunkPos) <<"\n";
+        std::cout << "ERROR CORRUPTED CHUNK AT " << glm::to_string(parent->getPosition()) <<"\n";
         delete[] data;
         return;
       }
@@ -443,7 +394,7 @@ void BSP::drawOpaque(Shader* shader, const glm::vec3 &pos)
 {
   if(oIndicesSize != 0)
   {
-    glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->chunkPos)-pos);
+    glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-pos);
     //std::cout << glm::to_string(glm::vec3(parent->chunkPos) - pos) << "\n";
     shader->setMat4("model",model);
     glBindVertexArray(oVAO);
@@ -457,7 +408,7 @@ void BSP::drawTranslucent(Shader* shader,const glm::vec3 &pos)
 {
   if(tIndicesSize)
   {
-    glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->chunkPos)-pos);
+    glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-pos);
     shader->setMat4("model",model);
     glBindVertexArray(tVAO);
     glDrawElements(GL_TRIANGLES, tIndicesSize, GL_UNSIGNED_INT,0);

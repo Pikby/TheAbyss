@@ -11,10 +11,11 @@
 #include <GLFW/glfw3.h>
 #include <thread>
 #include <iostream>
-#include "include/threads.h"
-#include "../InputHandling/include/inputhandling.h"
-#include "../Settings/settings.h"
 
+#include "include/threads.h"
+
+#include "../Settings/settings.h"
+#include "../Character/include/gui.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
@@ -64,13 +65,25 @@ int main()
   const int numbBuildThreads = 2;
   int winWidth = std::stoi(Settings::get("windowWidth"));
   int winHeight = std::stoi(Settings::get("windowHeight"));
-  GLFWwindow* newWindow = createWindow(winWidth,winHeight);
-  glfwMakeContextCurrent(newWindow);
-  glfwSetKeyCallback(newWindow, key_callback);
-  glfwSetCursorPosCallback(newWindow, mouse_callback);
-  glfwSetScrollCallback(newWindow, scroll_callback);
-  glfwSetMouseButtonCallback(newWindow, mousekey_callback);
-  glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+  const GLFWvidmode * mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+  winWidth = mode->width;
+  winHeight = mode->height;
+
+  glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+  glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+  glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+  glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+  GLFWwindow* window = createWindow(winWidth,winHeight);
+  glfwMakeContextCurrent(window);
+  glfwSetKeyCallback(window, GUI::GLFWKeyCallBack);
+  glfwSetCharCallback(window, GUI::GLFWCharCallBack);
+  glfwSetCursorPosCallback(window, GUI::GLFWCursorCallback);
+  glfwSetMouseButtonCallback(window, GUI::GLFWMouseButtonCallback);
+  glfwSetScrollCallback(window, GUI::GLFWScrollCallback);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   //glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
@@ -81,7 +94,7 @@ int main()
   ImGuiIO& io = ImGui::GetIO(); (void)io;
   io.WantCaptureMouse = true;
   ImGui::StyleColorsDark();
-  ImGui_ImplGlfw_InitForOpenGL(newWindow, true);
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init("#version 330");
 
 
@@ -114,6 +127,8 @@ int main()
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
 
+  Shader::setShaderDirectory("../src/Shaders/");
+  GUI::initGUI(glm::vec2(winWidth,winHeight));
 
   try
   {

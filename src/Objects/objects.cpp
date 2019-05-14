@@ -188,7 +188,7 @@ void Player::draw(Shader* shader,const glm::vec3 &viewPos)
 
 SkyBox::SkyBox(const std::string &filePath)
 {
-  skyboxShader = Shader("../src/Shaders/skyShader.vs","../src/Shaders/skyShader.fs");
+  skyboxShader = Shader("skyShader.vs","skyShader.fs");
   std::vector<std::string> faces
   {
     filePath + "_ft.tga",

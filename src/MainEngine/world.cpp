@@ -250,7 +250,7 @@ void World::addToBuildQueue(std::shared_ptr<BSPNode> curNode)
 
 void World::addToBuildQueueFront(std::shared_ptr<BSPNode> curNode)
 {
-  std::lock_guard<std::recursive_mutex> lock(curNode->BSPMutex);
+  //std::lock_guard<std::recursive_mutex> lock(curNode->BSPMutex);
     if(curNode->toBuild == true) return;
     curNode->toBuild = true;
     buildQueue.push_front(curNode);
@@ -443,7 +443,7 @@ void World::delScan(float mainx, float mainy, float mainz)
     y/= CHUNKSIZE;
     z/= CHUNKSIZE;
 
-    glm::ivec3 chunk = (*itr)->chunkPos;
+    glm::ivec3 chunk = (*itr)->getPosition();
 
     if(abs(chunk.x-x) > horzRenderDistance + renderBuffer
     || abs(chunk.y-y) > horzRenderDistance + renderBuffer
@@ -468,14 +468,6 @@ glm::vec4 World::rayCast(const glm::vec3 &pos,const glm::vec3 &front, int max)
   for(float i = 0; i<max;i += 1/parts)
   {
     glm::vec3 curPos = pos+i*front;
-    //std::cout << curPos.x << ":" << curPos.y << ":" << curPos.z << "\n";
-/*
-    int id = entityExists(curPos);
-    if(id != 0)
-    {
-      return glm::vec4(curPos,BLOCK);
-    }
-    */
     if(blockExists(curPos))
     {
         return glm::vec4(curPos,0);

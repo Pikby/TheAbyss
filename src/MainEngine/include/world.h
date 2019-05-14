@@ -79,6 +79,8 @@ public:
   static void delScan(float mainx, float mainy, float mainz);
   static void generateChunkFromString(const glm::ivec3 &pos,const char* val);
 };
+
+
 #ifdef WORLDIMPLEMENTATION
 Messenger World::messenger;
 Drawer World::drawer;

@@ -7,8 +7,11 @@
 //#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
+
 #include <random>
 #include <limits>
+#define GLSLSHADERSIMPLEMNTATION
+
 #include "include/drawer.h"
 #include "../TextureLoading/textureloading.h"
 #include "include/world.h"
@@ -43,6 +46,8 @@ void Drawer::createTextureAtlas(const char* texture,int cellWidth)
 void Drawer::setupShadersAndTextures(int width, int height)
 {
   MSAA = 1;
+
+
   createTextureAtlas("../assets/textures/atlas.png",128);
 
   screenWidth = width;
@@ -50,8 +55,8 @@ void Drawer::setupShadersAndTextures(int width, int height)
 
   skyBox = SkyBox("../assets/alps");
 
-  objShader = Shader("../src/Shaders/EntityShaders/entShader.vs",
-                     "../src/Shaders/EntityShaders/entShader.fs");
+  objShader = Shader("EntityShaders/entShader.vs",
+                     "EntityShaders/entShader.fs");
   objShader.use();
   objShader.setInt("curTexture",0);
   objShader.setInt("dirLight.shadow",4);
@@ -60,16 +65,16 @@ void Drawer::setupShadersAndTextures(int width, int height)
   objShader.setFloat("far_plane",25.0f);
 
 
-  depthBufferLoadingShader = Shader("../src/Shaders/depthBufferLoadingShader.vs","../src/Shaders/depthBufferLoadingShader.fs");
+  depthBufferLoadingShader = Shader("depthBufferLoadingShader.vs","depthBufferLoadingShader.fs");
   depthBufferLoadingShader.use();
 
 
-  quadShader = Shader("../src/Shaders/old/debugQuad.vs","../src/Shaders/old/debugQuad.fs");
+  quadShader = Shader("old/debugQuad.vs","old/debugQuad.fs");
   quadShader.use();
 
   //blockShader.setInt("depthMap",0);
 
-  blockShader = Shader("../src/Shaders/BSPShaders/shaderBSP.fs","../src/Shaders/BSPShaders/shaderBSP.vs");
+  blockShader = Shader("BSPShaders/shaderBSP.fs","BSPShaders/shaderBSP.vs");
   blockShader.use();
   blockShader.setInt("gPosition", 0);
   blockShader.setInt("gNormal", 1);
@@ -84,7 +89,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader.setFloat("fog_dist",CHUNKSIZE);
   blockShader.setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
   blockShader.setBool("shadowsOn",true);
-  gBufferShader = Shader("../src/Shaders/BSPShaders/gBuffer.fs","../src/Shaders/BSPShaders/gBuffer.vs","../src/Shaders/BSPShaders/gBuffer.gs");
+  gBufferShader = Shader("BSPShaders/gBuffer.fs","BSPShaders/gBuffer.vs","BSPShaders/gBuffer.gs");
 
   int cellWidth = 128;
   gBufferShader.use();
@@ -95,16 +100,16 @@ void Drawer::setupShadersAndTextures(int width, int height)
   gBufferShader.setVec3("objectColor", 0.5f, 0.5f, 0.31f);
 
 
-  PPShader = Shader("../src/Shaders/PPShaders/PPShader.fs","../src/Shaders/PPShaders/PPShader.vs");
+  PPShader = Shader("PPShaders/PPShader.fs","PPShaders/PPShader.vs");
   PPShader.use();
   PPShader.setInt("curTexture",0);
   PPShader.setInt("bloomTexture",1);
   PPShader.setFloat("exposure",1.0f);
 
 
-  transShader = Shader("../src/Shaders/BSPShaders/transShader.fs","../src/Shaders/BSPShaders/transShader.vs");
+  transShader = Shader("BSPShaders/transShader.fs","BSPShaders/transShader.vs");
 
-  GBlurShader = Shader("../src/Shaders/PPShaders/GBlurShader.fs","../src/Shaders/PPShaders/GBlurShader.vs");
+  GBlurShader = Shader("PPShaders/GBlurShader.fs","PPShaders/GBlurShader.vs");
   GBlurShader.use();
   GBlurShader.setInt("image",0);
 
@@ -120,14 +125,14 @@ void Drawer::setupShadersAndTextures(int width, int height)
 
   //std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
 
-  dirDepthShader   = Shader("../src/Shaders/dirDepthShader.fs",
-                            "../src/Shaders/dirDepthShader.vs");
+  dirDepthShader   = Shader("dirDepthShader.fs",
+                            "dirDepthShader.vs");
   dirDepthShader.use();
   glm::mat4 model(1.0f);
   dirDepthShader.setMat4("model",model);
-  pointDepthShader = Shader("../src/Shaders/pointDepthShader.fs",
-                            "../src/Shaders/pointDepthShader.vs",
-                            "../src/Shaders/pointDepthShader.gs");
+  pointDepthShader = Shader("pointDepthShader.fs",
+                            "pointDepthShader.vs",
+                            "pointDepthShader.gs");
 
   setAllBuffers();
   renderDirectionalDepthMap();

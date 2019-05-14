@@ -1,5 +1,20 @@
-#include "include/bsp.h"
+
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <list>
+#include <memory>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+
+#include <iostream>
+#include <vector>
+#include <mutex>
+#include <atomic>
+
+#include "include/bsp.h"
 inline int pack4chars(char a, char b, char c, char d)
 {
   return ((a << 24) | (b << 16) | (c << 8) | d);
@@ -534,8 +549,11 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
     ivec3 side1Pos = pos + side1;
     ivec3 side2Pos = pos + side2;
 
-    bool side1Opacity = (OPAQUE==parent->blockVisibleTypeOOB(side1Pos));
-    bool side2Opacity = (OPAQUE==parent->blockVisibleTypeOOB(side2Pos));
+
+    Block b1 = ItemDatabase::blockDictionary[parent->getBlockOOB(side1Pos)];
+    Block b2 = ItemDatabase::blockDictionary[parent->getBlockOOB(side2Pos)];
+    bool side1Opacity = (OPAQUE == b1.visibleType);
+    bool side2Opacity = (OPAQUE == b2.visibleType);
 
     if(side1Opacity && side2Opacity)
     {
@@ -543,7 +561,9 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
     }
     ivec3 corner = side1+side2-norm;
     ivec3 cornerPos = pos + corner;
-    bool cornerOpacity = (OPAQUE==parent->blockVisibleTypeOOB(cornerPos));
+
+    Block cornerBlock = ItemDatabase::blockDictionary[parent->getBlockOOB(cornerPos)];
+    bool cornerOpacity = (OPAQUE==cornerBlock.visibleType);
     return static_cast<AmbientOcclusion> (side1Opacity+side2Opacity+cornerOpacity);
   }
 
@@ -626,13 +646,11 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
 
   void BSP::build()
   {
-    //std::cout << "Starting build\n";
-    //std::cout << glm::to_string(parent->chunkPos) << "\n";
+    //Delete and reserve space for the vectors;
     oVertices = std::vector<float>();
     oIndices = std::vector<uint>();
     tVertices = std::vector<float>();
     tIndices = std::vector<uint>();
-
 
     lightList.clear();
     oVertices.reserve(20000);
@@ -708,9 +726,9 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
         }
         else if(cell->id[index] == 1)
         {
-          cell->val[index] = 99;
+          cell->val[index] = 101;
         }
-        else cell->val[index] = 98;
+        else cell->val[index] = 101;
 
       }else cell->val[index] = 0;
 
@@ -727,8 +745,8 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
           int ry = y*lod;
           int rz = z*lod;
 
-
-          if(parent->blockVisibleTypeOOB(glm::ivec3(x,y,z)) == OPAQUE)
+          Block curBlock = ItemDatabase::blockDictionary[parent->getBlockOOB(glm::ivec3(x,y,z))];
+          if(curBlock.visibleType == OPAQUE)
           {
             Block tempBlock = ItemDatabase::blockDictionary[parent->getBlockOOB(glm::ivec3(x,y,z))];
             uint8_t blockId = tempBlock.getTop();
@@ -815,7 +833,11 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
             int ntris = Polygonise(cell,p,50,tris);
 
 
+            /* If ntris is 2 intialize the quad checking algorithm in order to test
+            if the given quad should be flipped in order to deal with problems of anistropy.
+            Otherwise just render normally.
 
+            */
             if(ntris == 2)
             {
               std::vector<VERTEX> singleList;
@@ -857,7 +879,6 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
               glm::dvec3 flip,shift,norm;
               glm::dmat4 rot;
               bool shouldFlip = false;
-
               if( (duplicateList[0].id != duplicateList[1].id) && (singleList[0].id !=  duplicateList[0].id || singleList[0].id !=  duplicateList[1].id))
               {
                 shouldFlip = true;
@@ -867,66 +888,54 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
                 shift = (singleList[0].pos+ singleList[1].pos + duplicateList[0].pos + duplicateList[1].pos)/4.0;
                 norm = glm::normalize(glm::cross(tris[0].p[0].pos -tris[0].p[1].pos,tris[0].p[0].pos -tris[0].p[2].pos));
 
-                flip.x = abs(norm.y) > 0.9 ? -1.0 : 1.0;
-                flip.y = abs(norm.z) > 0.9 ? -1.0 : 1.0;
-                flip.z = abs(norm.x) > 0.9 ? -1.0 : 1.0;
+                flip.x = abs(norm.z) > 0.9 ? -1.0 : 1.0;
+                flip.y = abs(norm.x) > 0.9 ? -1.0 : 1.0;
+                flip.z = abs(norm.y) > 0.9 ? -1.0 : 1.0;
 
                 if(!(flip.x != 1.0f || flip.y != 1.0f || flip.z != 1.0f))
                 {
+                  //If the quad is not axis alligned dont try to flip it
                   shouldFlip = false;
                 }
-                //std::cout << glm::to_string(norm) << "\n";
-                //std::cout << glm::to_string(flip) << "\n";
                 rot = glm::scale(flip);
               }
               if(shouldFlip)
               {
-                glm::dvec3 points[3];
-                points[1] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[0].p[0].pos) -shift,1)) +shift;
-                points[0] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[0].p[1].pos) -shift,1)) +shift;
-                points[2] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[0].p[2].pos) -shift,1)) +shift;
-
-
-                for(int i=0;i<3;i++)
+                for(int tri =0;tri<2;tri++)
                 {
-                  for(int j=0;j<4;j++)
+                  //Change ordering since the quad is going to be flipped
+                  glm::dvec3 points[3];
+                  points[1] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[tri].p[0].pos) -shift,1)) +shift;
+                  points[0] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[tri].p[1].pos) -shift,1)) +shift;
+                  points[2] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[tri].p[2].pos) -shift,1)) +shift;
+
+
+                  for(int i=0;i<3;i++)
                   {
-                    if(abs(glm::length(glm::dvec3(fullList[j].pos)- points[i])) < 0.01)
+                    for(int j=0;j<4;j++)
                     {
-                      vertex.ids[i] = fullList[j].id;
+                      //The new positions arent exactly the same as the old positions, so find nearest
+                      if(abs(glm::length(glm::dvec3(fullList[j].pos)- points[i])) < 0.01)
+                      {
+                        points[i] = fullList[j].pos;
+                        vertex.ids[i] = fullList[j].id;
+                      }
                     }
                   }
-                }
 
-                for(int j=0;j<3;j++)
-                {
-                  vertex.pos = points[j] + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
-                  int id = addVertex(vertex);
-                  oIndices.push_back(id);
-                }
-                points[1] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[1].p[0].pos) -shift,1)) +shift;
-                points[0] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[1].p[1].pos) -shift,1)) +shift;
-                points[2] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[1].p[2].pos) -shift,1)) +shift;
-                for(int i=0;i<3;i++)
-                {
-                  for(int j=0;j<4;j++)
+                  for(int j=0;j<3;j++)
                   {
-                    if(abs(glm::length(fullList[j].pos- glm::dvec3(points[i]))) < 0.1)
-                    {
-                      vertex.ids[i] = fullList[j].id;
-                    }
+                    vertex.pos = points[j] + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
+                    int id = addVertex(vertex);
+                    oIndices.push_back(id);
                   }
                 }
-                for(int j=0;j<3;j++)
-                {
-                  vertex.pos = points[j] + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
-                  int id = addVertex(vertex);
-                  oIndices.push_back(id);
-                }
+                //Skip normal rendering
                 continue;
-
               }
             }
+
+            //Normal rendering
             for(int i=0;i<ntris;i++)
             {
               glm::dvec3 normal = glm::cross(tris[i].p[0].pos- tris[i].p[1].pos,tris[i].p[0].pos - tris[i].p[2].pos);

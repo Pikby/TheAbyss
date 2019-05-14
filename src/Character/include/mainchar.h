@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MAINCHARLIBRARY
+#define MAINCHARLIBRARY
 #include "gui.h"
 #include <atomic>
 #include "../../headers/camera.h"
@@ -6,18 +7,18 @@
 class Item;
 
 
-enum Menu {WORLDMENU,INVENTORYMENU,OPTIONSMENU,CHATMENU};
+//enum Menu {WORLDMENU,INVENTORYMENU,OPTIONSMENU,CHATMENU};
 
 
 class MainChar
 {
 private:
-  //References
+  static std::map<int,int> keyMap;
+
   static std::string userName;
-  static Menu curMenu;
-  static GUIRenderer gui;
+
   static int screenWidth, screenHeight;
-  static std::deque<std::string> chatLog;
+
 
   //Character attributes
   static float gravity;
@@ -63,3 +64,15 @@ public:
   //Hud functions
   static void addCharacterToChat(int key);
 };
+#ifdef MAINCHARIMPLEMENTATION
+  std::string MainChar::userName;
+  int MainChar::screenWidth, MainChar::screenHeight;
+  float MainChar::gravity, MainChar::moveSpeed = 0.2f,MainChar::deltax = 0,MainChar::deltay = 0,MainChar::deltaz = 0;
+  int MainChar::reach = 200;
+  bool MainChar::shiftHeld = false, MainChar::grounded,MainChar::controlHeld,MainChar::inInventory;
+  Camera MainChar::mainCam;
+  std::atomic<float> MainChar::xpos,MainChar::ypos,MainChar::zpos;
+  char MainChar::heldItem;
+  std::map<int,int> MainChar::keyMap;
+#endif
+#endif

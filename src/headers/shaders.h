@@ -1,4 +1,7 @@
-#pragma once
+#ifndef GLSLSHADERS
+#define GLSLSHADERS
+
+
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -17,6 +20,7 @@ typedef unsigned int uint;
 class Shader
 {
   private:
+    static std::string filePath;
     unsigned int id;
     void compileShader(std::string path)
     {
@@ -81,24 +85,30 @@ class Shader
       glDeleteShader(shader);
     }
   public:
+
+    static void setShaderDirectory(const std::string& FilePath)
+    {
+      filePath = FilePath;
+    }
     Shader(){};
     Shader(std::string shader1, std::string shader2 = "",std::string shader3 = "")
     {
       id = glCreateProgram();
-      compileShader(shader1);
-      if(shader2 != "") compileShader(shader2);
-      if(shader3 != "") compileShader(shader3);
+      compileShader(filePath+ shader1);
+      if(shader2 != "") compileShader(filePath+ shader2);
+      if(shader3 != "") compileShader(filePath+ shader3);
       glLinkProgram(id);
 
       int success;
-     char infoLog[512];
-     glGetProgramiv(id, GL_LINK_STATUS, &success);
-          if(!success)
-          {
-              glGetProgramInfoLog(id, 1024, NULL, infoLog);
-              std::cout << "ERROR::PROGRAM_LINKING_ERROR"<< "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
-            }
+      char infoLog[512];
+      glGetProgramiv(id, GL_LINK_STATUS, &success);
+           if(!success)
+           {
+               glGetProgramInfoLog(id, 1024, NULL, infoLog);
+               std::cout << "ERROR::PROGRAM_LINKING_ERROR"<< "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+           }
     }
+
 
     void use()
     {
@@ -109,6 +119,12 @@ class Shader
     {
       glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
     }
+    void setMat3(std::string name, const glm::mat3 &value)
+    {
+      glUniformMatrix3fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+    }
+
+
 
     void setVec3(std::string name, const glm::vec3 &value)
     {
@@ -136,8 +152,21 @@ class Shader
     {
       glUniform1ui(glGetUniformLocation(id,name.c_str()),x);
     }
+    void setVec2(std::string name, const glm::vec2 & val)
+    {
+      glUniform2f(glGetUniformLocation(id,name.c_str()),val.x,val.y);
+    }
     void setIVec2(std::string name, const glm::ivec2 &val)
     {
       glUniform2i(glGetUniformLocation(id,name.c_str()),val.x,val.y);
     }
+    void setVec4(std::string name, const glm::vec4 &val)
+    {
+      glUniform4f(glGetUniformLocation(id,name.c_str()),val.x,val.y,val.z,val.w);
+    }
 };
+
+#ifdef GLSLSHADERSIMPLEMNTATION
+std::string Shader::filePath;
+#endif
+#endif

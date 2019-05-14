@@ -14,7 +14,6 @@
 #include "../headers/shaders.h"
 #include "include/world.h"
 #include "../Character/include/mainchar.h"
-#include "../InputHandling/include/inputhandling.h"
 #include "../Objects/include/objects.h"
 #include "../Settings/settings.h"
 #include "imgui/imgui.h"
@@ -117,7 +116,7 @@ void draw()
 
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    MainChar::update();
+
 
     World::drawer.updateCameraMatrices(mainCam);
 
@@ -209,7 +208,13 @@ void draw()
         ImGui::Text("Took %.6f ms to render directional shadows",1000.0f*(directend-directstart));
         static int curText = 9;
 
+        static glm::vec3 lastPos;
+        glm::vec3 curPos = MainChar::mainCam.position;
+        double distance = glm::length(lastPos-curPos)*ImGui::GetIO().Framerate;
 
+        ImGui::Text("You are traveling %.6f ms",distance);
+
+        lastPos = curPos;
         if(ImGui::Button("<-"))
         {
           curText--;
@@ -320,8 +325,7 @@ void logic()
     //std::cout << deltaFrame << ":" << waitTime ;
     std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
     currentFrame = glfwGetTime();
-    updateInputs();
-
+    MainChar::update();
     //DO the game logic
     World::messenger.createMoveRequest(MainChar::xpos,MainChar::ypos,MainChar::zpos);
   }

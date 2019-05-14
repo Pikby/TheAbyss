@@ -1,21 +1,15 @@
 #ifndef BSPHEADER
 #define BSPHEADER
 
-
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <list>
 #include <memory>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
-#include <iostream>
-#include <vector>
-#include <mutex>
 #include <atomic>
+#include <mutex>
+#include <list>
+
 #include "../../headers/shaders.h"
 #include "../../headers/3darray.h"
 #include "../../Objects/include/items.h"
+
 typedef unsigned char uint8_t;
 #define CHUNKSIZE 32
 //Class which holds the data for each individual chunk
@@ -86,8 +80,9 @@ class BSP
     std::vector<float> oVertices,tVertices;
     std::vector<uint> oIndices,tIndices;
     //The stored number of indices so we know how many indices to draw
-    int oIndicesSize,tIndicesSize;
-    uint oVBO, oEBO, oVAO, tVBO, tEBO, tVAO;
+    int oIndicesSize = 0,tIndicesSize = 0;
+    uint oVBO = 0, oEBO = 0, oVAO = 0,
+         tVBO = 0, tEBO = 0, tVAO = 0;
 
     AmbientOcclusion getAO(const glm::ivec3 &pos, Faces face, TextureSides top, TextureSides right);
     int addVertex(const VertexData& vertex);
@@ -123,20 +118,24 @@ class BSPNode
     BSP curBSP;
 
     //references to the 6 cardinal neighbours of the chunk
-    std::shared_ptr<BSPNode>  leftChunk,rightChunk,frontChunk,backChunk,topChunk,bottomChunk;
-  public:
+    std::shared_ptr<BSPNode>  leftChunk = NULL,rightChunk = NULL,frontChunk = NULL,
+                              backChunk = NULL,topChunk = NULL,bottomChunk = NULL;
     std::recursive_mutex BSPMutex;
-    static int totalChunks;
     glm::ivec3 chunkPos;
+  public:
+    static int totalChunks;
 
     //Flags for use inbetween pointers
-    std::atomic<bool> toRender,toBuild,toDelete;
+    std::atomic<bool> toRender = false,toBuild = false,toDelete = false;
+
+
 
     BSPNode(const glm::ivec3 &pos,const char* val);
     ~BSPNode();
+
+    glm::ivec3 getPosition(){return chunkPos;}
     void saveChunk();
     bool blockExists(const glm::ivec3 &pos);
-    RenderType blockVisibleTypeOOB(const glm::ivec3 &pos);
     RenderType blockVisibleType(const glm::ivec3 &pos);
     uint8_t getBlockOOB(const glm::ivec3 &pos);
 
