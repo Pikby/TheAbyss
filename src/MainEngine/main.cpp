@@ -40,27 +40,9 @@ MessageCallback( GLenum source,
 }
 
 
-void handler(int sig)
-{
-  void *array[10];
-  size_t size;
-
-  // get void*'s for all entries on the stack
-  size = backtrace(array, 10);
-
-  // print out all the frames to stderr
-  fprintf(stderr, "Error: signal %d:\n", sig);
-  backtrace_symbols_fd(array, size, STDERR_FILENO);
-  exit(1);
-}
-// During init, enable debug output
-
 
 int main()
 {
-
-  signal(SIGSEGV, handler);
-
   glfwInit();
   const int numbBuildThreads = 2;
   int winWidth = std::stoi(Settings::get("windowWidth"));
@@ -100,14 +82,6 @@ int main()
 
   glewExperimental = GL_TRUE;
   glewInit();
-  {
-  int error = glGetError();
-  if(error != 0)
-  {
-    std::cout << "Getting rid of glews error:" << error << ":" << std::hex << error << "\n";
-    //glfwSetWindowShouldClose(window, true);
-    //return;
-  }}
   glViewport(0, 0, winWidth, winHeight);
 
 
@@ -119,8 +93,6 @@ int main()
 
   glEnable              ( GL_DEBUG_OUTPUT );
   glDebugMessageCallback( MessageCallback, 0 );
-  //Enable antialiasing
-  //glEnable(GL_MULTISAMPLE);
 
   //Cull face unrenders the back side of polygons
   glEnable(GL_CULL_FACE);

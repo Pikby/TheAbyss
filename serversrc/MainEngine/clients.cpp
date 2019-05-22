@@ -207,6 +207,10 @@ void Client::recvMessages()
       case (100):
         receiveChatMessage(length);
         break;
+
+      case (250):
+        sendPing();
+        break;
       case (0xFF):
         disconnect();
         break;
@@ -265,6 +269,13 @@ void Client::sendDelBlockAll(int x, int y, int z)
 {
   std::shared_ptr<OutMessage> tmp(new OutMessage(1,0,0,0,x,y,z,NULL));
   Server::messageAll(tmp);
+}
+
+void Client::sendPing()
+{
+  std::shared_ptr<OutMessage> tmp(new OutMessage(250,0,0,0,0,0,0,0));
+  msgQueue.push(tmp);
+
 }
 
 void Client::sendExit()

@@ -1,8 +1,6 @@
 #ifndef WORLDHEADER
 #define WOLRDHEADER
 
-typedef unsigned char uchar;
-typedef unsigned int uint;
 #define CHUNKSIZE 32
 
 #include <memory>
@@ -15,6 +13,15 @@ typedef unsigned int uint;
 #include "drawer.h"
 #include "../../headers/threadSafeQueue.h"
 #include "../../headers/3dmap.h"
+
+
+struct WorldStats
+{
+  int chunksInMemory;
+  int chunksInBuildQueue;
+
+  double pingInMS;
+};
 
 
 
@@ -32,6 +39,8 @@ private:
 public:
   static Messenger messenger;
   static Drawer drawer;
+  static WorldStats worldStats;
+
   static Map3D<std::shared_ptr<BSPNode>> BSPmap;
   static char mainId;
 
@@ -40,6 +49,8 @@ public:
   static int horzRenderDistance,vertRenderDistance,renderBuffer;
   static int drawnChunks;
   static int numbOfBuildThreads;
+
+
 
   //The name of the world, for saving and loading
   static std::string worldName;
@@ -65,16 +76,16 @@ public:
 
   static void buildWorld(char threadNumb);
   static bool chunkExists(const glm::ivec3 &pos);
-  static void addPlayer(const glm::vec3 &pos, uchar id);
-  static void removePlayer(uchar id);
-  static void movePlayer(const glm::vec3 &pos, uchar id);
+  static void addPlayer(const glm::vec3 &pos, uint8_t id);
+  static void removePlayer(uint8_t id);
+  static void movePlayer(const glm::vec3 &pos, uint8_t id);
 
   static std::list<Light> findAllLights(const glm::vec3 &playerPos,int count);
   static void delBlock(const glm::ivec3 &pos);
   static void delChunk(const glm::ivec3 &pos);
   static void deleteChunksFromQueue();
   static void findChunkToRequest(const float mainx, const float mainy, const float mainz);
-  static void addBlock(const glm::ivec3 &pos, uchar id);
+  static void addBlock(const glm::ivec3 &pos, uint8_t id);
   static void updateBlock(const glm::ivec3 &pos);
   static void delScan(const glm::vec3& pos);
   static void generateChunkFromString(const glm::ivec3 &pos,const char* val);
@@ -82,6 +93,7 @@ public:
 
 
 #ifdef WORLDIMPLEMENTATION
+WorldStats World::worldStats;
 Messenger World::messenger;
 Drawer World::drawer;
 Map3D<std::shared_ptr<BSPNode>> World::BSPmap;

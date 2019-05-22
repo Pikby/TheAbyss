@@ -44,6 +44,7 @@ class Client
     void sendInitAll();
     void sendPositionAll(float x, float y, float z);
     void sendExit();
+    void sendPing();
     void disconnect();
     void errorDisconnect();
     inline void sendMessage(const void *buffer,int length);

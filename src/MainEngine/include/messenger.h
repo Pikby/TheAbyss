@@ -9,6 +9,8 @@ class Messenger
 {
 private:
   int fd;
+
+  std::chrono::system_clock::time_point lastPing;
   inline int pack4chars(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
   {
     return ((a << 24) | (b << 16) | (c << 8) | d);
@@ -31,6 +33,9 @@ public:
   void requestDelBlock(int x, int y, int z);
   void requestMove(float x, float y, float z);
   void requestExit();
+  void pingStart();
+  double pingEnd();
+  void createPingRequest();
   void sendChatMessage(std::shared_ptr<std::string> msg);
   void receiveMessage(void *buffer,int length);
   void sendMessage(const void* buffer,int length);

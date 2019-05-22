@@ -327,6 +327,18 @@ void logic()
     //DO the game logic
     glm::vec3 pos = MainChar::getPosition();
     World::messenger.createMoveRequest(pos.x,pos.y,pos.z);
+
+
+
+
+    static double lastPingTime = 0;
+
+    if(glfwGetTime() - lastPingTime > 1)
+    {
+      World::messenger.createPingRequest();
+      lastPingTime = glfwGetTime();
+    }
+
   }
   std::cout << "Ending logic thread\n";
 }
@@ -340,7 +352,7 @@ void send()
     {
       OutMessage msg = World::messenger.messageQueue.front();
       World::messenger.messageQueue.pop();
-      uchar opcode = msg.opcode;
+      uint8_t opcode = msg.opcode;
       switch(opcode)
       {
         case(0):
@@ -357,6 +369,9 @@ void send()
           break;
         case(100):
           World::messenger.sendChatMessage(msg.data);
+          break;
+        case(250):
+          World::messenger.pingStart();
           break;
         default:
           std::cout << "Sending unknown opcode" << std::dec << (int)msg.opcode << "\n";
@@ -436,9 +451,15 @@ void receive()
           std::cout << line;
           //MainChar::addChatLine(line);
           delete[] buf;
-          break;
         }
-      case(0xFF):
+        break;
+
+     case(250):
+       {
+         World::worldStats.pingInMS =  World::messenger.pingEnd();
+         break;
+       }
+      case(255):
         std::cout << "Received exit message\n";
         closeGame();
         break;

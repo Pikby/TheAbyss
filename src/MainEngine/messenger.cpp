@@ -105,6 +105,35 @@ InMessage Messenger::receiveAndDecodeMessage()
 
 }
 
+
+void Messenger::pingStart()
+{
+  lastPing = std::chrono::system_clock::now();
+  int32_t request[5];
+  request[0] = pack4chars(250,0,0,0);
+  request[1] = 0;
+  request[2] = 0;
+  request[3] = 0;
+  request[4] = 0;
+  try
+  {
+    sendMessage(request,sizeof(request));
+  }
+  catch(...)
+  {
+    std::cout << "ERROR: SENDING PING, ERRNO: " << errno << "\n";
+  }
+}
+
+double Messenger::pingEnd()
+{
+  auto end = std::chrono::system_clock::now();
+  std::chrono::duration<double> dif = end - lastPing;
+  double pingInMS = (dif.count())*1000;
+  return pingInMS;
+}
+
+
 void Messenger::createChatMessage(const std::string& msg)
 {
   OutMessage newMsg = OutMessage(100,0,0,0,0,0,0,std::make_shared<std::string> (msg));
@@ -148,6 +177,13 @@ void Messenger::sendChatMessage(std::shared_ptr<std::string> msg)
   }
 
 }
+
+void Messenger::createPingRequest()
+{
+  OutMessage tmp = OutMessage(250,0,0,0,0,0,0,0);
+  messageQueue.push(tmp);
+}
+
 void Messenger::createMoveRequest(float x, float y, float z)
 {
   OutMessage tmp = OutMessage(91,0,0,0,x,y,z,0);

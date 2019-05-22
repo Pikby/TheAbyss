@@ -1,5 +1,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+
+#include "../../MainEngine/include/world.h"
 #include "../include/gui.h"
 #include "../Widgets/widgets.h"
 
@@ -34,8 +36,17 @@ void GUI::initDebugMenu()
     lastFps = expectedFps;
     ((Label*)parent)->updateLabel(fpsStr);
   });
-  //fps->updateLabel("Stuff\n");
+  Label* ping = new Label("STUFF",glm::vec2(0.1,1.0-0.02),24.0/64.0);
+  ping->setColor(glm::vec4(0.7,0.7,0.7,1.0));
+  ping->setOnDraw([](Widget* parent)
+  {
 
+    std::string pingStr = "Ping: " + std::to_string((int)World::worldStats.pingInMS) + " ms";
+    ((Label*)parent)->updateLabel(pingStr);
+  });
+
+
+  debugMenu.addWidget(ping);
   debugMenu.addWidget(fps);
   debugMenu.addWidget(test);
   debugMenu.addWidget(inGame);

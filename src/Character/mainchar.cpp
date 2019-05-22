@@ -40,6 +40,7 @@ void MainChar::handleKeyHold(int key)
         case GLFW_KEY_D:			moveRight();						break;
         case GLFW_KEY_S:			moveBackward();					break;
         case GLFW_KEY_SPACE:	moveUp();								break;
+
       }
 
 
@@ -53,7 +54,7 @@ void MainChar::handleKeyRelease(int key)
 void MainChar::handleKeyPress(int key)
 {
 	keyMap[key] = GLFW_PRESS;
-
+  if(key == GLFW_KEY_P) World::messenger.createPingRequest();
 }
 
 void MainChar::addCharacterToChat(int key)

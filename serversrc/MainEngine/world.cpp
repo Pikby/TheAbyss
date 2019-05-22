@@ -12,7 +12,7 @@ World::World()
   totalChunks = 0;
 }
 
-
+  
 void World::generateChunk(int chunkx, int chunky, int chunkz)
 {
   if(chunkExists(chunkx,chunky,chunkz)) return;

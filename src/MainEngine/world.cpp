@@ -82,7 +82,7 @@ void World::initWorld(int NumbBuildThreads,int width,int height)
 
 
 
-void World::movePlayer(const glm::vec3 &pos, uchar id)
+void World::movePlayer(const glm::vec3 &pos, uint8_t id)
 {
   if(drawer.playerList.count(id) != 1)
   {
@@ -99,7 +99,7 @@ void World::movePlayer(const glm::vec3 &pos, uchar id)
 }
 
 
-void World::addPlayer(const glm::vec3 &pos, uchar id)
+void World::addPlayer(const glm::vec3 &pos, uint8_t id)
 {
   std::cout << "Adding player at" << glm::to_string(pos) << ":"<< (int) id << "\n";
   std::shared_ptr<Player> temp(new Player(pos));
@@ -107,7 +107,7 @@ void World::addPlayer(const glm::vec3 &pos, uchar id)
 }
 
 
-void World::removePlayer(uchar id)
+void World::removePlayer(uint8_t id)
 {
 
   std::cout << "Removing PLayer\n";
@@ -209,7 +209,7 @@ void World::generateChunkFromString(const glm::ivec3 &chunk,const char* value)
 
   otherChunk = getChunk(glm::ivec3(chunkx,chunky-1,chunkz));
   if(otherChunk != NULL)
-  {
+  { 
     update(BOTTOMF,TOPF);
   }
   otherChunk = getChunk(glm::ivec3(chunkx,chunky+1,chunkz));
