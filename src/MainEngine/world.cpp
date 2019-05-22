@@ -298,7 +298,7 @@ void World::findChunkToRequest(const float mainx,const float mainy,const float m
   }
 
 }
-void World::renderWorld(float mainx, float mainy, float mainz)
+void World::renderWorld(const glm::vec3& pos)
 {
   double lastFrame = 0;
   double currentFrame = 0;
@@ -317,9 +317,9 @@ void World::renderWorld(float mainx, float mainy, float mainz)
         int curz = (z%2 == 0) ? z/2 : -(z/2+1);
 
         if((curx*curx)/horzSquared + (cury*cury)/vertSquared + (curz*curz)/horzSquared > 1) continue;
-        int xchunk = round(mainx);
-        int ychunk = round(mainy);
-        int zchunk = round(mainz);
+        int xchunk = round(pos.x);
+        int ychunk = round(pos.y);
+        int zchunk = round(pos.z);
         xchunk/= CHUNKSIZE;
         ychunk/= CHUNKSIZE;
         zchunk/= CHUNKSIZE;
@@ -424,7 +424,7 @@ void World::delChunk(const glm::ivec3 &pos)
 }
 
 
-void World::delScan(float mainx, float mainy, float mainz)
+void World::delScan(const glm::vec3& pos)
 {
   /*
     Scans through the same list as the draw function
@@ -435,9 +435,9 @@ void World::delScan(float mainx, float mainy, float mainz)
   auto list = BSPmap.getFullList();
   for(auto itr = list.begin();itr != list.end();++itr)
   {
-    int x = round(mainx);
-    int y = round(mainy);
-    int z = round(mainz);
+    int x = round(pos.x);
+    int y = round(pos.y);
+    int z = round(pos.z);
 
     x/= CHUNKSIZE;
     y/= CHUNKSIZE;

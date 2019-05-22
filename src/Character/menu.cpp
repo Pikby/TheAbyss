@@ -20,6 +20,8 @@ void Menu::setFocusTarget(Widget* widget)
 
 void Menu::GLFWKeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
+
+  if(action == GLFW_PRESS && actionMap.count(key) == 1) actionMap[key]();
   if(focusTarget == NULL) return;
   focusTarget->handleKeyInput(key,action);
 }
@@ -67,6 +69,11 @@ void Menu::GLFWMouseButtonCallback(GLFWwindow* window, int button,int action, in
       }
     }
   }
+}
+
+void Menu::setKeyMapping(int action, std::function<void()> handler)
+{
+  actionMap[action] = handler;
 }
 
 void Menu::drawGUI()

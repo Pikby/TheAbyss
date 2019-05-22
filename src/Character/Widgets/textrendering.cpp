@@ -343,6 +343,9 @@ void TextRenderer::renderText(const std::string &text,const glm::vec2 &screenPos
 
 void TextRenderer::drawAllText()
 {
+	 glEnable(GL_BLEND);
+	 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	 glDisable(GL_CULL_FACE);
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D,textAtlas);
    glBindVertexArray(VAO);
@@ -365,6 +368,9 @@ void TextRenderer::drawAllText()
    static int lastSize = 10;
    characterVertices.reserve(lastSize);
    lastSize = characterVertices.size();
+
+	 glEnable(GL_CULL_FACE);
+	 glDisable(GL_BLEND);
 
 }
 

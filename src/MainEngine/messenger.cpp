@@ -182,7 +182,6 @@ void Messenger::createDelBlockRequest(int x, int y, int z)
 {
   OutMessage tmp = OutMessage(1,0,0,0,x,y,z,0);
   messageQueue.push(tmp);
-  std::cout << "requesting del block\n";
 }
 void Messenger::requestDelBlock(int x, int y, int z)
 {

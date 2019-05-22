@@ -14,6 +14,8 @@ protected:
   glm::vec2 dimensions=glm::vec2(0);
   double padding = 0.01;
   double size;
+  glm::vec4 color = glm::vec4(1);
+  std::function<void(Widget* parent)> onDrawFunction = NULL;
 public:
   Widget(){}
   Widget(glm::vec2 Origin,glm::vec2 Dimensions = glm::vec2(0)): origin(Origin),dimensions(Dimensions){}
@@ -25,6 +27,7 @@ public:
     bool vertIn = pos.y > bottomLeft.y && pos.y < topRight.y;
     return horzIn && vertIn;
   }
+  virtual void setColor(glm::vec4 Color){color = Color;}
   virtual bool isFocusable(){return focusable;}
   virtual void setFocused(bool b){focused = b;}
   virtual void draw(){};
@@ -35,6 +38,9 @@ public:
   virtual void handleMouseHover(const glm::vec2& mousePos){};
   virtual void handleMouseInput(int button,int action){};
   virtual void handleMouseMovement(double xpos, double ypos){};
+  virtual void onDraw(){};
+  virtual void setOnDraw(std::function<void(Widget*)> func){onDrawFunction = func;}
+
 };
 
 class EditBox : public Widget
@@ -63,7 +69,7 @@ private:
 public:
   Label(){};
   Label(const std::string& text,const glm::vec2& Origin,double CharacterScale);
-
+  void updateLabel(const std::string& str);
   void draw() override;
 };
 

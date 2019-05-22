@@ -14,8 +14,10 @@
 #include "../headers/shaders.h"
 #include "include/world.h"
 #include "../Character/include/mainchar.h"
+#include "../Character/include/gui.h"
 #include "../Objects/include/objects.h"
 #include "../Settings/settings.h"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_glfw.h"
@@ -49,7 +51,7 @@ GLFWwindow* createWindow(int width, int height)
 void initWorld(int numbBuildThreads, int width,  int height)
 {
   World::initWorld(numbBuildThreads,width,height);
-  MainChar::initMainChar(0,50,0);
+  MainChar::initMainChar(glm::vec3(0,50,0));
 }
 
 void closeGame()
@@ -69,7 +71,6 @@ void draw()
   //World::drawer.createDirectionalLight(glm::vec3(-0.0f,-1.0f,-0.0001f),glm::vec3(0.8f,0.8f,0.8f));
   World::drawer.updateDirectionalLight(glm::vec3(-0.5,-1.0f,-0.5f),glm::vec3(0.8f,0.8f,0.8f));
   SkyBox skyBox("../assets/alps");
-  Camera* mainCam = &(MainChar::mainCam);
 
   Cube cube;
   cube.render();
@@ -107,18 +108,13 @@ void draw()
 
     World::drawnChunks = 0;
     World::drawer.chunksToDraw = NULL;
-
-
-
-
-
     World::deleteChunksFromQueue();
 
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-    World::drawer.updateCameraMatrices(mainCam);
+    World::drawer.updateCameraMatrices(MainChar::getCamera());
 
     float findstart = glfwGetTime();
     World::calculateViewableChunks();
@@ -144,7 +140,7 @@ void draw()
         ImGui::SliderFloat("SunZ", &sunZ, -10.0f, 10.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
         ImGui::ColorEdit3("Terrain Color", (float*)&terrainColor); // Edit 3 floats representing a color
 
-        char heldBlock = MainChar::heldItem;
+        char heldBlock = MainChar::getHeldItem();
 
 
 
@@ -170,7 +166,7 @@ void draw()
           id++;
         }
 
-        MainChar::heldItem = id;
+        MainChar::setHeldItem(id);
         std::string buttonStr = shadowsOn ? "On" : "Off";
         if (ImGui::Button(std::string("Shadows" + buttonStr).c_str()))     // Buttons return true when clicked (most widgets return true when edited/activated)
         {
@@ -194,7 +190,7 @@ void draw()
         }
 
 
-        glm::vec3 pos = mainCam->getPosition();
+        glm::vec3 pos = MainChar::getPosition();
 
         static float exposure = 1.0f;
         ImGui::SliderFloat("Exposure:", &exposure, 0.0f, 10.0f);
@@ -209,7 +205,7 @@ void draw()
         static int curText = 9;
 
         static glm::vec3 lastPos;
-        glm::vec3 curPos = MainChar::mainCam.position;
+        glm::vec3 curPos = MainChar::getPosition();
         double distance = glm::length(lastPos-curPos)*ImGui::GetIO().Framerate;
 
         ImGui::Text("You are traveling %.6f ms",distance);
@@ -250,11 +246,13 @@ void draw()
 
       BSP::geometryChanged = false;
     }
-    glDisable(GL_BLEND);
+    //glDisable(GL_BLEND);
     World::drawer.drawFinal();
+    GUI::drawGUI();
+    GUI::textRenderer.drawAllText();
 
     ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    //ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 
     glfwSwapBuffers(window);
@@ -280,7 +278,7 @@ void render()
     //std::cout << deltaFrame << ":" << waitTime ;
     //std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
     currentFrame = glfwGetTime();
-    World::renderWorld(MainChar::xpos,MainChar::ypos,MainChar::zpos);
+    World::renderWorld(MainChar::getPosition());
   }
 
 
@@ -303,7 +301,7 @@ void del()
     //std::cout << deltaFrame << ":" << waitTime ;
     std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
     currentFrame = glfwGetTime();
-    World::delScan(MainChar::xpos,MainChar::ypos,MainChar::zpos);
+    World::delScan(MainChar::getPosition());
   }
 
 }
@@ -327,7 +325,8 @@ void logic()
     currentFrame = glfwGetTime();
     MainChar::update();
     //DO the game logic
-    World::messenger.createMoveRequest(MainChar::xpos,MainChar::ypos,MainChar::zpos);
+    glm::vec3 pos = MainChar::getPosition();
+    World::messenger.createMoveRequest(pos.x,pos.y,pos.z);
   }
   std::cout << "Ending logic thread\n";
 }

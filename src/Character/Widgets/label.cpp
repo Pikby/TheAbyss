@@ -9,7 +9,13 @@ Label::Label(const std::string& text,const glm::vec2& Origin,double CharacterSca
 
 void Label::draw()
 {
-  GUI::renderText(label,origin,characterScale,glm::vec4(1));
+  if(onDrawFunction != NULL) onDrawFunction(this);
+  GUI::renderText(label,origin,characterScale,color);
+}
+
+void Label::updateLabel(const std::string& str)
+{
+  label = str;
 }
 
 EditBox::EditBox(const std::string& text,const glm::vec2& Origin,const glm::vec2& Dims,double CharacterScale,std::function<void(std::string)> SubmitHandler)

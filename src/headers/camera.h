@@ -66,12 +66,12 @@ public:
     }
 
 
-    glm::mat4 getViewMatrix()
+    glm::mat4 getViewMatrix() const
     {
     	return glm::lookAt(glm::vec3(0), glm::vec3(0) + front, up);
     }
 
-		glm::vec3 getPosition()
+		glm::vec3 getPosition() const
 		{
 			return position;
 		}
@@ -120,11 +120,9 @@ public:
     	updateCameraVectors();
     }
 
-    void setPosition(float x, float y, float z)
+    void setPosition(const glm::vec3& pos)
     {
-    	position.x = x;
-    	position.y = y;
-    	position.z = z;
+    	position = pos;
 
     	updateCameraVectors();
     }
@@ -144,7 +142,7 @@ public:
     	}
     }
 
-		glm::mat4 getHSRMatrix()
+		glm::mat4 getHSRMatrix() const
 		{
 			glm::vec3 newPos = position - front*64.0f;
 			return glm::lookAt(newPos, newPos + front, up );

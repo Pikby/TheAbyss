@@ -834,13 +834,13 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
   transShader.setMat4("projection",viewProj);
 }
 
-void Drawer::updateCameraMatrices(Camera* cam)
+void Drawer::updateCameraMatrices(const Camera& cam)
 {
-  viewMat = cam->getViewMatrix();
-  viewPos = cam->getPosition();
-  viewFront = cam->front;
-  viewUp = cam->up;
-  viewRight = cam->right;
+  viewMat = cam.getViewMatrix();
+  viewPos = cam.getPosition();
+  viewFront = cam.front;
+  viewUp = cam.up;
+  viewRight = cam.right;
   calculateFrustrum(viewFrustrum,viewPos,viewFront,viewRight,viewUp,camZoomInDegrees,(float)screenWidth/(float)screenHeight,camNear,camFar);
   calculateMinandMaxPoints(viewFrustrum,8,&viewMin,&viewMax);
 

@@ -7,19 +7,24 @@
 #include <list>
 #include <GLFW/glfw3.h>
 #include "../Widgets/textrenderer.h"
+#include "../include/menus.h"
 class Shader;
 class Widget;
-class Menu;
+
 enum QuadDrawType {DEFAULTQUAD = 0,ROUNDEDQUAD = 1,INVERTEDQUAD = 2, CIRCLEQUAD = 3, OUTLINEQUAD =4};
 
 class GUI
 {
 private:
+
   static glm::vec2 mousePos;
   static Menu* currentMenu;
   static Shader GUIShader2D,GUIShaderImage;
   static uint quadVAO,quadVBO;
 public:
+  static Menu debugMenu,gameMenu;
+
+
   static void setMenu(Menu* newMenu){currentMenu = newMenu;}
   static glm::vec2 getMousePos(){return mousePos;}
   static TextRenderer textRenderer;
@@ -48,8 +53,11 @@ public:
   static void GLFWScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
   static void handleMouseHover();
   static Widget* findWidgetAtMouse();
+
+  static void initDebugMenu();
 };
 #ifdef GUILIBRARYIMPLEMENTATION
+Menu GUI::debugMenu, GUI::gameMenu;
 glm::vec2 GUI::mousePos;
 glm::ivec2 GUI::dimensions;
 Menu* GUI::currentMenu = NULL;

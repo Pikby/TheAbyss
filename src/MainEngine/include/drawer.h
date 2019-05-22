@@ -120,7 +120,7 @@ public:
   void drawObjects();
   void drawPlayers();
   void drawFinal();
-  void updateCameraMatrices(Camera* cam);
+  void updateCameraMatrices(const Camera& cam);
   void addLight(glm::vec3 pos, glm::vec3 amb = glm::vec3(1.0f,1.0f,1.0f),
                 glm::vec3 spe = glm::vec3(1.0f,1.0f,1.0f), glm::vec3 dif = glm::vec3(0.5f,0.5f,0.5f),
                 float cons = 1.0f, float lin = 0.14f, float quad = 0.07f);

@@ -44,13 +44,7 @@ void GUI::initGUI(const glm::ivec2 Dimensions)
   textRenderer.init();
   GUI::textRenderer.GUIShaderText.use();
 
-  Menu* gameMenu = new Menu;
-  InGame* inGame = new InGame;
-
-  gameMenu->addWidget(inGame);
-  gameMenu->setFocusTarget(inGame);
-
-  currentMenu = gameMenu;
+  initDebugMenu();
 }
 
 void GUI::drawGUI()

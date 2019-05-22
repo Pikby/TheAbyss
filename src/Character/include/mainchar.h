@@ -1,42 +1,33 @@
 #ifndef MAINCHARLIBRARY
 #define MAINCHARLIBRARY
-#include "gui.h"
 #include <atomic>
+#include <map>
 #include "../../headers/camera.h"
 
 class Item;
-
-
-//enum Menu {WORLDMENU,INVENTORYMENU,OPTIONSMENU,CHATMENU};
-
-
 class MainChar
 {
 private:
   static std::map<int,int> keyMap;
-
   static std::string userName;
 
-  static int screenWidth, screenHeight;
-
+  static Camera mainCam;
 
   //Character attributes
   static float gravity;
   static float moveSpeed;
-  static float deltax,deltay,deltaz;
+
+  static glm::vec3 deltaPos;
+  static glm::vec3 playerPos;
+  static uint8_t heldItem;
+
+  static bool isGrounded;
   static int reach;
-  static bool shiftHeld;
-  static bool grounded;
-  static bool controlHeld;
 
 
-  static bool inInventory;
 public:
-  static char heldItem;
-  static Camera mainCam;
-  static std::atomic<float> xpos,ypos,zpos;
 
-  static void initMainChar(float x, float y, float z);
+  static void initMainChar(const glm::vec3& pos);
   //Update movement
   static void update();
   static void processMouseMovement(float xoffset, float yoffset);
@@ -53,6 +44,7 @@ public:
   static void moveUp();
   static void jump();
 
+
   static void handleKeyPress(int key);
   static void handleKeyHold(int key);
   static void handleKeyRelease(int key);
@@ -63,16 +55,21 @@ public:
   static void draw();
   //Hud functions
   static void addCharacterToChat(int key);
+
+  //Setters and Getters
+  static Camera& getCamera(){return mainCam;}
+  static uint8_t getHeldItem(){return heldItem;}
+  static void setHeldItem(uint8_t id){heldItem = id;}
+  static glm::vec3 getPosition(){return playerPos;}
 };
 #ifdef MAINCHARIMPLEMENTATION
   std::string MainChar::userName;
-  int MainChar::screenWidth, MainChar::screenHeight;
-  float MainChar::gravity, MainChar::moveSpeed = 0.2f,MainChar::deltax = 0,MainChar::deltay = 0,MainChar::deltaz = 0;
+  float MainChar::gravity, MainChar::moveSpeed = 0.2f;
   int MainChar::reach = 200;
-  bool MainChar::shiftHeld = false, MainChar::grounded,MainChar::controlHeld,MainChar::inInventory;
   Camera MainChar::mainCam;
-  std::atomic<float> MainChar::xpos,MainChar::ypos,MainChar::zpos;
-  char MainChar::heldItem;
+  glm::vec3 MainChar::playerPos, MainChar::deltaPos;
+  uint8_t MainChar::heldItem;
+  bool MainChar::isGrounded;
   std::map<int,int> MainChar::keyMap;
 #endif
 #endif

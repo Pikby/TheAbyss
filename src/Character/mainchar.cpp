@@ -22,17 +22,11 @@ template <typename T> int sign(T val)
 }
 
 
-void MainChar::initMainChar(float x, float y, float z)
+void MainChar::initMainChar(const glm::vec3& pos)
 {
-
-  xpos = x;
-  ypos = y;
-  zpos = z;
-  mainCam = Camera(glm::vec3((float)xpos,(float)ypos,(float)zpos));
-  screenWidth = World::drawer.screenWidth;
-  screenHeight = World::drawer.screenHeight;
+  playerPos = pos;
+  mainCam = Camera(playerPos);
   userName = Settings::get("userName");
-
 
 }
 void MainChar::handleKeyHold(int key)
@@ -74,72 +68,70 @@ void MainChar::update()
     handleKeyHold(it->first);
   }
 
-  if(!World::blockExists(glm::ivec3(floor(xpos+deltax),floor(ypos),floor(zpos))))
+  if(!World::blockExists(glm::ivec3(floor(playerPos.x+deltaPos.x),floor(playerPos.y),floor(playerPos.z))))
   {
-    xpos = xpos + deltax;
+    playerPos.x = playerPos.x + deltaPos.x;
   }
 
-  if(!World::blockExists(glm::ivec3(floor(xpos),floor(ypos),floor(zpos+deltaz))))
+  if(!World::blockExists(glm::ivec3(floor(playerPos.x),floor(playerPos.y),floor(playerPos.z+deltaPos.z))))
   {
-    zpos = zpos + deltaz;
+    playerPos.z = playerPos.z + deltaPos.z;
   }
 
-  if(!World::blockExists(glm::ivec3(floor(xpos),floor(ypos+deltay),floor(zpos))))
+  if(!World::blockExists(glm::ivec3(floor(playerPos.x),floor(playerPos.y+deltaPos.y),floor(playerPos.z))))
   {
-    ypos = ypos + deltay;
-    grounded = false;
+    playerPos.y = playerPos.y + deltaPos.y;
+    isGrounded = false;
   }
-  deltax /= 5;
-  deltay /= 5;
-  deltaz /= 5;
-  mainCam.setPosition((float)xpos,(float)ypos,(float)zpos);
+  deltaPos /= 5.0f;
+  mainCam.setPosition(playerPos);
 }
 
 void MainChar::moveRight()
 {
-  deltax += cos((mainCam.yaw+90)*PI/180.0)*moveSpeed;
-  deltaz += sin((mainCam.yaw+90)*PI/180.0)*moveSpeed;
+  deltaPos.x += cos((mainCam.yaw+90)*PI/180.0)*moveSpeed;
+  deltaPos.z += sin((mainCam.yaw+90)*PI/180.0)*moveSpeed;
 }
 
 void MainChar::moveLeft()
 {
-  deltax += cos((mainCam.yaw-90)*PI/180.0)*moveSpeed;
-  deltaz += sin((mainCam.yaw-90)*PI/180.0)*moveSpeed;
+  deltaPos.x += cos((mainCam.yaw-90)*PI/180.0)*moveSpeed;
+  deltaPos.z += sin((mainCam.yaw-90)*PI/180.0)*moveSpeed;
 }
 
 void MainChar::moveForward()
 {
-  deltax += cos(mainCam.yaw*PI/180.0)*moveSpeed;
-  deltaz += sin(mainCam.yaw*PI/180.0)*moveSpeed;
+  deltaPos.x += cos(mainCam.yaw*PI/180.0)*moveSpeed;
+  deltaPos.z += sin(mainCam.yaw*PI/180.0)*moveSpeed;
 }
 
 void MainChar::moveBackward()
 {
-  deltax += -cos(mainCam.yaw*PI/180.0)*moveSpeed;
-  deltaz += -sin(mainCam.yaw*PI/180.0)*moveSpeed;
+  deltaPos.x += -cos(mainCam.yaw*PI/180.0)*moveSpeed;
+  deltaPos.z += -sin(mainCam.yaw*PI/180.0)*moveSpeed;
 }
 
 void MainChar::setPosition(const glm::vec3 &pos)
 {
-  if(pow(pos.x-xpos,2)+pow(pos.y-ypos,2)+pow(pos.z-zpos,2) < 64*64) return;
-  xpos = pos.x;
-  ypos = pos.y;
-  zpos = pos.z;
+  if(pow(pos.x-playerPos.x,2)+pow(pos.y-playerPos.y,2)+pow(pos.z-playerPos.z,2) < 64*64) return;
+  playerPos.x = pos.x;
+  playerPos.y = pos.y;
+  playerPos.z = pos.z;
 }
 
 void MainChar::moveDown()
 {
-  deltay += -moveSpeed;
+  deltaPos.y += -moveSpeed;
 }
 
 void MainChar::moveUp()
 {
-  deltay += moveSpeed;
+  deltaPos.y += moveSpeed;
 }  static char heldItem=1;
 
 void MainChar::jump()
 {
-  if(grounded) deltay = 5.0f;
+  if(isGrounded) deltaPos.y = 5.0f;
 }
 //Destroys the block ur looking at
 void MainChar::destroyBlock()
@@ -168,7 +160,6 @@ void MainChar::destroyBlock()
 */
 
 
-  std::cout << "Destroying blocks\n";
   World::messenger.createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
 
 /*

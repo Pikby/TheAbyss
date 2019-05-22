@@ -61,7 +61,7 @@ public:
   static void addToBuildQueueFront(std::shared_ptr<BSPNode> curNode);
   static void initWorld(int numbBuildThreads,int width,int height);
 
-  static void renderWorld(float mainx, float mainy, float mainz);
+  static void renderWorld(const glm::vec3& pos);
 
   static void buildWorld(char threadNumb);
   static bool chunkExists(const glm::ivec3 &pos);
@@ -76,7 +76,7 @@ public:
   static void findChunkToRequest(const float mainx, const float mainy, const float mainz);
   static void addBlock(const glm::ivec3 &pos, uchar id);
   static void updateBlock(const glm::ivec3 &pos);
-  static void delScan(float mainx, float mainy, float mainz);
+  static void delScan(const glm::vec3& pos);
   static void generateChunkFromString(const glm::ivec3 &pos,const char* val);
 };
 

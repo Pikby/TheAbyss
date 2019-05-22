@@ -1,12 +1,16 @@
 #ifndef MENULIBRARY
 #define MENULIBRARY
+#include <functional>
+#include <list>
+#include <map>
+#include <glm/glm.hpp>
 
-#include "gui.h"
-
+class Widget;
 class Menu
 {
 private:
   std::list<Widget*> viewableList;
+  std::map<int,std::function<void()>> actionMap;
   Widget* focusTarget = NULL;
 public:
   Menu(){}
@@ -19,6 +23,7 @@ public:
   void GLFWScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
   void handleMouseHover(const glm::vec2 &mousePos);
   void drawGUI();
+  void setKeyMapping(int action, std::function<void()> handler);
 
   //addWidget transfers ownership to the menu, and the menu becomes in charge of freeing
   uint addWidget(Widget* widget){viewableList.push_back(widget);return viewableList.size()-1;}
