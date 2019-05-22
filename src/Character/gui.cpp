@@ -19,8 +19,10 @@
 
 
 
-void GUI::initGUI(const glm::ivec2 Dimensions)
+void GUI::initGUI(const glm::ivec2 Dimensions,const std::string &name)
 {
+  username = name;
+
   glm::mat4 projection = glm::ortho(0.0f,1.0f,0.0f,1.0f);
   dimensions = Dimensions;
 
@@ -44,6 +46,8 @@ void GUI::initGUI(const glm::ivec2 Dimensions)
   textRenderer.init();
   GUI::textRenderer.GUIShaderText.use();
 
+  chatBox.setOrigin(glm::vec2(0.2,0.2));
+  chatBox.setColor(glm::vec4(0,0,0,1));
   initDebugMenu();
 }
 

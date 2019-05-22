@@ -12,10 +12,10 @@ ChatBox::ChatBox(const glm::vec2 &newOrigin,const glm::vec2 &dimensions,double n
   focused = false;
   focusTarget = history.begin();
 
-
+  inputBox.setColor(glm::vec4(glm::vec3(0),1));
   auto submit = [&](std::string str)
   {
-    addLineToHistory(str);
+    addLineToHistory( GUI::username + ":" + str);
   };
 
   inputBox = EditBox("",origin,glm::vec2(dimensions.x,(characterScale*64)/GUI::dimensions.y),characterScale,submit);
@@ -23,6 +23,7 @@ ChatBox::ChatBox(const glm::vec2 &newOrigin,const glm::vec2 &dimensions,double n
 
 void ChatBox::draw()
 {
+  inputBox.setColor(glm::vec4(glm::vec3(0),1));
   inputBox.draw();
   GUI::drawQuad(origin-glm::vec2(padding),origin+dimensions+glm::vec2(padding),glm::vec4(0.5));
   double curTime = glfwGetTime();
@@ -55,7 +56,7 @@ void ChatBox::draw()
     for(auto itr = lines.rbegin(); itr != lines.rend();itr++)
     {
       std::string displayText = *itr;
-      GUI::renderText(displayText,origin + (float)i*offset,characterScale,glm::vec4(1,1,1,alpha));
+      GUI::renderText(displayText,origin + (float)i*offset,characterScale,glm::vec4(glm::vec3(color),alpha));
       i++;
     }
     target++;

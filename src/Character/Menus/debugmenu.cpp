@@ -7,7 +7,6 @@
 
 void GUI::initDebugMenu()
 {
-  InGame* inGame = new InGame;
   Label* test = new Label("DEBUG!!!",glm::vec2(0.5),12.0/64.0);
 
   test->setOnDraw([](Widget* parent)
@@ -49,18 +48,26 @@ void GUI::initDebugMenu()
   debugMenu.addWidget(ping);
   debugMenu.addWidget(fps);
   debugMenu.addWidget(test);
-  debugMenu.addWidget(inGame);
-  debugMenu.setFocusTarget(inGame);
+  debugMenu.addWidget(&inGame);
+  debugMenu.setFocusTarget(&inGame);
   debugMenu.setKeyMapping(GLFW_KEY_F1,[]()
   {
     setMenu(&gameMenu);
   });
-  inGame = new InGame;
-  gameMenu.addWidget(inGame);
-  gameMenu.setFocusTarget(inGame);
+
+  gameMenu.addWidget(&chatBox);
+  gameMenu.setFocusTarget(&inGame);
   gameMenu.setKeyMapping(GLFW_KEY_F1,[]()
   {
     setMenu(&debugMenu);
+  });
+  gameMenu.setKeyMapping(GLFW_KEY_T,[]()
+  {
+    gameMenu.setFocusTarget(&chatBox);
+  });
+  gameMenu.setKeyMapping(GLFW_KEY_ESCAPE,[]()
+  {
+    gameMenu.setFocusTarget(&inGame);
   });
 
   setMenu(&debugMenu);

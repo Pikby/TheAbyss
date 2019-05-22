@@ -7,6 +7,7 @@
 #include <list>
 #include <GLFW/glfw3.h>
 #include "../Widgets/textrenderer.h"
+#include "../Widgets/widgets.h"
 #include "../include/menus.h"
 class Shader;
 class Widget;
@@ -23,7 +24,9 @@ private:
   static uint quadVAO,quadVBO;
 public:
   static Menu debugMenu,gameMenu;
-
+  static ChatBox chatBox;
+  static InGame inGame;
+  static std::string username;
 
   static void setMenu(Menu* newMenu){currentMenu = newMenu;}
   static glm::vec2 getMousePos(){return mousePos;}
@@ -31,7 +34,7 @@ public:
   static glm::ivec2 dimensions;
   static void renderText(std::string text, glm::vec2 pos, float scale=1, glm::vec4 color=glm::vec4(1),glm::mat3 rot = glm::mat3(1),TextAlignment alignment = TEXTALILEFT){textRenderer.renderText(text,pos,scale,color,rot,alignment);}
   static glm::vec3 calculateStringDimensions(const std::string &line, double scale){return textRenderer.calculateStringDimensions(line,scale);}
-  static void initGUI(const glm::ivec2 Dimensions);
+  static void initGUI(const glm::ivec2 Dimensions, const std::string& name);
   static void freeGUI();
   static void initQuadVAO();
 
@@ -57,6 +60,8 @@ public:
   static void initDebugMenu();
 };
 #ifdef GUILIBRARYIMPLEMENTATION
+InGame GUI::inGame;
+ChatBox GUI::chatBox(glm::vec2(0.2,0.2),glm::vec2(0.2,0.2),12.0/64.0);
 Menu GUI::debugMenu, GUI::gameMenu;
 glm::vec2 GUI::mousePos;
 glm::ivec2 GUI::dimensions;
@@ -64,6 +69,7 @@ Menu* GUI::currentMenu = NULL;
 Shader GUI::GUIShader2D,GUI::GUIShaderImage;
 TextRenderer GUI::textRenderer;
 uint GUI::quadVAO,GUI::quadVBO;
+std::string GUI::username;
 
 #endif
 

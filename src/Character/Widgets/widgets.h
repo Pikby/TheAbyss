@@ -1,3 +1,6 @@
+#ifndef WIDGETLIBRARY
+#define WIDGETLIBRARY
+
 #include <glm/glm.hpp>
 #include <string>
 #include <list>
@@ -27,6 +30,7 @@ public:
     bool vertIn = pos.y > bottomLeft.y && pos.y < topRight.y;
     return horzIn && vertIn;
   }
+  void setOrigin(const glm::vec2 pos){origin = pos;}
   virtual void setColor(glm::vec4 Color){color = Color;}
   virtual bool isFocusable(){return focusable;}
   virtual void setFocused(bool b){focused = b;}
@@ -146,3 +150,6 @@ public:
   void handleMouseMovement(double xpos, double ypos) override;
   void handleMouseInput(int button,int action) override;
 };
+
+
+#endif

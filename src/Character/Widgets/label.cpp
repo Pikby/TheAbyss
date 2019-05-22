@@ -66,7 +66,7 @@ void EditBox::draw()
   if(text == "")
   {
     int displayCursorPosition = hasCursor && focused ? 0 : -1;
-    GUI::textRenderer.renderText(defaultText+ ' ',origin,characterScale,glm::vec4(0.5,0.5,0.5,1.0),glm::mat3(1),TEXTALILEFT,displayCursorPosition);
+    GUI::textRenderer.renderText(defaultText+ ' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,displayCursorPosition);
   }
   else
   {
@@ -94,8 +94,8 @@ void EditBox::draw()
     }
 
     int displayCursorPosition = negativeDir-1;
-    if(hasCursor && focused) GUI::textRenderer.renderText(displayText+' ',origin,characterScale,glm::vec4(1),glm::mat3(1),TEXTALILEFT,displayCursorPosition);
-    else GUI::textRenderer.renderText(displayText+' ',origin,characterScale,glm::vec4(1),glm::mat3(1),TEXTALILEFT,-1);
+    if(hasCursor && focused) GUI::textRenderer.renderText(displayText+' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,displayCursorPosition);
+    else GUI::textRenderer.renderText(displayText+' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,-1);
   }
   glDepthMask(GL_FALSE);
     GUI::drawQuad(origin-glm::vec2(padding),origin+dimensions+glm::vec2(padding),glm::vec4(glm::vec3(0.5),1));

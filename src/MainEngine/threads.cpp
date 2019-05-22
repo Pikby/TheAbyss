@@ -435,11 +435,14 @@ void receive()
         break;
       case(100):
         {
-          char* buf = new char[msg.length];
+          std::cout << "len: " << msg.length;
+          char* buf = new char[msg.length + 1];
+          buf[msg.length] = 0;
           World::messenger.receiveMessage(buf,msg.length);
           std::string line = "(Server): ";
           line.append(buf);
-          //MainChar::addChatLine(line);
+          std::cout << line << "\n";
+          GUI::chatBox.addLineToHistory(line);
           delete[] buf;
         }
         break;

@@ -100,7 +100,7 @@ int main()
   glFrontFace(GL_CCW);
 
   Shader::setShaderDirectory("../src/Shaders/");
-  GUI::initGUI(glm::vec2(winWidth,winHeight));
+  GUI::initGUI(glm::vec2(winWidth,winHeight),Settings::get("userName"));
 
   try
   {

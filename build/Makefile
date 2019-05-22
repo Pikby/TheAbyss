@@ -67,6 +67,7 @@ $(NOISEOBJECTPATH)%.o: $(NOISESRCPATH)%.cpp
 	@$(CC) $(NOISEFLAGSLINUX) -c $< -o $@
 
 $(SERVEROBJECTPATH)%.o: $(SERVERSRCPATH)%.cpp
+	@rm -f $@
 	@mkdir -p $@
 	@rmdir $@
 	@echo Compiling $<
