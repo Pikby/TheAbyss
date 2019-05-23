@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include "widgets.h"
 #include "../include/gui.h"
-
+#include "../../MainEngine/include/world.h"
 
 ChatBox::ChatBox(const glm::vec2 &newOrigin,const glm::vec2 &dimensions,double newSize) : Widget(newOrigin,dimensions),characterScale(newSize)
 {
@@ -16,6 +16,7 @@ ChatBox::ChatBox(const glm::vec2 &newOrigin,const glm::vec2 &dimensions,double n
   auto submit = [&](std::string str)
   {
     addLineToHistory( GUI::username + ":" + str);
+    World::messenger.createChatMessage(str);
   };
 
   inputBox = EditBox("",origin,glm::vec2(dimensions.x,(characterScale*64)/GUI::dimensions.y),characterScale,submit);

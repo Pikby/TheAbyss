@@ -2,13 +2,14 @@
 #define MAINCHARLIBRARY
 #include <atomic>
 #include <map>
+#include <set>
 #include "../../headers/camera.h"
 
 class Item;
 class MainChar
 {
 private:
-  static std::map<int,int> keyMap;
+  static std::set<int> keySet;
   static std::string userName;
 
   static Camera mainCam;
@@ -31,11 +32,8 @@ public:
   //Update movement
   static void update();
   static void processMouseMovement(float xoffset, float yoffset);
-  static void switchInventoryMode();
-  static void openChat();
-  static void closeChat();
-  static void sendMessage();
-  //Movement inputs
+
+  //All the character actions
   static void moveLeft();
   static void moveRight();
   static void moveForward();
@@ -44,17 +42,17 @@ public:
   static void moveUp();
   static void jump();
 
-
+  //Takes the key inputs to be mapped
   static void handleKeyPress(int key);
   static void handleKeyHold(int key);
   static void handleKeyRelease(int key);
   static void handleMouseClick(int key);
+
+  //Maniuplates block infront of the character
   static void addBlock(int id);
   static void destroyBlock();
   static void setPosition(const glm::vec3 &pos);
   static void draw();
-  //Hud functions
-  static void addCharacterToChat(int key);
 
   //Setters and Getters
   static Camera& getCamera(){return mainCam;}
@@ -62,6 +60,8 @@ public:
   static void setHeldItem(uint8_t id){heldItem = id;}
   static glm::vec3 getPosition(){return playerPos;}
 };
+
+
 #ifdef MAINCHARIMPLEMENTATION
   std::string MainChar::userName;
   float MainChar::gravity, MainChar::moveSpeed = 0.2f;
@@ -70,6 +70,6 @@ public:
   glm::vec3 MainChar::playerPos, MainChar::deltaPos;
   uint8_t MainChar::heldItem;
   bool MainChar::isGrounded;
-  std::map<int,int> MainChar::keyMap;
+  std::set<int> MainChar::keySet;
 #endif
 #endif
