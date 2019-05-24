@@ -76,9 +76,13 @@ public:
 
   static void buildWorld(char threadNumb);
   static bool chunkExists(const glm::ivec3 &pos);
+
+
   static void addPlayer(const glm::vec3 &pos, uint8_t id);
   static void removePlayer(uint8_t id);
   static void movePlayer(const glm::vec3 &pos, uint8_t id);
+  static void updatePlayerViewDirection(const glm::vec3 &pos, uint8_t id);
+
 
   static std::list<Light> findAllLights(const glm::vec3 &playerPos,int count);
   static void delBlock(const glm::ivec3 &pos);

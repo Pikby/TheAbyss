@@ -43,6 +43,7 @@ class Client
     void sendDelBlockAll(int x, int y, int z);
     void sendInitAll();
     void sendPositionAll(float x, float y, float z);
+    void sendViewDirectionAll(float x, float y, float z);
     void sendExit();
     void sendPing();
     void disconnect();

@@ -297,6 +297,7 @@ void Drawer::renderGBuffer()
     drawTerrainOpaque(shader,chunksToDraw);
     //skyBox.draw(&viewMat);
     drawObjects();
+    drawPlayers();
     //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 

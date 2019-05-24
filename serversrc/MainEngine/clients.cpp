@@ -202,7 +202,10 @@ void Client::recvMessages()
         sendAddBlockAll(x.i,y.i,z.i,ext1);
         break;
       case (91):
-        //sendPositionAll(x.f,y.f,z.f);
+        sendPositionAll(x.f,y.f,z.f);
+        break;
+      case (92):
+        sendViewDirectionAll(x.f,y.f,z.f);
         break;
       case (100):
         receiveChatMessage(length);
@@ -242,6 +245,12 @@ void Client::sendPositionAll(float x, float y,float z)
 {
   setPos(glm::vec3(x,y,z));
   std::shared_ptr<OutMessage> tmp(new OutMessage(91,id,0,0,x,y,z,NULL));
+  Server::messageAll(tmp);
+}
+
+void Client::sendViewDirectionAll(float x, float y, float z)
+{
+  std::shared_ptr<OutMessage> tmp(new OutMessage(92,id,0,0,x,y,z,NULL));
   Server::messageAll(tmp);
 }
 

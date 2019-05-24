@@ -28,8 +28,11 @@ public:
   void createMoveRequest(float x, float y, float z);
   void createAddBlockRequest(int x, int y, int z, uint8_t id);
   void createChatMessage(const std::string & msg);
+  void createViewDirectionChangeRequest(float x, float y, float z);
+
   void requestAddBlock(int x, int y, int z, uint8_t id);
   void createDelBlockRequest(int x, int y, int z);
+  void requestViewDirectionChange(float x, float y, float z);
   void requestDelBlock(int x, int y, int z);
   void requestMove(float x, float y, float z);
   void requestExit();

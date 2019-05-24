@@ -134,6 +134,12 @@ double Messenger::pingEnd()
 }
 
 
+void Messenger::createViewDirectionChangeRequest(float x, float y, float z)
+{
+  OutMessage tmp = OutMessage(92,0,0,0,x,y,z,0);
+  messageQueue.push(tmp);
+}
+
 void Messenger::createChatMessage(const std::string& msg)
 {
   OutMessage newMsg = OutMessage(100,0,0,0,0,0,0,std::make_shared<std::string> (msg));
@@ -251,10 +257,27 @@ void Messenger::requestMove(float x, float y, float z)
   }
   catch(...)
   {
-    std::cout << "ERROR: REQUESTING BLOCK DELETION, ERRNO: " << errno << "\n";
+    std::cout << "ERROR: REQUESTING PLAYER MOVE, ERRNO: " << errno << "\n";
   }
 }
 
+void Messenger::requestViewDirectionChange(float x,float y, float z)
+{
+  int32_t request[5];
+  request[0] = pack4chars(92,0,0,0);
+  request[1] = floatBitsToInt(x);
+  request[2] = floatBitsToInt(y);
+  request[3] = floatBitsToInt(z);
+  request[4] = 0;
+  try
+  {
+    sendMessage(request, sizeof(request));
+  }
+  catch(...)
+  {
+    std::cout << "ERROR: REQUESTING PLAYER CHANGE VIEW, ERRNO: " << errno << "\n";
+  }
+}
 
 void Messenger::requestExit()
 {

@@ -15,7 +15,7 @@ ChatBox::ChatBox(const glm::vec2 &newOrigin,const glm::vec2 &dimensions,double n
   inputBox.setColor(glm::vec4(glm::vec3(0),1));
   auto submit = [&](std::string str)
   {
-    addLineToHistory( GUI::username + ":" + str);
+    //addLineToHistory( GUI::username + ":" + str);
     World::messenger.createChatMessage(str);
   };
 

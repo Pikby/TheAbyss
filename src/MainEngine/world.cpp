@@ -93,9 +93,21 @@ void World::movePlayer(const glm::vec3 &pos, uint8_t id)
   if(tmp != NULL)
   {
     tmp->setPosition(pos);
-    tmp->updateModelMat();
   }
+}
 
+void World::updatePlayerViewDirection(const glm::vec3 &direction, uint8_t id)
+{
+  if(drawer.playerList.count(id) != 1)
+  {
+    std::cout << "ERROR: Attempting to move player that doesnt exist\n";
+    return;
+  }
+  std::shared_ptr<Object> tmp = drawer.playerList[id];
+  if(tmp != NULL)
+  {
+    tmp->setFacing(direction);
+  }
 }
 
 
@@ -209,7 +221,7 @@ void World::generateChunkFromString(const glm::ivec3 &chunk,const char* value)
 
   otherChunk = getChunk(glm::ivec3(chunkx,chunky-1,chunkz));
   if(otherChunk != NULL)
-  { 
+  {
     update(BOTTOMF,TOPF);
   }
   otherChunk = getChunk(glm::ivec3(chunkx,chunky+1,chunkz));

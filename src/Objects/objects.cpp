@@ -178,12 +178,50 @@ void Player::render()
 
 void Player::draw(Shader* shader,const glm::vec3 &viewPos)
 {
-  shader->setMat4("model",modelMat);
-  shader->setVec3("objectColor",color);
 
+  glm::mat4 model = glm::translate(glm::mat4(1),pos-viewPos);
+  glm::vec3 defaultFace = glm::vec3(0,1,0);
+  glm::mat4 rot1 =  glm::mat4(1);
+  if(defaultFace != curFacing)
+  {
+    glm::vec3 norm = glm::normalize(glm::cross(defaultFace,curFacing));
+    float angle = glm::angle(glm::normalize(curFacing),glm::normalize(defaultFace));
+    //std::cout << glm::to_string(norm) << angle << "\n";
+    rot1 = glm::rotate(angle,norm);
+  }
+
+
+
+  glm::mat4 rot2 = glm::mat4(1);
+  if(curFacing != nextFacing)
+  {
+    glm::vec3 norm = glm::normalize(glm::cross(curFacing,nextFacing));
+    float angle = glm::angle(glm::normalize(curFacing),glm::normalize(nextFacing));
+
+    double curTime = glfwGetTime();
+    float alpha = (rotateTimeEnd - glfwGetTime())/(rotateTimeEnd - rotateTimeStart);
+  }
+
+
+  glm::mat4 rotationMat = rot1 * rot2;
+
+  model  = model*rotationMat;
+
+  shader->use();
+  shader->setMat4("modelMat",model);
+  shader->setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
+
+  glm::mat4 faceModel = glm::translate(model,glm::vec3(0,1.5,0));
+  faceModel = glm::scale(faceModel,glm::vec3(0.5));
+  shader->setMat4("modelMat",faceModel);
+  shader->setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
+  glBindVertexArray(VAO);
+  glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
+  glBindVertexArray(0);
+
 }
 
 SkyBox::SkyBox(const std::string &filePath)

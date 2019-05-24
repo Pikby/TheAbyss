@@ -1,46 +1,77 @@
 #pragma once
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/vector_angle.hpp>
 #include "../../headers/shaders.h"
-#define GLM_ENABLE_EXPERIMENTAL
-//#include <glm/ext.hpp>
-//#include <glm/gtx/string_cast.hpp>
+
 #include <memory>
 
 class Camera;
 class Object
 {
 protected:
-  glm::vec3 pos,scale,rotAxis,color;
-  float angInRads;
+  glm::vec3 pos,scale,curFacing = glm::vec3(0,1,0),nextFacing =  glm::vec3(0,1,0),color;
+  double rotateTimeStart;
+  double rotateTimeEnd;
+  glm::quat curQuaternion = glm::quat(1,0,0,0);
+
+
+  glm::mat4 rotationMat;
+
+
   glm::mat4 modelMat;
   bool isRendered = false;
   public:
   void updateModelMat()
   {
-    modelMat = glm::mat4(1.0f);
-    modelMat = glm::translate(modelMat,pos);
-    modelMat = glm::rotate(modelMat,angInRads,rotAxis);
+    /*
+    modelMat = glm::translate(glm::mat4(1),pos);
+
+    glm::vec3 norm = glm::normalize(glm::cross(curFacing,nextFacing));
+    float angle = glm::angle(glm::normalize(curFacing),glm::normalize(nextFacing));
+    glm::quat nextQuaternion = glm::angleAxis(angle,norm);
+
+    glm::quat finalQuaternion;
+
+    double curTime = glfwGetTime();
+
+    if(curTime > rotateTimeEnd)
+    {
+      curFacing = nextFacing;
+      finalQuaternion = nextQuaternion;
+    }
+    else if(rotateTimeEnd != rotateTimeStart)
+    {
+      float alpha = (rotateTimeEnd - glfwGetTime())/(rotateTimeEnd - rotateTimeStart);
+      finalQuaternion = glm::slerp(curQuaternion,nextQuaternion,alpha);
+    }
+    glm::mat4 rotationMat = glm::toMat4(finalQuaternion);
+
+    modelMat = rotationMat*modelMat;
     modelMat = glm::scale(modelMat,scale);
+    */
   }
 
   Object(glm::vec3 p = glm::vec3(0,0,0),
                   glm::vec3 s = glm::vec3(1,1,1),
-                  glm::vec3 r = glm::vec3(0,1,0),
-                  float angInDegrees = 0)
+                  glm::vec3 r = glm::vec3(0,1,0))
+                  : pos(p), scale(s) , curFacing(r)
   {
-    pos = p;
-    scale = s;
-    rotAxis = r;
-    angInRads = glm::radians(angInDegrees);
     updateModelMat();
     color = glm::vec3(1.0f,1.0f,1.0f);
 
   }
-  void setRotation(const glm::vec3 &rot,const double &newAngInRads)
+  void setFacing(const glm::vec3 &newFace, double timeInSeconds = 0)
   {
-    rotAxis = rot;
-    angInRads = newAngInRads;
+    curFacing = newFace;
+    nextFacing = newFace;
+    rotateTimeEnd = glfwGetTime() + timeInSeconds;
+    rotateTimeStart = glfwGetTime();
   }
   void setModelMatrix(const glm::mat4 &newModel)
   {

@@ -102,7 +102,7 @@ void draw()
     }
     World::drawer.setTerrainColor(terrainColor);
     glm::vec3 dirLight(sunX,-1.0f,sunZ);
-
+    MainChar::update();
 
     World::drawer.updateDirectionalLight(dirLight,glm::vec3(0.8f,0.8f,0.8f));
 
@@ -323,10 +323,9 @@ void logic()
     //std::cout << deltaFrame << ":" << waitTime ;
     std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
     currentFrame = glfwGetTime();
-    MainChar::update();
+
     //DO the game logic
-    glm::vec3 pos = MainChar::getPosition();
-    World::messenger.createMoveRequest(pos.x,pos.y,pos.z);
+
 
 
 
@@ -366,6 +365,9 @@ void send()
           break;
         case(91):
           World::messenger.requestMove(msg.x.f,msg.y.f,msg.z.f);
+          break;
+        case(92):
+          World::messenger.requestViewDirectionChange(msg.x.f,msg.y.f,msg.z.f);
           break;
         case(100):
           World::messenger.sendChatMessage(msg.data);
@@ -423,19 +425,26 @@ void receive()
         World::addPlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
         break;
       case(91):
-        std::cout << "Moving player" << msg.x.f << msg.y.f << msg.z.f << "\n";
+        //std::cout << "Moving player" << msg.x.f << msg.y.f << msg.z.f << "\n";
         if(msg.ext1 == World::mainId)
         {
-          MainChar::setPosition(glm::vec3(msg.x.f,msg.y.f,msg.z.f));
+          //MainChar::setPosition(glm::vec3(msg.x.f,msg.y.f,msg.z.f));
         }
         else World::movePlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
         break;
+      case(92):
+        if(msg.ext1 == World::mainId)
+        {
+
+        }
+        else World::updatePlayerViewDirection(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
+        break;
+
       case(99):
         World::removePlayer(msg.ext1);
         break;
       case(100):
         {
-          std::cout << "len: " << msg.length;
           char* buf = new char[msg.length + 1];
           buf[msg.length] = 0;
           World::messenger.receiveMessage(buf,msg.length);
@@ -448,11 +457,12 @@ void receive()
         break;
       case(101):
         {
-          char* buf = new char[msg.length];
+          char* buf = new char[msg.length + 1];
+          buf[msg.length] = 0;
           World::messenger.receiveMessage(buf,msg.length);
           std::string line = std::string(buf,msg.length);
           std::cout << line;
-          //MainChar::addChatLine(line);
+          GUI::chatBox.addLineToHistory(line);
           delete[] buf;
         }
         break;

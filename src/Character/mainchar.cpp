@@ -56,6 +56,27 @@ void MainChar::handleKeyPress(int key)
 
 void MainChar::update()
 {
+
+  static double lastMoveTime = glfwGetTime();
+  static double lastSendTime = glfwGetTime();
+  const double movementSendRate = 1.0/10.0;
+  const double movementUpdateRate = 1.0/60.0;
+  double curTime = glfwGetTime();
+
+
+  if(curTime - lastSendTime > movementSendRate)
+  {
+    World::messenger.createMoveRequest(playerPos.x,playerPos.y,playerPos.z);
+    World::messenger.createViewDirectionChangeRequest(mainCam.front.x,mainCam.front.y,mainCam.front.z);
+  }
+
+
+  if(curTime-lastMoveTime < movementUpdateRate)
+  {
+    return;
+  }
+  lastMoveTime = curTime;
+
   for(auto it = keySet.begin();it!= keySet.end();++it)
   {
     handleKeyHold(*it);
