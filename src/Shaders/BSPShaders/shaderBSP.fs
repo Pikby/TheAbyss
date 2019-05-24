@@ -51,16 +51,16 @@ uniform ivec2 resolution;
 
 ivec2 texCoord = ivec2(TexCoords*textureSize(gColorSpec));
 
-vec4 objColorAO = texelFetch(gColorSpec, texCoord,4).rgba;
+vec4 objColorAO = texelFetch(gColorSpec, texCoord,0).rgba;
 vec3 objColor = objColorAO.rgb;
 
-vec4 transColorAO = texelFetch(transTexture, texCoord,4).rgba;
+vec4 transColorAO = texelFetch(transTexture, texCoord,0).rgba;
 vec3 transColor = transColorAO.rgb;
 float transColorCount = transColorAO.a;
 
 float AO = objColorAO.a;
-vec3 normal = texelFetch(gNormal, texCoord,4).rgb;
-vec3 fragPosition = texelFetch(gPosition,texCoord,4).rgb;
+vec3 normal = texelFetch(gNormal, texCoord,0).rgb;
+vec3 fragPosition = texelFetch(gPosition,texCoord,0).rgb;
 float fragDepth = length(fragPosition);
 
 float linstep(float low, float high, float v){
@@ -223,11 +223,11 @@ void main()
     //vec3 finColor = fog+objColor;
 
     //Pixel has no translucent objects
-
+    finalColor = vec4(finColor,1);
+    /*
     transColor += vec3(1.0f,1.0f,1.0f);
     if(transColor == vec3(0.0f,0.0f,0.0f))
     {
-      finalColor = vec4(finColor,1);
     }
     else
     {
@@ -236,6 +236,7 @@ void main()
       finalColor = vec4((finTransColor + finColor )/2.0f,1.0f);
 
     }
+    */
     float brightness = dot(finalColor.rgb,vec3(0.2126, 0.7152, 0.122));
     if(brightness > 1.0f)
     {

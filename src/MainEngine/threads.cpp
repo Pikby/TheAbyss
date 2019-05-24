@@ -31,7 +31,7 @@ GLFWwindow* createWindow(int width, int height)
   //Initial windows configs
 
 
-  glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwWindowHint(GLFW_SAMPLES, 1);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,5);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -96,7 +96,7 @@ void draw()
   bool shadowsOn = true;
   while(!glfwWindowShouldClose(window))
   {
-    std::cout << World::BSPmap.size << "\n";
+    //std::cout << World::BSPmap.size << "\n";
     static const char* current_item = "1.0";
     static const char* old_item = "1.0";
     if(current_item!=old_item)

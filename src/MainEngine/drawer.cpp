@@ -155,25 +155,27 @@ void Drawer::deleteAllBuffers()
 
 void Drawer::setAllBuffers()
 {
+
+  int samples = 1;
   glGenFramebuffers(1, &gBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
 
     glGenTextures(1, &gPosition);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gPosition);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 1,GL_RGB16F, screenWidth, screenHeight,true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples ,GL_RGB16F, screenWidth, screenHeight,true);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, gPosition, 0);
 
 
     glGenTextures(1, &gNormal);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gNormal);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 1, GL_RGB16F, screenWidth, screenHeight,true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples , GL_RGB16F, screenWidth, screenHeight,true);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, gNormal, 0);
 
 
     glGenTextures(1, &gColorSpec);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gColorSpec);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 1, GL_RGBA, screenWidth, screenHeight,true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples , GL_RGBA, screenWidth, screenHeight,true);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, gColorSpec, 0);
 
     {
@@ -184,7 +186,7 @@ void Drawer::setAllBuffers()
    unsigned int rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH24_STENCIL8, screenWidth, screenHeight);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, screenWidth, screenHeight);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
@@ -192,7 +194,7 @@ void Drawer::setAllBuffers()
         std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << endl;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-
+  /*
 
   glGenFramebuffers(1, &transBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
@@ -212,7 +214,7 @@ void Drawer::setAllBuffers()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, transDepth, 0);
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
-
+  */
   glGenFramebuffers(1,&PPBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
     glGenTextures(1, &PPTexture);

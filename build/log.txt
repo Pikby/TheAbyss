@@ -1,0 +1,16 @@
+initing GUI
+dims:1040:1040
+0.1
+0.2
+0.3
+dirShadowResolution:4096
+horzRenderDistance:2
+ipAddress:127.0.0.1
+port:3030
+renderBuffer:3
+userName:kibby
+vertRenderDistance:2
+windowHeight:1080
+windowWidth:1920
+worldName:default
+Successfully connected to server
