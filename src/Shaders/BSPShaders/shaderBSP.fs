@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 #define MAXDIRECTIONALLIGHTPARTS 4
 
 struct DirLight

@@ -1,13 +1,7 @@
-#version 330 core
+#version 430 core
 layout (location = 0) in vec3 position;
 layout (location = 1) in float texIds;
 layout (location = 2) in float packagef;
-
-
-
-
-
-
 
 out VS_OUT
 {

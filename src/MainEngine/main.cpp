@@ -69,6 +69,17 @@ int main()
   //glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
+  int major,minor;
+  glGetIntegerv(GL_MAJOR_VERSION,&major);
+  glGetIntegerv(GL_MAJOR_VERSION,&minor);
+  std::cout << major << ":" << minor << "\n";
+
+  const unsigned char* ver = glGetString(GL_VERSION);
+  std::cout << ver << std::endl;
+
+  const unsigned char* verglsl = glGetString(GL_SHADING_LANGUAGE_VERSION);
+  std::cout << verglsl << std::endl;
+
   glfwSwapInterval(0);//FPS Capping
   //Intialize glew and all related settings
 

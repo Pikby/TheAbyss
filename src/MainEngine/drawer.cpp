@@ -33,6 +33,7 @@ void Drawer::createTextureAtlas(const char* texture,int cellWidth)
     unsigned char* image = loadTexture(texture, &texWidth,&texHeight,&nrChannels);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight,0,GL_RGBA, GL_UNSIGNED_BYTE, image);
 
+    std::cout << texWidth << ":" << texHeight << "\n";
     //Max mipmaplevel is required in order to stop texture bleeding on very small mipmaps
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 7);
     glGenerateMipmap(GL_TEXTURE_2D);
@@ -160,32 +161,35 @@ void Drawer::setAllBuffers()
 
     glGenTextures(1, &gPosition);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gPosition);
-    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGB16F, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 1,GL_RGB16F, screenWidth, screenHeight,true);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, gPosition, 0);
 
 
     glGenTextures(1, &gNormal);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gNormal);
-    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGB16F, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 1, GL_RGB16F, screenWidth, screenHeight,true);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, gNormal, 0);
 
 
     glGenTextures(1, &gColorSpec);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gColorSpec);
-    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGBA, screenWidth*MSAA, screenHeight*MSAA, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 1, GL_RGBA, screenWidth, screenHeight,true);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, gColorSpec, 0);
 
     {
       unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
       glDrawBuffers(3, attachments);
     }
-    glGenTextures(1, &gDepth);
-    glBindTexture(GL_TEXTURE_2D, gDepth);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth*MSAA,screenHeight*MSAA, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gDepth, 0);
+   unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, GL_DEPTH24_STENCIL8, screenWidth, screenHeight);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << endl;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
@@ -195,7 +199,7 @@ void Drawer::setAllBuffers()
 
     glGenTextures(1, &transTexture);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, transTexture);
-    glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE,0,GL_RGBA16F,screenWidth*MSAA,screenHeight*MSAA,0,GL_RGBA,GL_FLOAT,0);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,8,GL_RGBA16F,screenWidth*MSAA,screenHeight*MSAA,true);
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, transTexture, 0);
 
@@ -301,6 +305,7 @@ void Drawer::renderGBuffer()
     //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
+  /*
   glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(-1.0f,-1.0f,-1.0f,1.0f);
@@ -326,7 +331,7 @@ void Drawer::renderGBuffer()
     //glEnable(GL_DEPTH_TEST);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   //std::cout << GL_DEPTH_SCALE << ":"<< GL_DEPTH_BIAS <<"\n";
-
+  */
 }
 
 void Drawer::renderDirectionalDepthMap()
@@ -341,8 +346,8 @@ void Drawer::renderDirectionalDepthMap()
       glGenTextures(1, &(dirLight.depthMap[i]));
       glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i]);
       int factor = i == 0 ? factor = 1 : factor = i*2;
-      glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_DEPTH_COMPONENT,
-                   directionalShadowResolution/factor,directionalShadowResolution/factor, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_DEPTH_COMPONENT,
+                   directionalShadowResolution/factor,directionalShadowResolution/factor,true);
       float borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
       //glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BORDER_COLOR, borderColor);
 

@@ -30,8 +30,10 @@ GLFWwindow* createWindow(int width, int height)
 {
   //Initial windows configs
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
+
+  glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,5);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   //Create the window
@@ -45,6 +47,8 @@ GLFWwindow* createWindow(int width, int height)
   {
     std::cout << "OPENGL ERRORa" << error << ":" << std::hex << error << "\n";
   }
+
+
   return window;
 }
 
@@ -92,6 +96,7 @@ void draw()
   bool shadowsOn = true;
   while(!glfwWindowShouldClose(window))
   {
+    std::cout << World::BSPmap.size << "\n";
     static const char* current_item = "1.0";
     static const char* old_item = "1.0";
     if(current_item!=old_item)
