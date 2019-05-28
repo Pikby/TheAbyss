@@ -18,36 +18,47 @@
 #define WORLDIMPLEMENTATION
 #include "include/world.h"
 #include "include/bsp.h"
+#include "include/drawer.h"
 #include "include/messenger.h"
+
 #include "../Settings/settings.h"
 #include "../TextureLoading/textureloading.h"
 #include "../Objects/include/items.h"
-
+#include "../Objects/include/objects.h"
 //Initialize all the static objects for world
 
 
 
 void World::initWorld(int NumbBuildThreads,int width,int height)
 {
+  messenger = std::make_unique<Messenger>();
+  drawer = std::make_unique<Drawer>();
+  drawer->directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
+
+  std::cout << "After cons\n";
   numbOfBuildThreads = NumbBuildThreads;
 
 
   ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
   ItemDatabase::loadItemDictionary("../assets/itemDictionary.dat");
   //Settings::set("unlockCamera","0");
-  Settings::print();
+  //Settings::print();
   try
   {
     horzRenderDistance = std::stoi(Settings::get("horzRenderDistance"));
     vertRenderDistance = std::stoi(Settings::get("vertRenderDistance"));
     renderBuffer = std::stoi(Settings::get("renderBuffer"));
-    drawer.directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
+
   }
   catch(...)
   {
     std::ofstream error("errorlog.txt");
     error << "Bad settings\n";
   }
+
+
+  //drawer->directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
+
   worldName = Settings::get("worldName");
   std::string ipAddress = Settings::get("ipAddress");
   std::string port = Settings::get("port");
@@ -55,7 +66,7 @@ void World::initWorld(int NumbBuildThreads,int width,int height)
   boost::filesystem::create_directory("saves");
   boost::filesystem::create_directory("saves/"+worldName);
   boost::filesystem::create_directory("saves/"+worldName+"/chunks");
-
+  std::cout << "Loading settings\n";
   drawnChunks = 0;
 
   std::string name;
@@ -64,9 +75,9 @@ void World::initWorld(int NumbBuildThreads,int width,int height)
   name.reserve(24);
   try
   {
-    messenger.setupSockets(ipAddress,port);
-    messenger.sendMessage(name.c_str(),24);
-    messenger.receiveMessage(&mainId,sizeof(mainId));
+    messenger->setupSockets(ipAddress,port);
+    messenger->sendMessage(name.c_str(),24);
+    messenger->receiveMessage(&mainId,sizeof(mainId));
   }catch(const char* err)
   {
     std::ofstream error("errorlog.txt");
@@ -75,21 +86,18 @@ void World::initWorld(int NumbBuildThreads,int width,int height)
   std::cout << "Done\n";
 
 
-  drawer.setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
-  drawer.setupShadersAndTextures(width,height);
-  drawer.updateViewProjection(45.0f,0.1f,(horzRenderDistance)*CHUNKSIZE);
 }
 
 
 
 void World::movePlayer(const glm::vec3 &pos, uint8_t id)
 {
-  if(drawer.playerList.count(id) != 1)
+  if(drawer->playerList.count(id) != 1)
   {
     std::cout << "ERROR: Attempting to move player that doesnt exist\n";
     return;
   }
-  std::shared_ptr<Object> tmp = drawer.playerList[id];
+  std::shared_ptr<Object> tmp = drawer->playerList[id];
   if(tmp != NULL)
   {
     tmp->setPosition(pos);
@@ -98,12 +106,12 @@ void World::movePlayer(const glm::vec3 &pos, uint8_t id)
 
 void World::updatePlayerViewDirection(const glm::vec3 &direction, uint8_t id)
 {
-  if(drawer.playerList.count(id) != 1)
+  if(drawer->playerList.count(id) != 1)
   {
     std::cout << "ERROR: Attempting to move player that doesnt exist\n";
     return;
   }
-  std::shared_ptr<Object> tmp = drawer.playerList[id];
+  std::shared_ptr<Object> tmp = drawer->playerList[id];
   if(tmp != NULL)
   {
     tmp->setFacing(direction);
@@ -115,7 +123,7 @@ void World::addPlayer(const glm::vec3 &pos, uint8_t id)
 {
   std::cout << "Adding player at" << glm::to_string(pos) << ":"<< (int) id << "\n";
   std::shared_ptr<Player> temp(new Player(pos));
-  drawer.playerList[id] = temp;
+  drawer->playerList[id] = temp;
 }
 
 
@@ -123,7 +131,7 @@ void World::removePlayer(uint8_t id)
 {
 
   std::cout << "Removing PLayer\n";
-  drawer.playerList.erase(id);
+  drawer->playerList.erase(id);
 
 }
 
@@ -148,9 +156,9 @@ std::shared_ptr<BSPNode> World::chunkRayCast(const glm::vec3 &pos, const glm::ve
 
 void World::calculateViewableChunks()
 {
-  glm::ivec3 min = toChunkCoords(drawer.viewMin) + glm::ivec3(-1,-1,-1);
-  glm::ivec3 max = toChunkCoords(drawer.viewMax) + glm::ivec3(1,1,1);;
-  drawer.chunksToDraw = BSPmap.findAll(min,max);
+  glm::ivec3 min = toChunkCoords(drawer->viewMin) + glm::ivec3(-1,-1,-1);
+  glm::ivec3 max = toChunkCoords(drawer->viewMax) + glm::ivec3(1,1,1);;
+  drawer->chunksToDraw = BSPmap.findAll(min,max);
 
   auto check = [](glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 target)
   {
@@ -160,10 +168,10 @@ void World::calculateViewableChunks()
       glm::vec3 chunkVec = target - a;
       return (glm::dot(chunkVec,UVCross) < 0);
   };
-  glm::vec3* viewFrustrum = drawer.viewFrustrum;
+  glm::vec3* viewFrustrum = drawer->viewFrustrum;
 
-  if(drawer.chunksToDraw->empty()) return;
-  for(auto it = drawer.chunksToDraw->cbegin();it != drawer.chunksToDraw->cend();)
+  if(drawer->chunksToDraw->empty()) return;
+  for(auto it = drawer->chunksToDraw->cbegin();it != drawer->chunksToDraw->cend();)
   {
     std::shared_ptr<BSPNode> curNode = (*it);
     glm::vec3 chunkVec = curNode->getRealWorldPosition();
@@ -175,7 +183,7 @@ void World::calculateViewableChunks()
     {
       ++it;
     }
-    else it = (drawer.chunksToDraw->erase(it));
+    else it = (drawer->chunksToDraw->erase(it));
   }
 
 }
@@ -284,7 +292,7 @@ void World::findChunkToRequest(const float mainx,const float mainy,const float m
     if(!chunkExists(glm::ivec3(org.x+x,org.y+y,org.z+z)))
     {
       std::cout << "Found missing chunk\n";
-      messenger.createChunkRequest(org.x+x,org.y+y,org.z+z);
+      messenger->createChunkRequest(org.x+x,org.y+y,org.z+z);
       return;
     }
     if(x < radius)
@@ -337,7 +345,7 @@ void World::renderWorld(const glm::vec3& pos)
         zchunk/= CHUNKSIZE;
         if(!chunkExists(glm::ivec3(xchunk+curx,ychunk+cury,zchunk+curz)))
         {
-          messenger.createChunkRequest(xchunk+curx,ychunk+cury,zchunk+curz);
+          messenger->createChunkRequest(xchunk+curx,ychunk+cury,zchunk+curz);
           lastFrame = currentFrame;
           currentFrame = glfwGetTime();
           double deltaFrame = currentFrame-lastFrame;
@@ -365,7 +373,8 @@ std::shared_ptr<BSPNode>  World::getChunk(const glm::ivec3 &pos)
   return BSPmap.get(pos);
 }
 
-std::list<Light> World::findAllLights(const glm::vec3 &playerPos,int count)
+/*
+std::list<World::Light> World::findAllLights(const glm::vec3 &playerPos,int count)
 {
   int total = 0;
   std::list<Light> lightList;
@@ -391,7 +400,7 @@ std::list<Light> World::findAllLights(const glm::vec3 &playerPos,int count)
         if(chunkExists(glm::ivec3(xchunk+curx,ychunk+cury,zchunk+curz)))
         {
           auto curChunk = getChunk(glm::ivec3(xchunk+curx,ychunk+cury,zchunk+curz));
-          std::list<Light> lights = curChunk->getFromLightList(count - total);
+          auto lights = curChunk->getFromLightList(count - total);
           if(lights.size() == 0)
           {
             continue;
@@ -404,6 +413,7 @@ std::list<Light> World::findAllLights(const glm::vec3 &playerPos,int count)
   }
   return lightList;
 }
+*/
 
 void World::deleteChunksFromQueue()
 {
@@ -422,7 +432,7 @@ void World::delChunk(const glm::ivec3 &pos)
   if(tempChunk != NULL)
   {
     BSPmap.del(pos);
-    messenger.requestMap.del(pos);
+    messenger->requestMap.del(pos);
     tempChunk->disconnect();
     chunkDeleteQueue.push(tempChunk);
     /*
@@ -490,7 +500,7 @@ glm::vec4 World::rayCast(const glm::vec3 &pos,const glm::vec3 &front, int max)
 
 
 
-glm::ivec3 inline World::toLocalCoords(const glm::ivec3 &in)
+glm::ivec3 World::toLocalCoords(const glm::ivec3 &in)
 {
   glm::ivec3 out;
   out.x = in.x >= 0 ? in.x % CHUNKSIZE : CHUNKSIZE + (in.x % CHUNKSIZE);
@@ -503,7 +513,7 @@ glm::ivec3 inline World::toLocalCoords(const glm::ivec3 &in)
   return out;
 }
 
-glm::ivec3 inline World::toChunkCoords(const glm::ivec3 &in)
+glm::ivec3 World::toChunkCoords(const glm::ivec3 &in)
 {
   glm::ivec3 out;
   out.x = floor((float)in.x/(float)CHUNKSIZE);
@@ -580,7 +590,7 @@ void World::addBlock(const glm::ivec3 &pos,uint8_t id)
   }
   if(ItemDatabase::blockDictionary[id].isLightSource)
   {
-    drawer.addLight(pos,glm::vec3(1.0f,1.0f,1.0f),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.5f,0.5f,0.5f),1.0,0.045,0.0075);
+    drawer->addLight(pos,glm::vec3(1.0f,1.0f,1.0f),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.5f,0.5f,0.5f),1.0,0.045,0.0075);
     std::cout << "Adding light\n";
   }
 }

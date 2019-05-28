@@ -1,19 +1,35 @@
 #ifndef GUILIBRARY
 #define GUILIBRARY
 
+
+
 #include <glm/glm.hpp>
 #include <map>
 #include <vector>
 #include <list>
 #include <GLFW/glfw3.h>
-#include "../Widgets/textrenderer.h"
-#include "../Widgets/widgets.h"
-#include "../include/menus.h"
+#include <memory>
+//#include "../Widgets/textrenderer.h"
+//#include "../Widgets/widgets.h"
+#include "../Widgets/texttypes.h"
+
 class Shader;
 class Widget;
 
-enum QuadDrawType {DEFAULTQUAD = 0,ROUNDEDQUAD = 1,INVERTEDQUAD = 2, CIRCLEQUAD = 3, OUTLINEQUAD =4};
+const glm::vec3 COLORPALETTE[5] =
+{
+  glm::vec3(85,192,127)/255.0f,
+  glm::vec3(100,162,95)/255.0f,
+  glm::vec3(94,106,10)/255.0f,
+  glm::vec3(151,147,17)/255.0f,
+  glm::vec3(246,255,123)/255.0f,
+};
 
+
+class ChatBox;
+class InGame;
+class TextRenderer;
+class Menu;
 class GUI
 {
 private:
@@ -23,17 +39,21 @@ private:
   static Shader GUIShader2D,GUIShaderImage;
   static uint quadVAO,quadVBO;
 public:
-  static Menu debugMenu,gameMenu;
-  static ChatBox chatBox;
-  static InGame inGame;
+  static std::unique_ptr<Menu> debugMenu,gameMenu,mainMenu;
+  static std::unique_ptr<ChatBox> chatBox;
+  static std::unique_ptr<InGame> inGame;
   static std::string username;
+
+  static std::unique_ptr<TextRenderer> textRenderer;
+  static glm::ivec2 dimensions;
+
 
   static void setMenu(Menu* newMenu){currentMenu = newMenu;}
   static glm::vec2 getMousePos(){return mousePos;}
-  static TextRenderer textRenderer;
-  static glm::ivec2 dimensions;
-  static void renderText(std::string text, glm::vec2 pos, float scale=1, glm::vec4 color=glm::vec4(1),glm::mat3 rot = glm::mat3(1),TextAlignment alignment = TEXTALILEFT){textRenderer.renderText(text,pos,scale,color,rot,alignment);}
-  static glm::vec3 calculateStringDimensions(const std::string &line, double scale){return textRenderer.calculateStringDimensions(line,scale);}
+  static void renderText(std::string text, glm::vec2 pos, float scale=1, glm::vec4 color=glm::vec4(1),glm::mat3 rot = glm::mat3(1),TextAlignment alignment = TEXTALILEFT,int cursorPosition = -1);
+  static glm::vec3 calculateStringDimensions(const std::string &line, double scale);
+
+  static std::vector<std::string> splitString(const std::string& string,double scale, int viewLength);
   static void initGUI(const glm::ivec2 Dimensions, const std::string& name);
   static void freeGUI();
   static void initQuadVAO();
@@ -58,16 +78,17 @@ public:
   static Widget* findWidgetAtMouse();
 
   static void initDebugMenu();
+  static void initMainMenu();
 };
 #ifdef GUILIBRARYIMPLEMENTATION
-InGame GUI::inGame;
-ChatBox GUI::chatBox(glm::vec2(0.2,0.2),glm::vec2(0.2,0.2),12.0/64.0);
-Menu GUI::debugMenu, GUI::gameMenu;
+std::unique_ptr<InGame> GUI::inGame;
+std::unique_ptr<ChatBox> GUI::chatBox;
+std::unique_ptr<Menu> GUI::debugMenu, GUI::gameMenu,GUI::mainMenu;
 glm::vec2 GUI::mousePos;
 glm::ivec2 GUI::dimensions;
 Menu* GUI::currentMenu = NULL;
 Shader GUI::GUIShader2D,GUI::GUIShaderImage;
-TextRenderer GUI::textRenderer;
+std::unique_ptr<TextRenderer> GUI::textRenderer;
 uint GUI::quadVAO,GUI::quadVBO;
 std::string GUI::username;
 

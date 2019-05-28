@@ -10,18 +10,25 @@
 Button::Button(const glm::vec2& Origin, const glm::vec2& Dimensions,const std::string& Text,std::function<void(int)> ClickHandler)
     : Widget(Origin,Dimensions),text(Text),clickHandler(ClickHandler)
   {
-    textOrigin = origin + glm::vec2(0,dimensions.y/2);
-    glm::vec3 stringDims = GUI::textRenderer.calculateStringDimensions(text,1);
+
+    glm::vec3 stringDims = GUI::calculateStringDimensions(text,1);
     textScale = (dimensions.x-padding)/(stringDims.x/GUI::dimensions.x);
   }
 
 void Button::draw()
 {
-  glm::vec4 color = glm::vec4(1);
-  if(glfwGetTime() < pressedTime) color = glm::vec4(glm::vec3(0.5),1);
 
-  GUI::drawQuad(origin,origin+ dimensions,color,CIRCLEQUAD);
-  GUI::renderText(text,textOrigin,textScale,glm::vec4(1,0,0,1));
+  glm::vec4 drawColor = color;
+  if(glfwGetTime() < pressedTime) drawColor = color*0.5f;
+  glm::vec2 textOrigin = origin + glm::vec2(0,dimensions.y/2);
+  GUI::drawQuad(origin,origin+ dimensions,drawColor,CIRCLEQUAD);
+  GUI::renderText(text,textOrigin,textScale,textColor);
+}
+
+
+void Button::submitEvent()
+{
+  clickHandler(GLFW_MOUSE_BUTTON_1);
 }
 
 void Button::handleMouseInput(int button, int mode)
@@ -30,7 +37,7 @@ void Button::handleMouseInput(int button, int mode)
   if(mode == GLFW_PRESS)
   {
     pressedTime = glfwGetTime() + 1;
-    clickHandler(button);
+    submitEvent();
   }
   else
   {

@@ -1,6 +1,6 @@
 #pragma once
 enum Type {NONE,MELEEWEAPON,RANGEDWEAPON};
-enum RenderType{OPAQUE = 0, TRANSLUCENT = 1, TRANSPARENT = 2};
+
 #include <string>
 #include <glm/glm.hpp>
 #include <vector>
@@ -9,6 +9,7 @@ enum RenderType{OPAQUE = 0, TRANSLUCENT = 1, TRANSPARENT = 2};
 #include <algorithm>
 #include <map>
 
+#include "../../MainEngine/include/types.h"
 class Block;
 
 
@@ -62,9 +63,6 @@ public:
 #define BLOCKRES 128
 
 
-enum Faces {FRONTF = 1 << 0, BACKF = 1 << 1,
-            TOPF = 1 << 2, BOTTOMF = 1 << 3,
-            RIGHTF = 1 << 4, LEFTF = 1 << 5};
 
 class Block
 {
@@ -101,6 +99,7 @@ public:
     std::cout << "\n";
   }
 
+/*
   uint8_t getFace(Faces face)
   {
     switch(face)
@@ -114,7 +113,7 @@ public:
       default : return false; break;
     }
   }
-
+  */
   uint8_t getTop()
   {
     return texArray[0];

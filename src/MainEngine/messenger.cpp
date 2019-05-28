@@ -16,6 +16,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include "include/world.h"
 #include "include/messenger.h"
 
 void Messenger::setupSockets(std::string ipAddress,std::string port)
@@ -225,6 +226,7 @@ void Messenger::createDelBlockRequest(int x, int y, int z)
   OutMessage tmp = OutMessage(1,0,0,0,x,y,z,0);
   messageQueue.push(tmp);
 }
+
 void Messenger::requestDelBlock(int x, int y, int z)
 {
   int32_t request[5];

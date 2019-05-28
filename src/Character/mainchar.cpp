@@ -7,13 +7,14 @@
 #include <map>
 #include <string>
 
+#include "../MainEngine/include/messenger.h"
 #include "../MainEngine/include/world.h"
 #include "../headers/shaders.h"
 #include "../Settings/settings.h"
 
 #define MAINCHARIMPLEMENTATION
 #include "include/mainchar.h"
-#include "../MainEngine/imgui/imgui.h"
+
 
 
 
@@ -51,7 +52,7 @@ void MainChar::handleKeyRelease(int key)
 void MainChar::handleKeyPress(int key)
 {
   keySet.insert(key);
-  if(key == GLFW_KEY_P) World::messenger.createPingRequest();
+  if(key == GLFW_KEY_P) PlayerWorld.messenger->createPingRequest();
 }
 
 void MainChar::update()
@@ -66,8 +67,8 @@ void MainChar::update()
 
   if(curTime - lastSendTime > movementSendRate)
   {
-    World::messenger.createMoveRequest(playerPos.x,playerPos.y,playerPos.z);
-    World::messenger.createViewDirectionChangeRequest(mainCam.front.x,mainCam.front.y,mainCam.front.z);
+    PlayerWorld.messenger->createMoveRequest(playerPos.x,playerPos.y,playerPos.z);
+    PlayerWorld.messenger->createViewDirectionChangeRequest(mainCam.front.x,mainCam.front.y,mainCam.front.z);
   }
 
 
@@ -82,17 +83,17 @@ void MainChar::update()
     handleKeyHold(*it);
   }
 
-  if(!World::blockExists(glm::ivec3(floor(playerPos.x+deltaPos.x),floor(playerPos.y),floor(playerPos.z))))
+  if(!PlayerWorld.blockExists(glm::ivec3(floor(playerPos.x+deltaPos.x),floor(playerPos.y),floor(playerPos.z))))
   {
     playerPos.x = playerPos.x + deltaPos.x;
   }
 
-  if(!World::blockExists(glm::ivec3(floor(playerPos.x),floor(playerPos.y),floor(playerPos.z+deltaPos.z))))
+  if(!PlayerWorld.blockExists(glm::ivec3(floor(playerPos.x),floor(playerPos.y),floor(playerPos.z+deltaPos.z))))
   {
     playerPos.z = playerPos.z + deltaPos.z;
   }
 
-  if(!World::blockExists(glm::ivec3(floor(playerPos.x),floor(playerPos.y+deltaPos.y),floor(playerPos.z))))
+  if(!PlayerWorld.blockExists(glm::ivec3(floor(playerPos.x),floor(playerPos.y+deltaPos.y),floor(playerPos.z))))
   {
     playerPos.y = playerPos.y + deltaPos.y;
     isGrounded = false;
@@ -150,14 +151,14 @@ void MainChar::jump()
 
 void MainChar::destroyBlock()
 {
-  glm::vec4 block = World::rayCast(mainCam.position,mainCam.front,reach);
+  glm::vec4 block = PlayerWorld.rayCast(mainCam.position,mainCam.front,reach);
   if(block.w == NOTHING) return;
-  World::messenger.createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
+  PlayerWorld.messenger->createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
 }
 
 void MainChar::addBlock(int id)
 {
-  glm::vec4 block = World::rayCast(mainCam.position,mainCam.front,reach);
+  glm::vec4 block = PlayerWorld.rayCast(mainCam.position,mainCam.front,reach);
   if(block.w == NOTHING) return;
 
   glm::vec3 p1 = glm::vec3(block);
@@ -169,15 +170,15 @@ void MainChar::addBlock(int id)
 
   if(x != 0)
   {
-    World::messenger.createAddBlockRequest(floor(p1.x)-sign(x),floor(p1.y),floor(p1.z),id);
+    PlayerWorld.messenger->createAddBlockRequest(floor(p1.x)-sign(x),floor(p1.y),floor(p1.z),id);
   }
   else if(y != 0)
   {
-    World::messenger.createAddBlockRequest(floor(p1.x),floor(p1.y)-sign(y),floor(p1.z),id);
+    PlayerWorld.messenger->createAddBlockRequest(floor(p1.x),floor(p1.y)-sign(y),floor(p1.z),id);
   }
   else if(z != 0)
   {
-    World::messenger.createAddBlockRequest(floor(p1.x),floor(p2.y),floor(p1.z)-sign(z),id);
+    PlayerWorld.messenger->createAddBlockRequest(floor(p1.x),floor(p2.y),floor(p1.z)-sign(z),id);
   }
 
 }
@@ -192,6 +193,6 @@ void MainChar::handleMouseClick(int key)
   switch(key)
   {
     case GLFW_MOUSE_BUTTON_LEFT: destroyBlock() ; break;
-    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(heldItem); break;
+    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(1); break;
   }
 }

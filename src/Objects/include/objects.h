@@ -7,11 +7,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>
-#include "../../headers/shaders.h"
+#include <iostream>
+
+
 
 #include <memory>
 
-class Camera;
+class Shader;
 class Object
 {
 protected:
@@ -120,17 +122,4 @@ public:
   void draw(Shader* shader,const glm::vec3 &viewPos);
   void render();
   bool isCollided(Cube* cube);
-};
-
-class SkyBox
-{
-  private:
-  unsigned int VAO, VBO,texID;
-  glm::mat4 projectMat;
-  Shader skyboxShader;
-  public:
-  SkyBox(const std::string &filePath);
-  SkyBox(){};
-  void draw(glm::mat4* view);
-
 };

@@ -1,12 +1,16 @@
 #ifndef WIDGETLIBRARY
 #define WIDGETLIBRARY
 
+
+
 #include <glm/glm.hpp>
 #include <string>
 #include <list>
 #include <iostream>
 #include <vector>
 #include <functional>
+#include "texttypes.h"
+
 
 class Widget
 {
@@ -30,11 +34,17 @@ public:
     bool vertIn = pos.y > bottomLeft.y && pos.y < topRight.y;
     return horzIn && vertIn;
   }
-  void setOrigin(const glm::vec2 pos){origin = pos;}
+  void setOrigin(const glm::vec2 &pos){origin = pos;}
+  glm::vec2 getOrigin(){return origin;}
+
+  glm::vec2 getDimensions(){return dimensions;}
+
   virtual void setColor(glm::vec4 Color){color = Color;}
-  virtual bool isFocusable(){return focusable;}
+  virtual bool getFocusable(){return focusable;}
+  virtual void setFocusable(bool b){focusable = b;};
   virtual void setFocused(bool b){focused = b;}
   virtual void draw(){};
+  virtual void submitEvent(){};
   virtual void handleClick(){};
   virtual void handleKeyInput(int key,int action){}
   virtual void handleCharInput(uint character){}
@@ -65,24 +75,41 @@ public:
   void handleKeyInput(int key,int action) override;
 };
 
+
+class Quad : public Widget
+{
+private:
+  QuadDrawType type = DEFAULTQUAD;
+  uint textId;
+public:
+  Quad(){};
+  Quad(const glm::vec2& Origin, const glm::vec2& Dims, uint id = -1);
+  void draw() override;
+  void setDrawType(QuadDrawType newType) {type = newType;}
+};
+
 class Label : public Widget
 {
 private:
+  glm::mat3 rotMat = glm::mat3(1);
   std::string label;
   double characterScale;
+  TextAlignment  textAlignment;
 public:
   Label(){};
-  Label(const std::string& text,const glm::vec2& Origin,double CharacterScale);
+  Label(const std::string& text,const glm::vec2& Origin,double CharacterScale,TextAlignment ali= TEXTALILEFT);
   void updateLabel(const std::string& str);
   void draw() override;
+  void setRotMat(const glm::mat3& mat){rotMat = mat;}
 };
 
 class Button : public Widget
 {
 private:
-  glm::vec2 textOrigin;
   double textScale;
   double pressedTime;
+
+  glm::vec4 textColor = glm::vec4(0,0,0,1);
   std::string text = "";
   std::function<void(int)> clickHandler = NULL;
 public:
@@ -91,7 +118,8 @@ public:
 
   void draw() override;
   void handleMouseInput(int button, int action) override;
-
+  void submitEvent() override;
+  void setTextColor(glm::vec4 color){textColor = color;}
 };
 
 class ChatBox : public Widget
@@ -141,9 +169,28 @@ public:
   void draw() override;
 };
 
+
+class WidgetList : public Widget
+{
+private:
+  int selected = -1;
+  std::list<Widget*> widgetList;
+  glm::vec2 cellOffset;
+  std::function<glm::vec2(Widget* parent,int i)> offsetFunction = NULL;
+public:
+  WidgetList(const glm::vec2 &Origin);
+  void draw() override;
+  void handleKeyInput(int key,int action) override;
+
+  void addWidget(Widget* widget);
+  void setOffsetFunction(std::function<glm::vec2(Widget* parent, int i)> f){offsetFunction =f;}
+};
+
+
 class InGame : public Widget
 {
 public:
+  void draw() override;
   void handleKeyInput(int key,int action) override;
   void handleCharInput(uint character) override;
   void handleScrollInput(double xoffset,double yoffset) override;

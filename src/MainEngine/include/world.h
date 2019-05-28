@@ -8,11 +8,15 @@
 #include <map>
 #include <queue>
 #include <glm/glm.hpp>
-#include "../../Objects/include/objects.h"
-#include "messenger.h"
-#include "drawer.h"
+
+
+#include "../../headers/shaders.h"
 #include "../../headers/threadSafeQueue.h"
 #include "../../headers/3dmap.h"
+#include "../../headers/camera.h"
+
+
+#include "messages.h"
 
 
 struct WorldStats
@@ -23,82 +27,98 @@ struct WorldStats
   double pingInMS;
 };
 
-
-
 //Class which encapsulates all the chunks as well as the shaders and dicionary
 class BSPNode;
 class MainChar;
 class Player;
+class Object;
+class Cube;
+class Drawer;
+class Messenger;
+
 enum target{BLOCK = 0, NOTHING = -1};
 class World
 {
 private:
+  void checkForUpdates(const glm::ivec3 &local,std::shared_ptr<BSPNode> chunk);
+public:
   static glm::ivec3 toLocalCoords(const glm::ivec3 &in);
   static glm::ivec3 toChunkCoords(const glm::ivec3 &in);
-  static inline void checkForUpdates(const glm::ivec3 &local,std::shared_ptr<BSPNode> chunk);
-public:
-  static Messenger messenger;
-  static Drawer drawer;
-  static WorldStats worldStats;
 
-  static Map3D<std::shared_ptr<BSPNode>> BSPmap;
-  static char mainId;
+  std::unique_ptr<Messenger>  messenger;
+  std::unique_ptr<Drawer> drawer;
+  WorldStats worldStats;
 
-  static TSafeQueue<std::shared_ptr<BSPNode>> buildQueue;
-  static TSafeQueue<std::shared_ptr<BSPNode>> chunkDeleteQueue;
-  static int horzRenderDistance,vertRenderDistance,renderBuffer;
-  static int drawnChunks;
-  static int numbOfBuildThreads;
+  Map3D<std::shared_ptr<BSPNode>> BSPmap;
+  char mainId;
+
+  TSafeQueue<std::shared_ptr<BSPNode>> buildQueue;
+  TSafeQueue<std::shared_ptr<BSPNode>> chunkDeleteQueue;
+  int horzRenderDistance,vertRenderDistance,renderBuffer;
+  int drawnChunks;
+  int numbOfBuildThreads;
 
 
 
   //The name of the world, for saving and loading
-  static std::string worldName;
-  static void calculateViewableChunks();
-  static bool blockExists(const glm::ivec3 &pos);
-  static bool blockExists(const glm::vec3 &pos)
+  std::string worldName;
+  void initWorld(int numbBuildThreads,int width,int height);
+
+  void calculateViewableChunks();
+  bool blockExists(const glm::ivec3 &pos);
+  bool blockExists(const glm::vec3 &pos)
   {
     return blockExists(glm::ivec3(floor(pos)));
   }
 
-  static int anyExists(const glm::vec3 &pos);
-  static bool entityExists(const glm::vec3 &pos);
+  int anyExists(const glm::vec3 &pos);
+  bool entityExists(const glm::vec3 &pos);
 
-  static std::shared_ptr<BSPNode> getChunk(const glm::ivec3 &pos);
-  static std::shared_ptr<BSPNode> chunkRayCast(const glm::vec3 &pos, const glm::vec3 &front);
-  static glm::vec4 rayCast(const glm::vec3 &pos,const glm::vec3 &front, int max);
+  std::shared_ptr<BSPNode> getChunk(const glm::ivec3 &pos);
+  std::shared_ptr<BSPNode> chunkRayCast(const glm::vec3 &pos, const glm::vec3 &front);
+  glm::vec4 rayCast(const glm::vec3 &pos,const glm::vec3 &front, int max);
 
-  static void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
-  static void addToBuildQueueFront(std::shared_ptr<BSPNode> curNode);
-  static void initWorld(int numbBuildThreads,int width,int height);
+  void addToBuildQueue(std::shared_ptr<BSPNode> curNode);
+  void addToBuildQueueFront(std::shared_ptr<BSPNode> curNode);
 
-  static void renderWorld(const glm::vec3& pos);
+  void renderWorld(const glm::vec3& pos);
 
-  static void buildWorld(char threadNumb);
-  static bool chunkExists(const glm::ivec3 &pos);
-
-
-  static void addPlayer(const glm::vec3 &pos, uint8_t id);
-  static void removePlayer(uint8_t id);
-  static void movePlayer(const glm::vec3 &pos, uint8_t id);
-  static void updatePlayerViewDirection(const glm::vec3 &pos, uint8_t id);
+  void buildWorld(char threadNumb);
+  bool chunkExists(const glm::ivec3 &pos);
 
 
-  static std::list<Light> findAllLights(const glm::vec3 &playerPos,int count);
-  static void delBlock(const glm::ivec3 &pos);
-  static void delChunk(const glm::ivec3 &pos);
-  static void deleteChunksFromQueue();
-  static void findChunkToRequest(const float mainx, const float mainy, const float mainz);
-  static void addBlock(const glm::ivec3 &pos, uint8_t id);
-  static void updateBlock(const glm::ivec3 &pos);
-  static void delScan(const glm::vec3& pos);
-  static void generateChunkFromString(const glm::ivec3 &pos,const char* val);
+  void addPlayer(const glm::vec3 &pos, uint8_t id);
+  void removePlayer(uint8_t id);
+  void movePlayer(const glm::vec3 &pos, uint8_t id);
+  void updatePlayerViewDirection(const glm::vec3 &pos, uint8_t id);
+
+
+  //std::list<BSP::Light> findAllLights(const glm::vec3 &playerPos,int count);
+  void delBlock(const glm::ivec3 &pos);
+  void delChunk(const glm::ivec3 &pos);
+  void deleteChunksFromQueue();
+  void findChunkToRequest(const float mainx, const float mainy, const float mainz);
+  void addBlock(const glm::ivec3 &pos, uint8_t id);
+  void updateBlock(const glm::ivec3 &pos);
+  void delScan(const glm::vec3& pos);
+  void generateChunkFromString(const glm::ivec3 &pos,const char* val);
 };
 
+extern World PlayerWorld;
 
+/*
 #ifdef WORLDIMPLEMENTATION
+
+
+int World::Messenger::fd;
+std::chrono::system_clock::time_point World::Messenger::lastPing;
+Map3D<bool> World::Messenger::requestMap;
+TSafeQueue<OutMessage> World::Messenger::messageQueue;
+
+
+
 WorldStats World::worldStats;
-Messenger World::messenger;
+
 Drawer World::drawer;
 Map3D<std::shared_ptr<BSPNode>> World::BSPmap;
 char World::mainId;
@@ -110,5 +130,5 @@ int World::numbOfBuildThreads;
 std::string World::worldName;
 #endif
 
-
+*/
 #endif

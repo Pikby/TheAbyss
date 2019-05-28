@@ -68,7 +68,7 @@ public:
   int MainChar::reach = 200;
   Camera MainChar::mainCam;
   glm::vec3 MainChar::playerPos, MainChar::deltaPos;
-  uint8_t MainChar::heldItem;
+  uint8_t MainChar::heldItem=1;
   bool MainChar::isGrounded;
   std::set<int> MainChar::keySet;
 #endif

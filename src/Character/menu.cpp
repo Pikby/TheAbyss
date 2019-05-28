@@ -58,7 +58,7 @@ void Menu::GLFWMouseButtonCallback(GLFWwindow* window, int button,int action, in
     if(widget->isIn(GUI::getMousePos()))
     {
       widget->handleMouseInput(button,action);
-      if(widget->isFocusable())
+      if(widget->getFocusable())
       {
         if(focusTarget != NULL)
         {

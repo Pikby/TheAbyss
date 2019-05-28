@@ -201,7 +201,7 @@ void main()
     shadow = 1-calcDirShadows();
   }
 
-
+  shadow = 1;
 
 
 

@@ -1,0 +1,33 @@
+../bin/client/Character/Widgets/chatbox.o: \
+ ../src/Character/Widgets/chatbox.cpp ../src/Character/Widgets/widgets.h \
+ ../src/Character/Widgets/../Widgets/textrenderer.h \
+ /usr/include/freetype2/ft2build.h \
+ /usr/include/freetype2/freetype/config/ftheader.h \
+ /usr/include/freetype2/freetype/freetype.h \
+ /usr/include/freetype2/freetype/config/ftconfig.h \
+ /usr/include/freetype2/freetype/config/ftoption.h \
+ /usr/include/freetype2/freetype/config/ftstdlib.h \
+ /usr/include/freetype2/freetype/fttypes.h \
+ /usr/include/freetype2/freetype/ftsystem.h \
+ /usr/include/freetype2/freetype/ftimage.h \
+ /usr/include/freetype2/freetype/fterrors.h \
+ /usr/include/freetype2/freetype/ftmoderr.h \
+ /usr/include/freetype2/freetype/fterrdef.h \
+ ../src/Character/Widgets/../Widgets/../../headers/shaders.h \
+ ../src/Character/Widgets/../include/gui.h \
+ ../src/Character/Widgets/../include/../Widgets/textrenderer.h \
+ ../src/Character/Widgets/../include/../Widgets/widgets.h \
+ ../src/Character/Widgets/../include/../include/menus.h \
+ ../src/Character/Widgets/../../MainEngine/include/world.h \
+ ../src/Character/Widgets/../../MainEngine/include/../../Objects/include/objects.h \
+ ../src/Character/Widgets/../../MainEngine/include/../../Objects/include/../../headers/shaders.h \
+ ../src/Character/Widgets/../../MainEngine/include/../../headers/threadSafeQueue.h \
+ ../src/Character/Widgets/../../MainEngine/include/../../headers/3dmap.h \
+ ../src/Character/Widgets/../../MainEngine/include/../../headers/RWLock.h \
+ ../src/Character/Widgets/../../MainEngine/include/messages.h \
+ ../src/Character/Widgets/../../MainEngine/include/drawer.h \
+ ../src/Character/Widgets/../../MainEngine/include/bsp.h \
+ ../src/Character/Widgets/../../MainEngine/include/../../headers/shaders.h \
+ ../src/Character/Widgets/../../MainEngine/include/../../headers/3darray.h \
+ ../src/Character/Widgets/../../MainEngine/include/../../Objects/include/items.h \
+ ../src/Character/Widgets/../../MainEngine/include/../../headers/camera.h

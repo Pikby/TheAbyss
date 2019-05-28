@@ -10,6 +10,7 @@
 #include "include/menus.h"
 
 #include "Widgets/widgets.h"
+#include "Widgets/textrenderer.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 #include <GL/glew.h>
@@ -21,6 +22,13 @@
 
 void GUI::initGUI(const glm::ivec2 Dimensions,const std::string &name)
 {
+  chatBox = std::make_unique<ChatBox>(glm::vec2(0.2,0.2),glm::vec2(0.2,0.2),12.0/64.0);
+  inGame = std::make_unique<InGame>();
+  textRenderer = std::make_unique<TextRenderer>();
+  debugMenu = std::make_unique<Menu>();
+  gameMenu = std::make_unique<Menu>();
+  mainMenu = std::make_unique<Menu>();
+
   username = name;
 
   glm::mat4 projection = glm::ortho(0.0f,1.0f,0.0f,1.0f);
@@ -43,18 +51,25 @@ void GUI::initGUI(const glm::ivec2 Dimensions,const std::string &name)
 
 
   initQuadVAO();
-  textRenderer.init();
-  GUI::textRenderer.GUIShaderText.use();
+  textRenderer->init();
+  GUI::textRenderer->GUIShaderText->use();
 
-  chatBox.setOrigin(glm::vec2(0.2,0.2));
-  chatBox.setColor(glm::vec4(0,0,0,1));
+  chatBox->setOrigin(glm::vec2(0.2,0.2));
+  chatBox->setColor(glm::vec4(0,0,0,1));
   initDebugMenu();
+  initMainMenu();
 }
 
 void GUI::drawGUI()
 {
   if(currentMenu == NULL) return;
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+  glDisable(GL_DEPTH_TEST);
   currentMenu->drawGUI();
+  glEnable(GL_DEPTH_TEST);
+  textRenderer->drawAllText();
 }
 
 void GUI::freeGUI()
@@ -150,8 +165,20 @@ void GUI::drawQuad(const glm::vec2 &p1, const glm::vec2 &p2, const glm::vec2 &p3
   drawTriangle(p1,p2,p3,shader);
   drawTriangle(p1,p3,p4,shader);
 }
+void GUI::renderText(std::string text, glm::vec2 pos, float scale, glm::vec4 color,glm::mat3 rot,TextAlignment alignment,int cursorPosition)
+{
+  textRenderer->renderText(text,pos,scale,color,rot,alignment,cursorPosition);
+}
 
+glm::vec3 GUI::calculateStringDimensions(const std::string &line, double scale)
+{
+  return textRenderer->calculateStringDimensions(line,scale);
+}
 
+std::vector<std::string> GUI::splitString(const std::string& string,double scale, int viewLength)
+{
+  return textRenderer->splitString(string,scale,viewLength);
+}
 
 void GUI::drawTriangle(const glm::vec2& p1,const glm::vec2& p2, const glm::vec2& p3,Shader* shader)
 {

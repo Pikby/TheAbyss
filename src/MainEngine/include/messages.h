@@ -1,4 +1,5 @@
-
+#ifndef MESSAGESHEADER
+#define MESSAGESHEADER
 union IntOrFloat
 {
   int i;
@@ -72,3 +73,5 @@ struct OutMessage
     data = newData;
   }
 };
+
+#endif

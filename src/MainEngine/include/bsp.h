@@ -5,10 +5,14 @@
 #include <atomic>
 #include <mutex>
 #include <list>
+#include <vector>
+#include <map>
 
-#include "../../headers/shaders.h"
 #include "../../headers/3darray.h"
-#include "../../Objects/include/items.h"
+#include "types.h"
+
+class Shader;
+
 
 typedef unsigned char uint8_t;
 #define CHUNKSIZE 32

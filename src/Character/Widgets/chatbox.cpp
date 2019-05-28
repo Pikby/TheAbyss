@@ -4,7 +4,7 @@
 #include "widgets.h"
 #include "../include/gui.h"
 #include "../../MainEngine/include/world.h"
-
+#include "../../MainEngine/include/messenger.h"
 ChatBox::ChatBox(const glm::vec2 &newOrigin,const glm::vec2 &dimensions,double newSize) : Widget(newOrigin,dimensions),characterScale(newSize)
 {
   padding = 0.005;
@@ -16,7 +16,7 @@ ChatBox::ChatBox(const glm::vec2 &newOrigin,const glm::vec2 &dimensions,double n
   auto submit = [&](std::string str)
   {
     //addLineToHistory( GUI::username + ":" + str);
-    World::messenger.createChatMessage(str);
+    PlayerWorld.messenger->createChatMessage(str);
   };
 
   inputBox = EditBox("",origin,glm::vec2(dimensions.x,(characterScale*64)/GUI::dimensions.y),characterScale,submit);
@@ -53,7 +53,7 @@ void ChatBox::draw()
     std::string originText = (*target);
 
 
-    std::vector<std::string> lines = GUI::textRenderer.splitString(originText,characterScale,dimensions.x*GUI::dimensions.x);
+    std::vector<std::string> lines = GUI::splitString(originText,characterScale,dimensions.x*GUI::dimensions.x);
     for(auto itr = lines.rbegin(); itr != lines.rend();itr++)
     {
       std::string displayText = *itr;

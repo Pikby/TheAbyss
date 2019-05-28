@@ -3,6 +3,8 @@ libs/
 .vs/
 *.user
 build/saves/
+build/linux
+build/server
 assets/settings.ini
 win32/Debug/
 src/headers/SOIL.h

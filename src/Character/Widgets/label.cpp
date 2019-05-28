@@ -2,15 +2,15 @@
 #include <GLFW/glfw3.h>
 #include "widgets.h"
 #include "../include/gui.h"
-Label::Label(const std::string& text,const glm::vec2& Origin,double CharacterScale)
-                         : label(text), Widget(Origin), characterScale(CharacterScale)
+Label::Label(const std::string& text,const glm::vec2& Origin,double CharacterScale, TextAlignment ali)
+                         : label(text), Widget(Origin), characterScale(CharacterScale), textAlignment(ali)
 {
 }
 
 void Label::draw()
 {
   if(onDrawFunction != NULL) onDrawFunction(this);
-  GUI::renderText(label,origin,characterScale,color);
+  GUI::renderText(label,origin,characterScale,color,rotMat,textAlignment);
 }
 
 void Label::updateLabel(const std::string& str)
@@ -66,7 +66,7 @@ void EditBox::draw()
   if(text == "")
   {
     int displayCursorPosition = hasCursor && focused ? 0 : -1;
-    GUI::textRenderer.renderText(defaultText+ ' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,displayCursorPosition);
+    GUI::renderText(defaultText+ ' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,displayCursorPosition);
   }
   else
   {
@@ -77,7 +77,7 @@ void EditBox::draw()
     int positiveDir = 0;
     int negativeDir = 1;
 
-    while(GUI::textRenderer.calculateStringDimensions(displayText,characterScale).x < dimensions.x*GUI::dimensions.x)
+    while(GUI::calculateStringDimensions(displayText,characterScale).x < dimensions.x*GUI::dimensions.x)
     {
       if(stringSize > cursorPosition + charCount)
       {
@@ -94,8 +94,8 @@ void EditBox::draw()
     }
 
     int displayCursorPosition = negativeDir-1;
-    if(hasCursor && focused) GUI::textRenderer.renderText(displayText+' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,displayCursorPosition);
-    else GUI::textRenderer.renderText(displayText+' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,-1);
+    if(hasCursor && focused) GUI::renderText(displayText+' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,displayCursorPosition);
+    else GUI::renderText(displayText+' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,-1);
   }
   glDepthMask(GL_FALSE);
     GUI::drawQuad(origin-glm::vec2(padding),origin+dimensions+glm::vec2(padding),glm::vec4(glm::vec3(0.5),1));

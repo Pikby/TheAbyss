@@ -1,15 +1,14 @@
-#ifndef DRAWERHEADER
-#define DRAWERHEADER
+#define NUMBOFCASCADEDSHADOWS 1
 
-#include "bsp.h"
 #include <list>
 #include <map>
-#include "../../Objects/include/objects.h"
-#include "../../headers/camera.h"
-#include "../../headers/3dmap.h"
+
+#include "../../Objects/include/skybox.h"
 
 
-#define NUMBOFCASCADEDSHADOWS 1
+
+class BSPNode;
+class Camera;
 struct PointLight
 {
   glm::vec3 position;
@@ -68,21 +67,20 @@ private:
   uint transBuffer, transTexture, transDepth;
   uint PPBuffer,PPTexture,PPTextureBright;
   uint pingPongFBO[2],pingPongTexture[2];
-  Shader PPShader;
-
-  Shader objShader,dirDepthShader,pointDepthShader,blockShader,gBufferShader;
-  Shader transShader;
-
-  Shader GBlurShader;
-
-
-  Shader quadShader;
-  Shader depthBufferLoadingShader;
-  static void calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::vec3 &front,const glm::vec3 &right,const glm::vec3 &up, float camZoomInDegrees,float ar,float near, float far);
+  std::unique_ptr<Shader> PPShader;
+  std::unique_ptr<Shader> objShader,dirDepthShader,pointDepthShader,blockShader,gBufferShader;
+  std::unique_ptr<Shader> transShader;
+  std::unique_ptr<Shader> GBlurShader;
+  std::unique_ptr<Shader>  quadShader;
+  std::unique_ptr<Shader>  depthBufferLoadingShader;
+  void calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::vec3 &front,const glm::vec3 &right,const glm::vec3 &up, float camZoomInDegrees,float ar,float near, float far);
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
   void renderQuad();
   void createTextureAtlas(const char* texture, int cellWidth);
 public:
+  Drawer();
+
+
   glm::ivec2 textureAtlasDimensions;
   uint getTextureAtlasID(){return textureAtlas;}
   //Plane goes bottomleft,topleft,topright,bottomright;
@@ -109,7 +107,7 @@ public:
   void setAllBuffers();
   void setTerrainColor(const glm::vec3 &color);
 
-  void updateShadows(bool val) {blockShader.use();blockShader.setBool("shadowsOn",val);}
+  void updateShadows(bool val);
   void updateAntiAliasing(float MSAA);
   void renderPointShadows();
   void renderGBuffer();
@@ -134,4 +132,3 @@ public:
 
 
 };
-#endif

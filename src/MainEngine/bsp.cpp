@@ -14,7 +14,7 @@
 
 #define GLEW_STATIC
 #include <GL/glew.h>
-
+#include "../headers/shaders.h"
 // GLFW
 #include <GLFW/glfw3.h>
 #include "include/bsp.h"
@@ -276,7 +276,6 @@ RenderType BSP::blockVisibleType(const glm::ivec3 &pos)
 void BSP::addBlock(const glm::ivec3 &pos, char id)
 {
   worldArray.set(pos,id);
-  Block curBlock = ItemDatabase::blockDictionary[getBlock(pos)];
 }
 
 void BSP::addToLightList(const glm::ivec3 &localPos,const Light& light)

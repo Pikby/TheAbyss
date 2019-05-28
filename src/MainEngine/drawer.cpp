@@ -12,12 +12,34 @@
 #include <limits>
 #define GLSLSHADERSIMPLEMNTATION
 
-#include "include/drawer.h"
+#include "../Settings/settings.h"
+#include "../Objects/include/objects.h"
 #include "../TextureLoading/textureloading.h"
+
+#include "include/drawer.h"
+#include "include/bsp.h"
 #include "include/world.h"
 
-#define IMGUI_IMPL_OPENGL_LOADER_GLEW
 
+
+Drawer::Drawer()
+{
+  int vertRenderDistance = std::stoi(Settings::get("horzRenderDistance"));
+  int horzRenderDistance = std::stoi(Settings::get("vertRenderDistance"));
+  int renderBuffer = std::stoi(Settings::get("renderBuffer"));
+  setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
+  std::cout << "Initializing drawer\n";
+  std::cout << Settings::get("windowsWidth") << Settings::get("windowsHeight") << std::endl;
+  int width = std::stoi(Settings::get("windowWidth"));
+  int height = std::stoi(Settings::get("windowHeight"));
+  setupShadersAndTextures(width,height);
+
+
+
+  std::cout << width << ":" << height << ":" <<vertRenderDistance << ":" << horzRenderDistance << ":" << renderBuffer << "\n";
+
+  updateViewProjection(45.0f,0.1f,(horzRenderDistance)*CHUNKSIZE);
+}
 
 void Drawer::createTextureAtlas(const char* texture,int cellWidth)
 {
@@ -56,84 +78,84 @@ void Drawer::setupShadersAndTextures(int width, int height)
 
   skyBox = SkyBox("../assets/alps");
 
-  objShader = Shader("EntityShaders/entShader.vs",
-                     "EntityShaders/entShader.fs");
-  objShader.use();
-  objShader.setInt("curTexture",0);
-  objShader.setInt("dirLight.shadow",4);
-  objShader.setInt("pointLights[0].shadow",5);
-  objShader.setInt("pointLights[1].shadow",6);
-  objShader.setFloat("far_plane",25.0f);
+  objShader = std::make_unique<Shader>(Shader("EntityShaders/entShader.vs",
+                     "EntityShaders/entShader.fs"));
+  objShader->use();
+  objShader->setInt("curTexture",0);
+  objShader->setInt("dirLight.shadow",4);
+  objShader->setInt("pointLights[0].shadow",5);
+  objShader->setInt("pointLights[1].shadow",6);
+  objShader->setFloat("far_plane",25.0f);
 
 
-  depthBufferLoadingShader = Shader("depthBufferLoadingShader.vs","depthBufferLoadingShader.fs");
-  depthBufferLoadingShader.use();
+  depthBufferLoadingShader = std::make_unique<Shader>(Shader("depthBufferLoadingShader.vs","depthBufferLoadingShader.fs"));
+  depthBufferLoadingShader->use();
 
 
-  quadShader = Shader("old/debugQuad.vs","old/debugQuad.fs");
-  quadShader.use();
+  quadShader = std::make_unique<Shader>(Shader("old/debugQuad.vs","old/debugQuad.fs"));
+  quadShader->use();
 
-  //blockShader.setInt("depthMap",0);
+  //blockShader->setInt("depthMap",0);
 
-  blockShader = Shader("BSPShaders/shaderBSP.fs","BSPShaders/shaderBSP.vs");
-  blockShader.use();
-  blockShader.setInt("gPosition", 0);
-  blockShader.setInt("gNormal", 1);
-  blockShader.setInt("gColorSpec", 2);
-  blockShader.setInt("transTexture", 3);
-  blockShader.setInt("dirLight.shadow[0]",4);
-  blockShader.setInt("dirLight.shadow[1]",5);
-  blockShader.setInt("dirLight.shadow[2]",6);
-  blockShader.setInt("dirLight.shadow[3]",7);
-  blockShader.setFloat("far_plane",25.0f);
-  blockShader.setFloat("fog_start",CHUNKSIZE*(horzRenderDistance-2));
-  blockShader.setFloat("fog_dist",CHUNKSIZE);
-  blockShader.setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
-  blockShader.setBool("shadowsOn",true);
-  gBufferShader = Shader("BSPShaders/gBuffer.fs","BSPShaders/gBuffer.vs","BSPShaders/gBuffer.gs");
+  blockShader = std::make_unique<Shader>(Shader("BSPShaders/shaderBSP.fs","BSPShaders/shaderBSP.vs"));
+  blockShader->use();
+  blockShader->setInt("gPosition", 0);
+  blockShader->setInt("gNormal", 1);
+  blockShader->setInt("gColorSpec", 2);
+  blockShader->setInt("transTexture", 3);
+  blockShader->setInt("dirLight.shadow[0]",4);
+  blockShader->setInt("dirLight.shadow[1]",5);
+  blockShader->setInt("dirLight.shadow[2]",6);
+  blockShader->setInt("dirLight.shadow[3]",7);
+  blockShader->setFloat("far_plane",25.0f);
+  blockShader->setFloat("fog_start",CHUNKSIZE*(horzRenderDistance-2));
+  blockShader->setFloat("fog_dist",CHUNKSIZE);
+  blockShader->setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
+  blockShader->setBool("shadowsOn",true);
+  gBufferShader = std::make_unique<Shader>(Shader("BSPShaders/gBuffer.fs","BSPShaders/gBuffer.vs","BSPShaders/gBuffer.gs"));
 
   int cellWidth = 128;
-  gBufferShader.use();
-  gBufferShader.setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
-  gBufferShader.setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
-  gBufferShader.setInt("cellWidth",cellWidth);
-  gBufferShader.setInt("curTexture",0);
-  gBufferShader.setVec3("objectColor", 0.5f, 0.5f, 0.31f);
+  gBufferShader->use();
+  gBufferShader->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
+  gBufferShader->setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
+  gBufferShader->setInt("cellWidth",cellWidth);
+  gBufferShader->setInt("curTexture",0);
+  gBufferShader->setVec3("objectColor", 0.5f, 0.5f, 0.31f);
 
 
-  PPShader = Shader("PPShaders/PPShader.fs","PPShaders/PPShader.vs");
-  PPShader.use();
-  PPShader.setInt("curTexture",0);
-  PPShader.setInt("bloomTexture",1);
-  PPShader.setFloat("exposure",1.0f);
+  PPShader = std::make_unique<Shader>(Shader("PPShaders/PPShader.fs","PPShaders/PPShader.vs"));
+  PPShader->use();
+  PPShader->setInt("curTexture",0);
+  PPShader->setInt("bloomTexture",1);
+  PPShader->setFloat("exposure",1.0f);
 
 
-  transShader = Shader("BSPShaders/transShader.fs","BSPShaders/transShader.vs");
+  transShader = std::make_unique<Shader>(Shader("BSPShaders/transShader.fs","BSPShaders/transShader.vs"));
+  GBlurShader = std::make_unique<Shader>(Shader("PPShaders/GBlurShader.fs","PPShaders/GBlurShader.vs"));
 
-  GBlurShader = Shader("PPShaders/GBlurShader.fs","PPShaders/GBlurShader.vs");
-  GBlurShader.use();
-  GBlurShader.setInt("image",0);
+  GBlurShader->use();
+  GBlurShader->setInt("image",0);
 
 
 
-  transShader.use();
-  transShader.setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
-  transShader.setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
-  transShader.setInt("cellWidth",cellWidth);
-  transShader.setInt("curTexture",0);
-  transShader.setVec3("objectColor", 1.0f, 1.0f, 1.0f);
+  transShader->use();
+  transShader->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
+  transShader->setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
+  transShader->setInt("cellWidth",cellWidth);
+  transShader->setInt("curTexture",0);
+  transShader->setVec3("objectColor", 1.0f, 1.0f, 1.0f);
 
 
   //std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
 
-  dirDepthShader   = Shader("dirDepthShader.fs",
-                            "dirDepthShader.vs");
-  dirDepthShader.use();
+  dirDepthShader = std::make_unique<Shader>(Shader("dirDepthShader.fs",
+                                                   "dirDepthShader.vs"));
+  dirDepthShader->use();
   glm::mat4 model(1.0f);
-  dirDepthShader.setMat4("model",model);
-  pointDepthShader = Shader("pointDepthShader.fs",
-                            "pointDepthShader.vs",
-                            "pointDepthShader.gs");
+  dirDepthShader->setMat4("model",model);
+  pointDepthShader = std::make_unique<Shader>(Shader("pointDepthShader.fs",
+                                                     "pointDepthShader.vs",
+                                                     "pointDepthShader.gs"));
 
   setAllBuffers();
   renderDirectionalDepthMap();
@@ -194,27 +216,30 @@ void Drawer::setAllBuffers()
         std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << endl;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  /*
+
 
   glGenFramebuffers(1, &transBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
 
     glGenTextures(1, &transTexture);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, transTexture);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,8,GL_RGBA16F,screenWidth*MSAA,screenHeight*MSAA,true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,8,GL_RGBA16F,screenWidth,screenHeight,true);
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, transTexture, 0);
 
      glGenTextures(1, &transDepth);
      glBindTexture(GL_TEXTURE_2D, transDepth);
-     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth*MSAA,screenHeight*MSAA, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth,screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, transDepth, 0);
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
-  */
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+       std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << endl;
+ glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
   glGenFramebuffers(1,&PPBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
     glGenTextures(1, &PPTexture);
@@ -282,8 +307,8 @@ void Drawer::addCube(Cube newCube)
 
 void Drawer::setExposure(float exposure)
 {
-  PPShader.use();
-  PPShader.setFloat("exposure",exposure);
+  PPShader->use();
+  PPShader->setFloat("exposure",exposure);
 }
 void Drawer::renderGBuffer()
 {
@@ -294,7 +319,7 @@ void Drawer::renderGBuffer()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureAtlas);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    Shader* shader = &gBufferShader;
+    Shader* shader = gBufferShader.get();
     shader->use();
     shader->setMat4("view", viewMat);
 
@@ -313,7 +338,7 @@ void Drawer::renderGBuffer()
     glClearColor(-1.0f,-1.0f,-1.0f,1.0f);
     glViewport(0,0,screenWidth*MSAA,screenHeight*MSAA);
 
-    depthBufferLoadingShader.use();
+    depthBufferLoadingShader->use();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, gDepth);
     renderQuad();
@@ -409,7 +434,8 @@ void Drawer::setLights(Shader* shader)
 
   shader->setInt("numbOfCascadedShadows",NUMBOFCASCADEDSHADOWS);
   //unsigned int numbOfLights = lightList.size();
-  std::list<Light> list=World::findAllLights(viewPos,100);
+  /*
+  std::list<Light> list= PlayerWorld.findAllLights(viewPos,100);
 
   uint numbOfLights = list.size();
 
@@ -439,6 +465,7 @@ void Drawer::setLights(Shader* shader)
   }
   float end = glfwGetTime();
   //std::cout << "light setup took: " << 1000*(end-start) << "ms\n";
+  */
 }
 
 unsigned int quadVAO = 0;
@@ -594,8 +621,8 @@ void Drawer::renderDirectionalShadows()
 
 
     calculateMinandMaxPoints(lightFrustrum,8,&finalMin,&finalMax);
-    dirDepthShader.use();
-    dirDepthShader.setMat4("lightSpaceMatrix",dirLight.lightSpaceMat[x]);
+    dirDepthShader->use();
+    dirDepthShader->setMat4("lightSpaceMatrix",dirLight.lightSpaceMat[x]);
 
 
     auto check = [](glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 target)
@@ -606,8 +633,8 @@ void Drawer::renderDirectionalShadows()
         glm::vec3 chunkVec = target - a;
         return (glm::dot(chunkVec,UVCross) < 0);
     };
-    //auto chunkList = std::make_shared<std::list<std::shared_ptr<BSPNode>>>(World::BSPmap.getFullList());
-    auto chunkList = World::BSPmap.findAll(toChunkCoords(finalMin),toChunkCoords(finalMax));
+    //auto chunkList = std::make_shared<std::list<std::shared_ptr<BSPNode>>>(BSPmap.getFullList());
+    auto chunkList = PlayerWorld.BSPmap.findAll(toChunkCoords(finalMin),toChunkCoords(finalMax));
 
     /*
     if(chunkList->empty()) return;
@@ -642,7 +669,7 @@ void Drawer::renderDirectionalShadows()
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glCullFace(GL_FRONT);
-        drawTerrainOpaque(&dirDepthShader,chunkList);
+        drawTerrainOpaque(dirDepthShader.get(),chunkList);
         glCullFace(GL_BACK);
       glBindFramebuffer(GL_FRAMEBUFFER,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -669,19 +696,19 @@ void Drawer::bindDirectionalShadows(Shader* shader)
 
 void Drawer::renderPointShadows()
 {
-  pointDepthShader.use();
+  pointDepthShader->use();
   for(int i=0;i<objList.size();i++)
   {
     PointLight* light = &(lightList[i]);
     glViewport(0, 0, directionalShadowResolution, directionalShadowResolution);
     glBindFramebuffer(GL_FRAMEBUFFER,light->depthMapFBO);
       glClear(GL_DEPTH_BUFFER_BIT);
-      pointDepthShader.setVec3("lightPos",light->position);
-      pointDepthShader.setFloat("far_plane", 25.0f);
+      pointDepthShader->setVec3("lightPos",light->position);
+      pointDepthShader->setFloat("far_plane", 25.0f);
 
       for(int i=0;i<6;i++)
       {
-        pointDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", light->shadowTransform[i]);
+        pointDepthShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", light->shadowTransform[i]);
       }
     glBindFramebuffer(GL_FRAMEBUFFER,0);
   }
@@ -689,7 +716,7 @@ void Drawer::renderPointShadows()
 
 void Drawer::bindPointShadows()
 {
-  objShader.use();
+  objShader->use();
   unsigned int numbOfLights = lightList.size();
   for(uint i=0;i<numbOfLights;i++)
   {
@@ -702,16 +729,16 @@ void Drawer::bindPointShadows()
 void Drawer::drawObjects()
 {
   glViewport(0,0,screenWidth*MSAA,screenHeight*MSAA);
-  objShader.use();
+  objShader->use();
 
   glBindTexture(GL_TEXTURE_CUBE_MAP,0);
   glBindTexture(GL_TEXTURE_2D,0);
-  objShader.setMat4("view",viewMat);
+  objShader->setMat4("view",viewMat);
 
   for(int i=0;i<objList.size();i++)
   {
     //std::cout << objList.size() << "\n";
-    objList[i]->draw(&objShader,viewPos);
+    objList[i]->draw(objShader.get(),viewPos);
   }
 
 }
@@ -720,16 +747,16 @@ void Drawer::drawObjects()
 void Drawer::drawPlayers()
 {
   glViewport(0,0,screenWidth,screenHeight);
-  objShader.use();
+  objShader->use();
 
   glBindTexture(GL_TEXTURE_CUBE_MAP,0);
   glBindTexture(GL_TEXTURE_2D,0);
-  objShader.setMat4("view",viewMat);
-  objShader.setVec3("viewPos",viewPos);
+  objShader->setMat4("view",viewMat);
+  objShader->setVec3("viewPos",viewPos);
 
   for(auto it = playerList.begin(); it != playerList.end();it++)
   {
-    it->second->draw(&objShader,viewPos);
+    it->second->draw(objShader.get(),viewPos);
   }
 }
 
@@ -737,7 +764,7 @@ void Drawer::drawFinal()
 {
 
   glViewport(0,0,screenWidth,screenHeight);
-  Shader* shader = &blockShader;
+  Shader* shader = blockShader.get();
   shader->use();
 
  //glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
@@ -747,8 +774,8 @@ void Drawer::drawFinal()
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gNormal);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gColorSpec);
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,transTexture);
+    ///glActiveTexture(GL_TEXTURE3);
+    //glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gPosition);
 
     setLights(shader);
     shader->setVec3("viewPos", viewPos);
@@ -767,9 +794,9 @@ void Drawer::drawFinal()
   bool horizontal = false;
   const int amount = 10;
 
-  GBlurShader.use();
+  GBlurShader->use();
   glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[0]);
-    GBlurShader.setBool("horizontal",true);
+    GBlurShader->setBool("horizontal",true);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, PPTextureBright);
     renderQuad();
@@ -783,7 +810,7 @@ void Drawer::drawFinal()
     if(horizontal)
     {
       glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[0]);
-        GBlurShader.setBool("horizontal",true);
+        GBlurShader->setBool("horizontal",true);
         glBindTexture(GL_TEXTURE_2D, pingPongTexture[1]);
         renderQuad();
         horizontal = false;
@@ -792,7 +819,7 @@ void Drawer::drawFinal()
     else
     {
       glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[1]);
-        GBlurShader.setBool("horizontal",false);
+        GBlurShader->setBool("horizontal",false);
         glBindTexture(GL_TEXTURE_2D,pingPongTexture[0]);
         renderQuad();
         horizontal = true;
@@ -822,6 +849,15 @@ void Drawer::drawFinal()
   */
 }
 
+
+
+void Drawer::updateShadows(bool val)
+{
+  blockShader->use();
+  blockShader->setBool("shadowsOn",val);
+}
+
+
 void Drawer::updateViewProjection(float camZoom,float near,float far)
 {
 
@@ -832,14 +868,14 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
                               (float)screenWidth/(float)screenHeight,
                               camNear,camFar+5*CHUNKSIZE);
 
-  objShader.use();
-  objShader.setMat4("projection",viewProj);
-  blockShader.use();
-  blockShader.setMat4("projection",viewProj);
-  gBufferShader.use();
-  gBufferShader.setMat4("projection",viewProj);
-  transShader.use();
-  transShader.setMat4("projection",viewProj);
+  objShader->use();
+  objShader->setMat4("projection",viewProj);
+  blockShader->use();
+  blockShader->setMat4("projection",viewProj);
+  gBufferShader->use();
+  gBufferShader->setMat4("projection",viewProj);
+  transShader->use();
+  transShader->setMat4("projection",viewProj);
 }
 
 void Drawer::updateCameraMatrices(const Camera& cam)
@@ -967,6 +1003,6 @@ void Drawer::drawTerrainTranslucent(Shader* shader,std::shared_ptr<std::list<std
 
 void Drawer::setTerrainColor(const glm::vec3 &color)
 {
-  gBufferShader.use();
-  gBufferShader.setVec3("objectColor", color);
+  gBufferShader->use();
+  gBufferShader->setVec3("objectColor", color);
 }

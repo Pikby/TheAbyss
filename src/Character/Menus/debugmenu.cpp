@@ -1,8 +1,11 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <iomanip>
 
 #include "../../MainEngine/include/world.h"
+#include "../../Character/include/mainchar.h"
 #include "../include/gui.h"
+#include "../include/menus.h"
 #include "../Widgets/widgets.h"
 
 void GUI::initDebugMenu()
@@ -16,11 +19,52 @@ void GUI::initDebugMenu()
     parent->setColor(glm::vec4(color,1.0));
   });
 
+  Label* debugstring= new Label("DEBUdsd!!",glm::vec2(0,0.98),24.0/64.0);
+  debugstring->setColor(glm::vec4(1));
+  debugstring->setOnDraw([](Widget* parent)
+  {
+    const int strWidth = 40;
+    stringstream ss;
+    {
+      static double lastFrame = 0;
+      double curFrame = glfwGetTime();
+
+      static double lastFps;
+      double curFps = 1.0/(curFrame-lastFrame);
+
+      double alpha = 0.9;
+      double expectedFps = lastFps*alpha +curFps*(1-alpha);
+      std::string fpsStr = "FPS: " + std::to_string((int)expectedFps);
+      lastFrame=curFrame;
+      lastFps = expectedFps;
+      ss << std::left << std::setw(strWidth) << fpsStr;
+    }
+
+    {
+      std::string pingStr = "Ping: " + std::to_string((int)PlayerWorld.worldStats.pingInMS) + " ms\t";
+      ss << std::left << std::setw(strWidth) << pingStr;
+    }
 
 
-  Label* fps = new Label("STUFF",glm::vec2(0,1.0-0.02)  ,24.0/64.0);
-  fps->setColor(glm::vec4(0.7,0.7,0.7,1.0));
-  fps->setOnDraw([](Widget* parent)
+    {
+      glm::vec3 p =  MainChar::getPosition();
+      stringstream pcss;
+      pcss << "Player Coords: " << std::fixed << std::setprecision(2) << p.x << ':' << p.y << ':' << p.z << "\t";
+      ss << std::left << std::setw(strWidth) << pcss.str();
+    }
+
+    {
+      glm::ivec3 p = World::toChunkCoords(MainChar::getPosition());
+      stringstream ccss;
+      ccss << "Chunk Coords: " << std::fixed << std::setprecision(2) << p.x << ':' << p.y << ':' << p.z;
+      ss << std::left << std::setw(strWidth) << ccss.str();
+    }
+
+    ((Label*)parent)->updateLabel(ss.str());
+  });
+  /*
+  std::list<std::function<void(Widget* parent)>> labelList;
+  labelList.push_back([](Widget* parent)
   {
     static double lastFrame = 0;
     double curFrame = glfwGetTime();
@@ -35,41 +79,80 @@ void GUI::initDebugMenu()
     lastFps = expectedFps;
     ((Label*)parent)->updateLabel(fpsStr);
   });
-  Label* ping = new Label("STUFF",glm::vec2(0.1,1.0-0.02),24.0/64.0);
-  ping->setColor(glm::vec4(0.7,0.7,0.7,1.0));
-  ping->setOnDraw([](Widget* parent)
+
+  labelList.push_back([](Widget* parent)
   {
 
-    std::string pingStr = "Ping: " + std::to_string((int)World::worldStats.pingInMS) + " ms";
+    std::string pingStr = "Ping: " + std::to_string((int)PlayerWorld.worldStats.pingInMS) + " ms";
+    ((Label*)parent)->updateLabel(pingStr);
+  });
+
+  labelList.push_back([](Widget* parent)
+  {
+    glm::vec3 p=  MainChar::getPosition();
+    std::stringstream ss;
+
+    ss << std::fixed << std::setprecision(2) << p.x << ':' << p.y << ':' << p.z;
+    std::string posStr = ss.str();
+
+    std::string pingStr = "Player Coords: " +  posStr;
     ((Label*)parent)->updateLabel(pingStr);
   });
 
 
-  debugMenu.addWidget(ping);
-  debugMenu.addWidget(fps);
-  debugMenu.addWidget(test);
-  debugMenu.addWidget(&inGame);
-  debugMenu.setFocusTarget(&inGame);
-  debugMenu.setKeyMapping(GLFW_KEY_F1,[]()
+  labelList.push_back([](Widget* parent)
   {
-    setMenu(&gameMenu);
+    glm::ivec3 p= World::toChunkCoords(MainChar::getPosition());
+    std::stringstream ss;
+
+    ss << std::fixed << std::setprecision(2) << p.x << ':' << p.y << ':' << p.z;
+    std::string posStr = ss.str();
+
+    std::string pingStr = "Chunk Coords: " +  posStr;
+    ((Label*)parent)->updateLabel(pingStr);
   });
 
-  gameMenu.addWidget(&chatBox);
-  gameMenu.setFocusTarget(&inGame);
-  gameMenu.setKeyMapping(GLFW_KEY_F1,[]()
+
+  glm::vec2 curPos = glm::vec2(0,0.98);
+  for(auto itr = labelList.begin(); itr != labelList.end();itr++)
   {
-    setMenu(&debugMenu);
-  });
-  gameMenu.setKeyMapping(GLFW_KEY_T,[]()
+    Label* lbl = new Label("",curPos,12/64.0);
+    lbl->setColor(glm::vec4(0.7,0.7,0.7,1.0));
+    lbl->setOnDraw(*itr);
+    debugMenu->addWidget(lbl);
+
+    curPos += glm::vec2(0.1,0);
+    if(curPos.x > 0.9)
+    {
+      curPos.x = 0;
+      curPos.y -= 0.02;
+    }
+  }
+  */
+  debugMenu->addWidget(test);
+  debugMenu->addWidget(debugstring);
+  debugMenu->addWidget(inGame.get());
+  debugMenu->setFocusTarget(inGame.get());
+  debugMenu->setKeyMapping(GLFW_KEY_F1,[]()
   {
-    gameMenu.setFocusTarget(&chatBox);
-  });
-  gameMenu.setKeyMapping(GLFW_KEY_ESCAPE,[]()
-  {
-    gameMenu.setFocusTarget(&inGame);
+    setMenu(gameMenu.get());
   });
 
-  setMenu(&debugMenu);
+  gameMenu->addWidget(chatBox.get());
+  gameMenu->setFocusTarget(inGame.get());
+  gameMenu->setKeyMapping(GLFW_KEY_F1,[]()
+  {
+    setMenu(debugMenu.get());
+  });
+  gameMenu->setKeyMapping(GLFW_KEY_T,[]()
+  {
+    gameMenu->setFocusTarget(chatBox.get());
+  });
+  gameMenu->setKeyMapping(GLFW_KEY_ESCAPE,[]()
+  {
+    gameMenu->setFocusTarget(inGame.get());
+  });
+
+  setMenu(debugMenu.get());
 
 }

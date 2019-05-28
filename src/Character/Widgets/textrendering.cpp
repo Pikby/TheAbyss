@@ -21,10 +21,10 @@
 #include FT_FREETYPE_H
 // GL includes
 //#include "../textureloading.h"
+#include "textrenderer.h"
 
 #include "../../headers/shaders.h"
 #include "../include/gui.h"
-
 
 const Point inside = { 0, 0 };
 const Point empty = { 9999, 9999 };
@@ -135,11 +135,11 @@ void TextRenderer::loadTextAtlas(const FT_Face &face, int fontSize)
 		}
 
     characters.insert(std::pair<char, Character>(i, character));
-    GUIShaderText.setVec2("characters[" + std::to_string(i) + "].size",(character.size+glm::vec2(padding))/atlasDimensions);
-    GUIShaderText.setVec2("characters[" + std::to_string(i) + "].bearing",character.bearing/atlasDimensions);
-    GUIShaderText.setUInt("characters[" + std::to_string(i) + "].advance",character.advance);
-    GUIShaderText.setFloat("characters[" + std::to_string(i) + "].xstart",character.xstart);
-		GUIShaderText.setFloat("characters[" + std::to_string(i) + "].ystart",character.ystart);
+    GUIShaderText->setVec2("characters[" + std::to_string(i) + "].size",(character.size+glm::vec2(padding))/atlasDimensions);
+    GUIShaderText->setVec2("characters[" + std::to_string(i) + "].bearing",character.bearing/atlasDimensions);
+    GUIShaderText->setUInt("characters[" + std::to_string(i) + "].advance",character.advance);
+    GUIShaderText->setFloat("characters[" + std::to_string(i) + "].xstart",character.xstart);
+		GUIShaderText->setFloat("characters[" + std::to_string(i) + "].ystart",character.ystart);
 
   }
 }
@@ -147,10 +147,10 @@ void TextRenderer::loadTextAtlas(const FT_Face &face, int fontSize)
 
 void TextRenderer::init()
 {
-   GUIShaderText = Shader("GUIShaders/guiTextShader.vs","GUIShaders/guiTextShader.fs");
+   GUIShaderText = std::make_unique<Shader>(Shader("GUIShaders/guiTextShader.vs","GUIShaders/guiTextShader.fs"));
    glm::mat4 projection = glm::ortho(0, GUI::dimensions.x, 0,  GUI::dimensions.y);
-   GUIShaderText.use();
-   GUIShaderText.setMat4("projection",projection);
+   GUIShaderText->use();
+   GUIShaderText->setMat4("projection",projection);
 
    FT_Library ft;
    if (FT_Init_FreeType(&ft))
@@ -353,9 +353,9 @@ void TextRenderer::drawAllText()
    glEnableVertexAttribArray(0);
 
    glViewport(0,0,GUI::dimensions.x,GUI::dimensions.y);
-   GUIShaderText.use();
+   GUIShaderText->use();
    glm::mat4 projection = glm::ortho(0.0f, (float)GUI::dimensions.x, 0.0f,  (float)GUI::dimensions.y);
-   GUIShaderText.setMat4("projection",projection);
+   GUIShaderText->setMat4("projection",projection);
 	 glDepthMask(GL_FALSE);
    glDrawArrays(GL_TRIANGLES, 0, characterVertices.size()*6);
    glBindBuffer(GL_ARRAY_BUFFER, 0);

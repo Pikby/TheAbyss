@@ -16,7 +16,6 @@ const int OutlineStyle = 4;
 void main()
 {
 
-
   switch(quadStyle)
   {
     case(DefaultStyle):

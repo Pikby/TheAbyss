@@ -14,6 +14,7 @@
 #include <mutex>
 #include <atomic>
 
+#include "../Objects/include/items.h"
 #include "include/bsp.h"
 inline int pack4chars(char a, char b, char c, char d)
 {

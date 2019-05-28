@@ -82,6 +82,9 @@ $(CLIENTOBJECTPATH)%.o: $(CLIENTSRCPATH)%.cpp
 	@echo Compiling $<
 	@$(CC) $(CLIENTFLAGSLINUX) -c $< -o $@
 
+
+
+
 linux: $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES))
 	@echo Linking objects together, outputting: linux
 	@$(CC) $(addprefix $(CLIENTOBJECTPATH), $(CLIENTOBJECTSOURCES)) $(CLIENTFLAGSLINUX) -o linux

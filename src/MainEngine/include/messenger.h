@@ -1,15 +1,12 @@
-#ifndef MESSENGERHEADER
-#define MESSENGERHEADER
-#define PORT 3030
-#include "../../headers/threadSafeQueue.h"
+#include <chrono>
 #include "../../headers/3dmap.h"
+#include "../../headers/threadSafeQueue.h"
 #include "messages.h"
 
 class Messenger
 {
 private:
   int fd;
-
   std::chrono::system_clock::time_point lastPing;
   inline int pack4chars(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
   {
@@ -20,6 +17,10 @@ private:
       return *(int*)&f;
   }
 public:
+  explicit Messenger(){};
+   Messenger(const Messenger&) = delete;
+   Messenger& operator=(const Messenger&) = delete;
+   ~Messenger() = default;
   Map3D<bool> requestMap;
   TSafeQueue<OutMessage> messageQueue;
   void setupSockets(std::string ipAddress,std::string port);
@@ -44,5 +45,3 @@ public:
   void sendMessage(const void* buffer,int length);
   void createChunkRequest(int x, int y, int z);
 };
-
-#endif

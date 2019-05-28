@@ -1,9 +1,15 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "../include/gui.h"
 #include "../include/mainchar.h"
-#include "../../MainEngine/imgui/imgui.h"
 #include "widgets.h"
+
+void InGame::draw()
+{
+  GUI::drawQuad(glm::vec2(0.5)-glm::vec2(0.001),glm::vec2(0.5)+glm::vec2(0.001),glm::vec4(0.7,0.7,0.7,1));
+}
+
 
 void InGame::handleKeyInput(int key,int action)
 {
@@ -47,8 +53,6 @@ void InGame::handleMouseMovement(double xpos, double ypos)
 	lastY = ypos;
 	MainChar::processMouseMovement(xoffset, yoffset);
 
-  ImGuiIO& io = ImGui::GetIO();
-  io.MousePos = ImVec2(xpos,ypos);
 }
 
 void InGame::handleMouseInput(int button,int action)

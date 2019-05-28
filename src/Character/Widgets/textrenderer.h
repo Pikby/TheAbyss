@@ -1,8 +1,13 @@
+#ifndef TEXTRENDERERLIBRARY
+#define TEXTRENDERERLIBRARY
+
 #include <ft2build.h>
+#include <map>
+#include <memory>
+#include <vector>
+
 #include FT_FREETYPE_H
-
-#include "../../headers/shaders.h"
-
+#include "texttypes.h"
 #define TEXTFONTSIZE 64
 struct Character {
     glm::vec2 size;    // Size of glyph
@@ -48,8 +53,8 @@ struct Grid
 };
 
 
-enum TextAlignment{TEXTALILEFT,TEXTALIRIGHT,TEXTALICENTER};
 
+class Shader;
 class TextRenderer
 {
 private:
@@ -71,7 +76,7 @@ private:
   void generateSDF( Grid &g );
   void loadTextAtlas(const FT_Face &face, int fontSize);
 public:
-  Shader GUIShaderText;
+  std::unique_ptr<Shader> GUIShaderText;
   void init();
   void drawAllText();
   void renderText(const std::string &text,const glm::vec2 &screenPos, float scale,
@@ -80,3 +85,4 @@ public:
   glm::vec3 calculateStringDimensions(const std::string& line,double scale);
   std::vector<std::string> splitString(const std::string& string,double scale, int viewLength);
 };
+#endif

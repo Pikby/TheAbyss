@@ -13,13 +13,9 @@
 #include <iostream>
 
 #include "include/threads.h"
-
 #include "../Settings/settings.h"
 #include "../Character/include/gui.h"
-
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_opengl3.h"
-#include "imgui/imgui_impl_glfw.h"
+#include "../headers/shaders.h"
 
 void GLAPIENTRY
 MessageCallback( GLenum source,
@@ -74,13 +70,6 @@ int main()
   glfwSwapInterval(0);//FPS Capping
   //Intialize glew and all related settings
 
-  ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO(); (void)io;
-  io.WantCaptureMouse = true;
-  ImGui::StyleColorsDark();
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init("#version 330");
-
 
   glewExperimental = GL_TRUE;
   glewInit();
@@ -103,6 +92,22 @@ int main()
 
   Shader::setShaderDirectory("../src/Shaders/");
   GUI::initGUI(glm::vec2(winWidth,winHeight),Settings::get("userName"));
+
+
+/*
+  while(!glfwWindowShouldClose(window))
+  {
+    glfwPollEvents();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    GUI::drawGUI();
+    GUI::textRenderer.drawAllText();
+    glfwSwapBuffers(window);
+
+  }
+  return 1;
+*/
+
+
 
   try
   {
