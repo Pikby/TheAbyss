@@ -14,3 +14,5 @@ src/FastNoise.cpp
 *.rdc
 *.log
 .*
+*.d
+*.s
