@@ -113,7 +113,6 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader->setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
   blockShader->setBool("shadowsOn",true);
   gBufferShader = std::make_unique<Shader>(Shader("BSPShaders/gBuffer.fs","BSPShaders/gBuffer.vs","BSPShaders/gBuffer.gs"));
-
   int cellWidth = 128;
   gBufferShader->use();
   gBufferShader->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
@@ -121,6 +120,15 @@ void Drawer::setupShadersAndTextures(int width, int height)
   gBufferShader->setInt("cellWidth",cellWidth);
   gBufferShader->setInt("curTexture",0);
   gBufferShader->setVec3("objectColor", 0.5f, 0.5f, 0.31f);
+
+
+  normDebug = std::make_unique<Shader>(Shader("Debug/normShader.fs","BSPShaders/gBuffer.vs","Debug/normShader.gs"));
+  normDebug->use();
+  normDebug->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
+  normDebug->setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
+  normDebug->setInt("cellWidth",cellWidth);
+  normDebug->setInt("curTexture",0);
+  normDebug->setVec3("objectColor", 0.5f, 0.5f, 0.31f);
 
 
   PPShader = std::make_unique<Shader>(Shader("PPShaders/PPShader.fs","PPShaders/PPShader.vs"));
@@ -329,6 +337,13 @@ void Drawer::renderGBuffer()
     //skyBox.draw(&viewMat);
     drawObjects();
     drawPlayers();
+
+    /*
+    shader = normDebug.get();
+    shader->use();
+    shader->setMat4("view", viewMat);
+    drawTerrainOpaque(shader,chunksToDraw);
+    */
     //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
@@ -669,7 +684,7 @@ void Drawer::renderDirectionalShadows()
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glCullFace(GL_FRONT);
-        drawTerrainOpaque(dirDepthShader.get(),chunkList);
+        //drawTerrainOpaque(dirDepthShader.get(),chunkList);
         glCullFace(GL_BACK);
       glBindFramebuffer(GL_FRAMEBUFFER,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -780,9 +795,14 @@ void Drawer::drawFinal()
     setLights(shader);
     shader->setVec3("viewPos", viewPos);
     bindDirectionalShadows(shader);
+
+
     glDisable(GL_DEPTH_TEST);
     renderQuad();
+
+
     glEnable(GL_DEPTH_TEST);
+
 
   //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -874,6 +894,8 @@ void Drawer::updateViewProjection(float camZoom,float near,float far)
   blockShader->setMat4("projection",viewProj);
   gBufferShader->use();
   gBufferShader->setMat4("projection",viewProj);
+  normDebug->use();
+  normDebug->setMat4("projection",viewProj);
   transShader->use();
   transShader->setMat4("projection",viewProj);
 }
@@ -983,19 +1005,26 @@ void Drawer::updateDirectionalLight(glm::vec3 dir,glm::vec3 amb,glm::vec3 dif,gl
 void Drawer::drawTerrainOpaque(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
 {
   if(list->empty()) return;
+
   for(auto it = list->cbegin();it != list->cend();++it)
   {
     std::shared_ptr<BSPNode> curNode = (*it);
     curNode->drawOpaque(shader,viewPos);
   }
+
+
 }
 
 //Same as draw terrain, but for translucent blocks.
 void Drawer::drawTerrainTranslucent(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
 {
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, textureAtlas);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
   if(list->empty()) return;
   for(auto it = list->cbegin();it != list->cend();++it)
   {
+
     std::shared_ptr<BSPNode> curNode = (*it);
     curNode->drawTranslucent(shader,viewPos);
   }

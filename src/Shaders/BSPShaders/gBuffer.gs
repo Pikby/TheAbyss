@@ -11,6 +11,7 @@ out GS_OUT
   vec2 TexCells;
   vec2 TexOrigins[3];
   vec3 FinNormal;
+  vec3 TexNormal;
   vec3 FragPos;
   float AO;
 }
@@ -38,7 +39,7 @@ void passData(int index)
   {
     gs_out.TexOrigins[i] = vs_out[index].TexOrigins[i];
   }
-  //gs_out.FinNormal = vs_out[index].FinNormal;
+  gs_out.FinNormal = vs_out[index].FinNormal;
   gs_out.FragPos = vs_out[index].FragPos;
   gs_out.AO = vs_out[index].AO;
 }
@@ -50,7 +51,8 @@ void main()
   vec3 p2 = vs_out[1].TriPos;
   vec3 p3 = vs_out[2].TriPos;
   vec3 norm = normalize(cross(p1-p2,p1-p3));
-  gs_out.FinNormal = norm;
+  gs_out.TexNormal = norm;
+  //gs_out.FinNormal = norm;
 
   gl_Position = gl_in[0].gl_Position;
   passData(0);

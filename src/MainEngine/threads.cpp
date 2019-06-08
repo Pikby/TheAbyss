@@ -74,7 +74,7 @@ void draw()
   float deltaTime;
   float lastFrame;
   //PlayerWorld.drawer->createDirectionalLight(glm::vec3(-0.0f,-1.0f,-0.0001f),glm::vec3(0.8f,0.8f,0.8f));
-  PlayerWorld.drawer->updateDirectionalLight(glm::vec3(-0.5,-1.0f,-0.5f),glm::vec3(0.8f,0.8f,0.8f));
+  PlayerWorld.drawer->updateDirectionalLight(glm::vec3(-0.5,-1.0f,-0.5f),glm::vec3(0.2f),glm::vec3(0.5f),glm::vec3(1.0f));
   SkyBox skyBox("../assets/alps");
 
   Cube cube;
@@ -107,8 +107,7 @@ void draw()
       PlayerWorld.drawer->updateAntiAliasing(std::stof(current_item));
     }
     PlayerWorld.drawer->setTerrainColor(terrainColor);
-    glm::vec3 dirLight(sunX,-1.0f,sunZ);
-
+    glm::vec3 dirLight(0.1,-1.0f,0.1);
     glfwPollEvents();
     MainChar::update();
 

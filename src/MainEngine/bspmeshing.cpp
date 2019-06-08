@@ -1,13 +1,9 @@
 
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include <list>
 #include <memory>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
-#include <glm/gtx/transform.hpp>
+
 
 #include <iostream>
 #include <vector>
@@ -25,6 +21,7 @@ inline int pack4chars(char a, char b, char c, char d)
 struct VERTEX
 {
   glm::dvec3 pos;
+  glm::vec3 norm;
   uint8_t id;
 
   bool operator==(VERTEX p)
@@ -45,6 +42,7 @@ typedef struct
 {
   double val[8];
   uint8_t id[8];
+  glm::vec3 norm[8];
 } GRIDCELL;
 
 /*
@@ -66,7 +64,7 @@ of totally below the isolevel.
 
 
 
-const int edgeTable[256]={
+static const int edgeTable[256]={
   0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
   0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
   0x190, 0x99 , 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c,
@@ -99,7 +97,7 @@ const int edgeTable[256]={
   0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x99 , 0x190,
   0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c,
   0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0   };
-  const int triTable[256][16] =
+static const int triTable[256][16] =
   {{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
   {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
   {0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -373,6 +371,8 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
     glm::dvec3 p1 = p[id1];
     glm::dvec3 p2 = p[id2];
 
+
+
     double valp1 = grid.val[id1];
     double valp2 = grid.val[id2];
 
@@ -382,28 +382,28 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
     {
       ret.pos = p1;
       ret.id = grid.id[id1];
+      ret.norm = grid.norm[id1];
       return ret;
     }
     if (abs(isolevel-valp2) < 0.00001)
     {
       ret.pos = p2;
       ret.id = grid.id[id2];
+      ret.norm = grid.norm[id2];
       return ret;
     }
     if (abs(valp1-valp2) < 0.00001)
     {
       ret.pos = p1;
       ret.id = grid.id[id1];
+      ret.norm = grid.norm[id1];
       return ret;
     }
 
 
     double mu = (isolevel - valp1) / (valp2 - valp1);
-
-    ret.pos.x = p1.x + mu * (p2.x - p1.x);
-    ret.pos.y = p1.y + mu * (p2.y - p1.y);
-    ret.pos.z = p1.z + mu * (p2.z - p1.z);
-
+    ret.pos = p1 + mu*(p2-p1);
+    ret.norm = glm::normalize(grid.norm[id1] + float(mu)*(grid.norm[id2]-grid.norm[id1]));
     ret.id = valp1 > valp2 ? grid.id[id1] : grid.id[id2];
     return(ret);
   };
@@ -612,12 +612,15 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
     {
       std::cout << "adding vertex of a transparentobject ???\n";
     }
-    int numbVert = curBuffer->size()/5;
+    int numbVert = curBuffer->size()/8;
     //Adds position vector
     //curBuffer->push_back(*(float*)&fullPos);
     curBuffer->push_back(vertex.pos.x);
     curBuffer->push_back(vertex.pos.y);
     curBuffer->push_back(vertex.pos.z);
+    curBuffer->push_back(vertex.norm.x);
+    curBuffer->push_back(vertex.norm.y);
+    curBuffer->push_back(vertex.norm.z);
 
     uint32_t compactIds = vertex.ids[0] | (vertex.ids[1] << 8) | (vertex.ids[2] << 16);
 
@@ -645,6 +648,73 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
     return numbVert;
   }
 
+
+  class Vertex
+  {
+  public:
+    Vertex()
+    {
+    }
+    bool exists = false;
+    std::pair<uint8_t,int8_t> ids[8] = {std::pair<uint8_t,uint8_t>(-1,0)};
+    int idCount = 0;
+    std::vector<glm::vec3> norms;
+
+    void addNorm(const glm::vec3 &norm)
+    {
+      norms.push_back(norm);
+    }
+
+    glm::vec3 getNorm()
+    {
+      if(norms.empty()) return glm::vec3(0);
+      glm::vec3 totalNorm = glm::vec3(0);
+      for(auto itr = norms.begin(); itr != norms.end();itr++)
+      {
+        totalNorm += *itr;
+      }
+      return glm::normalize(totalNorm);
+
+    }
+
+
+    void addId(uint8_t id)
+    {
+      for(int i=0;i<idCount;i++)
+      {
+        if(ids[i].first == id)
+        {
+          ids[i].second++;
+          return;
+        }
+      }
+      ids[idCount].first = id;
+      ids[idCount].second = 1;
+      idCount++;
+    }
+    uint8_t getId()
+    {
+      int maxCount = -1;
+      int maxId = 3;
+      for(int i=0;i<idCount;i++)
+      {
+        if(maxCount < ids[i].second)
+        {
+          maxCount = ids[i].second;
+          maxId = ids[i].first;
+        }
+        else if(maxCount == ids[i].second)
+        {
+          if(ids[i].first > maxId)
+          {
+            maxId = ids[i].first;
+          }
+        }
+      }
+      return maxId;
+    }
+  };
+
   void BSP::build()
   {
     //Delete and reserve space for the vectors;
@@ -654,71 +724,32 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
     tIndices = std::vector<uint>();
 
     lightList.clear();
-    oVertices.reserve(20000);
-    oIndices.reserve(10000);
+    oVertices.reserve(200000);
+    oIndices.reserve(100000);
+
 
     const int lod = 2;
     const int arrSize = CHUNKSIZE*lod+2;
 
 
-    struct Vertex
-    {
-      bool exists = false;
-      std::pair<uint8_t,int8_t> ids[8] = {std::pair<uint8_t,uint8_t>(-1,0)};
-      int idCount = 0;
-      void addId(uint8_t id)
-      {
-        for(int i=0;i<idCount;i++)
-        {
-          if(ids[i].first == id)
-          {
-            ids[i].second++;
-            return;
-          }
-        }
-        ids[idCount].first = id;
-        ids[idCount].second = 1;
-        idCount++;
-      }
-      uint8_t getId()
-      {
-        int maxCount = -1;
-        int maxId = 3;
-        for(int i=0;i<idCount;i++)
-        {
-          if(maxCount < ids[i].second)
-          {
-            maxCount = ids[i].second;
-            maxId = ids[i].first;
-          }
-          else if(maxCount == ids[i].second)
-          {
-            if(ids[i].first > maxId)
-            {
-              maxId = ids[i].first;
-            }
-          }
-        }
-        return maxId;
-      }
-    };
+
 
     Array3D<Vertex,arrSize> arrayVertices;
-
-
-    auto setVertexValue = [&](uint8_t blockId,int x,int y, int z)
+    auto setVertexValue = [&](uint8_t blockId,const glm::ivec3& pos, const glm::vec3& norm)
     {
-      if(x < 0 || y < 0 || z < 0 || x > arrSize-1 || y > arrSize-1|| z > arrSize-1) return;
-      Vertex& v = arrayVertices.get(x,y,z);
+      if(pos.x < 0 || pos.y < 0 || pos.z < 0 || pos.x > arrSize-1 || pos.y > arrSize-1|| pos.z > arrSize-1) return;
+      Vertex& v = arrayVertices.get(pos);
       v.exists = true;
       v.addId(blockId);
+      v.addNorm(norm);
     };
 
     auto setCell = [&](GRIDCELL* cell,int index,int x,int y, int z)
     {
-      cell->id[index] = arrayVertices.get(x,y,z).getId();
-
-      if(arrayVertices.get(x,y,z).exists)
+      Vertex& v = arrayVertices.get(x,y,z);
+      cell->id[index] = v.getId();
+      cell->norm[index] = v.getNorm();
+      if(v.exists)
       {
         if(cell->id[index] == 0)
         {
@@ -754,7 +785,42 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
 
             for(int xn=0;xn<3;xn++) for(int yn=0;yn<3;yn++) for(int zn=0;zn<3;zn++)
             {
-              setVertexValue(blockId,rx+xn,ry+yn,rz+zn);
+              static const glm::vec3 FRONT = glm::vec3(0,0,-1), BACK = glm::vec3(0,0,1);
+              static const glm::vec3 LEFT = glm::vec3(-1,0,0), RIGHT = glm::vec3(1,0,0);
+              static const glm::vec3 TOP = glm::vec3(0,1,0), BOTTOM = glm::vec3(0,-1,0);
+
+              glm::vec3 vx = glm::vec3(0),vy = glm::vec3(0),vz = glm::vec3(0);
+              switch(xn)
+              {
+                case(0):
+                vx = LEFT; break;
+                case(2):
+                vx = RIGHT; break;
+              }
+              switch(yn)
+              {
+                case(0):
+                vy = BOTTOM; break;
+                case(2):
+                vy = TOP; break;
+              }
+              switch(zn)
+              {
+                case(0):
+                vz = FRONT; break;
+                case(2):
+                vz = BACK; break;
+              }
+
+              glm::vec3 norm;
+              if(xn == 1 && yn == 1 && zn == 1)
+              {
+                norm = glm::vec3(0);
+              }
+              else norm = glm::normalize(vx+vy+vz);
+              setVertexValue(blockId,glm::vec3(rx+xn,ry+yn,rz+zn),norm);
+
+
             }
 
           }
@@ -841,6 +907,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
             */
             if(ntris == 2)
             {
+
               std::vector<VERTEX> singleList;
               std::vector<VERTEX> duplicateList;
               std::vector<VERTEX> fullList;
@@ -906,6 +973,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
                 {
                   //Change ordering since the quad is going to be flipped
                   glm::dvec3 points[3];
+                  glm::vec3 norms[3];
                   points[1] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[tri].p[0].pos) -shift,1)) +shift;
                   points[0] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[tri].p[1].pos) -shift,1)) +shift;
                   points[2] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[tri].p[2].pos) -shift,1)) +shift;
@@ -918,6 +986,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
                       //The new positions arent exactly the same as the old positions, so find nearest
                       if(abs(glm::length(glm::dvec3(fullList[j].pos)- points[i])) < 0.01)
                       {
+                        norms[i] = fullList[j].norm;
                         points[i] = fullList[j].pos;
                         vertex.ids[i] = fullList[j].id;
                       }
@@ -927,6 +996,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
                   for(int j=0;j<3;j++)
                   {
                     vertex.pos = points[j] + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
+                    vertex.norm = norms[j];
                     int id = addVertex(vertex);
                     oIndices.push_back(id);
                   }
@@ -945,15 +1015,14 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
               vertex.ids[2] = tris[i].p[2].id;
               for(int j=0;j<3;j++)
               {
+                vertex.norm = tris[i].p[j].norm;
                 vertex.pos = glm::dvec3(tris[i].p[j].pos) + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
                 int id = addVertex(vertex);
                 oIndices.push_back(id);
               }
             }
-
           }
         }
       }
     }
-
   }

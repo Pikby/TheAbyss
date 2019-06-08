@@ -83,12 +83,13 @@ class Map3D
       return --fullList.end();
     }
     map<int, map<int, map<int, Node>>> map3D;
+    unsigned int size;
   public:
     Map3D()
     {
       size = 0;
     }
-    unsigned int size;
+    unsigned int getSize(){return size;}
     bool exists(const glm::ivec3 &pos);
     T get(const glm::ivec3 &pos);
     void add(const glm::ivec3 &pos, T data);

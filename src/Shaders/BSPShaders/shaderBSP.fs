@@ -59,7 +59,7 @@ vec3 transColor = transColorAO.rgb;
 float transColorCount = transColorAO.a;
 
 float AO = objColorAO.a;
-vec3 normal = texelFetch(gNormal, texCoord,0).rgb;
+vec3 normal = normalize(texelFetch(gNormal, texCoord,0).rgb);
 vec3 fragPosition = texelFetch(gPosition,texCoord,0).rgb;
 float fragDepth = length(fragPosition);
 
@@ -147,18 +147,19 @@ float calcPointShadows(PointLight light)
 */
 vec3 calcDirectionalLight(float shadow)
 {
+  shadow = 1;
   vec3 lightDir = -dirLight.direction;
   float diff = max(dot(normal, lightDir), 0.0);
 
   vec3 viewDir = normalize(-fragPosition);
   vec3 reflectDir = reflect(-lightDir, normal);
-  float spec = pow(max(dot(viewDir, reflectDir), 0.0), 8);
+  float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2);
 
 
   vec3 ambient = dirLight.ambient*AO;
   vec3 diffuse = dirLight.diffuse*diff;
-  vec3 specular = dirLight.specular*spec;
-
+  vec3 specular = dirLight.specular*spec*0.1;
+    //specular = vec3(0);
   return (ambient + shadow*(diffuse + specular));
 }
 
@@ -185,6 +186,7 @@ vec3 calcPointLights()
     vec3 ambient = light.ambient*attenuation;
     vec3 diffuse = light.diffuse*diff*attenuation;
     vec3 specular = light.specular*spec*attenuation;
+
 
     total += ambient+diffuse+specular;
   }

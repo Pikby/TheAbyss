@@ -245,6 +245,8 @@ BSP::BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent) : parent(Parent
 }
 
 
+
+
 void BSP::freeGL()
 {
   //Frees all the used opengl resourses
@@ -262,6 +264,14 @@ void BSP::freeGL()
 }
 
 
+bool BSP::empty()
+{
+  for(int i=0;i<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;i++)
+  {
+    if(worldArray[i] != 0) return false;
+  }
+  return true;
+}
 
 bool BSP::blockExists(const glm::ivec3 &pos)
 {
@@ -363,15 +373,18 @@ void BSP::setupBufferObjects(RenderType type)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,*EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, curInd->size()*sizeof(uint),&curInd->front(), GL_DYNAMIC_DRAW);
 
-    int vertexSize = 5*sizeof(float);
+    int vertexSize = 8*sizeof(float);
     glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE,vertexSize, (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(3*sizeof(float)));
+    glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE,vertexSize, (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(4*sizeof(float)));
+    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(6*sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    glVertexAttribPointer(3,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(7*sizeof(float)));
+    glEnableVertexAttribArray(3);
 
 
 
@@ -395,6 +408,7 @@ void BSP::drawOpaque(Shader* shader, const glm::vec3 &pos)
   {
     glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-pos);
     //std::cout << glm::to_string(glm::vec3(parent->chunkPos) - pos) << "\n";
+    shader->use();
     shader->setMat4("model",model);
     glBindVertexArray(oVAO);
     glDrawElements(GL_TRIANGLES, oIndicesSize, GL_UNSIGNED_INT,0);

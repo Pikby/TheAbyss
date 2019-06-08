@@ -73,6 +73,7 @@ private:
   std::unique_ptr<Shader> GBlurShader;
   std::unique_ptr<Shader>  quadShader;
   std::unique_ptr<Shader>  depthBufferLoadingShader;
+  std::unique_ptr<Shader> normDebug;
   void calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::vec3 &front,const glm::vec3 &right,const glm::vec3 &up, float camZoomInDegrees,float ar,float near, float far);
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
   void renderQuad();
@@ -122,8 +123,8 @@ public:
   void addLight(glm::vec3 pos, glm::vec3 amb = glm::vec3(1.0f,1.0f,1.0f),
                 glm::vec3 spe = glm::vec3(1.0f,1.0f,1.0f), glm::vec3 dif = glm::vec3(0.5f,0.5f,0.5f),
                 float cons = 1.0f, float lin = 0.14f, float quad = 0.07f);
-  void updateDirectionalLight(glm::vec3 dir = glm::vec3(-1.0f,-1.0f,-1.0f),glm::vec3 amb = glm::vec3(0.5f,0.5f,0.5f),
-                              glm::vec3 dif = glm::vec3(0.5f,0.5f,0.5f),glm::vec3 spec = glm::vec3(1.0f,1.0f,1.0f));
+  void updateDirectionalLight(glm::vec3 dir = glm::vec3(-1.0f,-1.0f,-1.0f),glm::vec3 amb = glm::vec3(0.2f),
+                              glm::vec3 dif = glm::vec3(0.5f),glm::vec3 spec = glm::vec3(1.0f));
 
   void drawTerrainOpaque(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);
   void drawTerrainTranslucent(Shader* shader,  std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list);

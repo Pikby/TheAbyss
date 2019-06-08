@@ -1,7 +1,8 @@
 #version 430 core
 layout (location = 0) in vec3 position;
-layout (location = 1) in float texIds;
-layout (location = 2) in float packagef;
+layout (location = 1) in vec3 norm;
+layout (location = 2) in float texIds;
+layout (location = 3) in float packagef;
 
 out VS_OUT
 {
@@ -39,7 +40,7 @@ void main()
 
 
   int package = floatBitsToInt(packagef);
-  int norm = ((package >> 24) & 0xF);
+  //int norm = ((package >> 24) & 0xF);
   int ao = ((package >> 24) & 0x30);
   int texCoord = ((package >> 24) & 0xC0);
   int texId = (package >> 16) & 0xFF;
@@ -48,7 +49,6 @@ void main()
 
   float cellWidth = 1.0f/textureAtlasWidthInCells;
   float cellHeight = 1.0f/textureAtlasHeightInCells;
-  vec3 normVec = vec3(0.0f,0.0f,0.0f);
 
   vs_out.TexCells.x = xblocks;
   vs_out.TexCells.y = yblocks;
@@ -73,14 +73,14 @@ void main()
 
   //An attempt and removing all brances from the shaders, its essentially the same as the switch statement
   //But should run faster
-
+  /*
   vec3 normBits;
   normBits.z = norm & 0x1;
   normBits.y = (norm >> 1) & 0x1;
   normBits.x = (norm >> 2) & 0x1;
   float modNorm = (norm >> 3) & 0x1;
   normVec = normBits -modNorm*normBits*2.0f;
-
+  */
 
 
 
@@ -97,10 +97,10 @@ void main()
 
 
   vs_out.TriPos = position;
-  vs_out.FinNormal = normVec;
+  vs_out.FinNormal = normalize(norm);
   vs_out.FragPos = vec3(model*vec4(position,1.0f));
 
-
+  
 
 
   gl_Position = projection*view*model*vec4(position, 1.0f);

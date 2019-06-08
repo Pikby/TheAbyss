@@ -10,7 +10,7 @@
 
 void GUI::initDebugMenu()
 {
-  Label* test = new Label("DEBUG!!!",glm::vec2(0.5),12.0/64.0);
+  Label* test = new Label("DEBUG!!!\nnewlineDEBUG",glm::vec2(0.5),12.0);
 
   test->setOnDraw([](Widget* parent)
   {
@@ -19,7 +19,7 @@ void GUI::initDebugMenu()
     parent->setColor(glm::vec4(color,1.0));
   });
 
-  Label* debugstring= new Label("DEBUdsd!!",glm::vec2(0,0.98),24.0/64.0);
+  Label* debugstring= new Label("DEBUdsd!!",glm::vec2(0,0.98),24.0);
   debugstring->setColor(glm::vec4(1));
   debugstring->setOnDraw([](Widget* parent)
   {
@@ -32,17 +32,17 @@ void GUI::initDebugMenu()
       static double lastFps;
       double curFps = 1.0/(curFrame-lastFrame);
 
-      double alpha = 0.9;
+      double alpha = 0.09;
       double expectedFps = lastFps*alpha +curFps*(1-alpha);
       std::string fpsStr = "FPS: " + std::to_string((int)expectedFps);
       lastFrame=curFrame;
       lastFps = expectedFps;
-      ss << std::left << std::setw(strWidth) << fpsStr;
+      ss << fpsStr << '\n';
     }
 
     {
       std::string pingStr = "Ping: " + std::to_string((int)PlayerWorld.worldStats.pingInMS) + " ms\t";
-      ss << std::left << std::setw(strWidth) << pingStr;
+      ss << pingStr << '\n';
     }
 
 
@@ -50,15 +50,32 @@ void GUI::initDebugMenu()
       glm::vec3 p =  MainChar::getPosition();
       stringstream pcss;
       pcss << "Player Coords: " << std::fixed << std::setprecision(2) << p.x << ':' << p.y << ':' << p.z << "\t";
-      ss << std::left << std::setw(strWidth) << pcss.str();
+      ss << pcss.str() << '\n';
+
+      pcss.str(std::string());
+      p = MainChar::getViewDirection();
+      pcss << "View Direction: " << std::fixed << std::setprecision(2) << p.x << ':' << p.y << ':' << p.z << "\t";
+      ss << pcss.str() << '\n';
+
     }
 
     {
       glm::ivec3 p = World::toChunkCoords(MainChar::getPosition());
       stringstream ccss;
       ccss << "Chunk Coords: " << std::fixed << std::setprecision(2) << p.x << ':' << p.y << ':' << p.z;
-      ss << std::left << std::setw(strWidth) << ccss.str();
+      ss << ccss.str() << '\n';
     }
+
+    {
+      int chunksInQueue = PlayerWorld.buildQueue.size();
+      std::string str = "Chunks Building:" + std::to_string(chunksInQueue);
+      ss << str << '\n';
+      int chunksInMemory = PlayerWorld.BSPmap.getSize();
+      str = "Chunks In Memory " + std::to_string(chunksInMemory);
+      ss << str << '\n';
+    }
+
+
 
     ((Label*)parent)->updateLabel(ss.str());
   });

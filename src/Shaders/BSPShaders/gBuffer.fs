@@ -13,6 +13,7 @@ in GS_OUT
   vec2 TexCells;
   vec2 TexOrigins[3];
   vec3 FinNormal;
+  vec3 TexNormal;
   vec3 FragPos;
   float AO;
 } gs_out;
@@ -28,7 +29,7 @@ uniform int textureAtlasHeightInCells;
 
 vec3 getWeights()
 {
-  vec3 absNorm = abs(gs_out.FinNormal);
+  vec3 absNorm = abs(gs_out.TexNormal);
   return absNorm/(absNorm.x+absNorm.y+absNorm.z);
 }
 

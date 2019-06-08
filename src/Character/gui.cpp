@@ -22,7 +22,7 @@
 
 void GUI::initGUI(const glm::ivec2 Dimensions,const std::string &name)
 {
-  chatBox = std::make_unique<ChatBox>(glm::vec2(0.2,0.2),glm::vec2(0.2,0.2),12.0/64.0);
+  chatBox = std::make_unique<ChatBox>(glm::vec2(0.2,0.2),glm::vec2(0.2,0.2),12.0);
   inGame = std::make_unique<InGame>();
   textRenderer = std::make_unique<TextRenderer>();
   debugMenu = std::make_unique<Menu>();

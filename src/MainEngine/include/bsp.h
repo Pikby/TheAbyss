@@ -1,6 +1,12 @@
 #ifndef BSPHEADER
 #define BSPHEADER
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/transform.hpp>
+
 #include <memory>
 #include <atomic>
 #include <mutex>
@@ -20,6 +26,10 @@ typedef unsigned char uint8_t;
 class BSPNode;
 enum AmbientOcclusion {NOAO = 0, SINGLE = 1, CONNECTED = 2, FULLCOVER = 3};
 enum TextureSides {BOTTOMTS  = 0,TOPTS = 1 << 6, RIGHTTS = 1 << 7, LEFTTS = 0};
+
+
+
+
 
 struct BlockFace
 {
@@ -57,6 +67,7 @@ struct VertexData
   uint8_t ids[3];
   RenderType renderType;
   glm::vec3 pos;
+  glm::vec3 norm;
   Faces face;
   AmbientOcclusion ao;
   TextureSides tb,rl;
@@ -88,6 +99,7 @@ class BSP
     uint oVBO = 0, oEBO = 0, oVAO = 0,
          tVBO = 0, tEBO = 0, tVAO = 0;
 
+
     AmbientOcclusion getAO(const glm::ivec3 &pos, Faces face, TextureSides top, TextureSides right);
     int addVertex(const VertexData& vertex);
     void addIndices(RenderType renderType,int index1, int index2, int index3, int index4);
@@ -98,6 +110,7 @@ class BSP
     BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent);
     static bool geometryChanged;
 
+    bool empty();
     void addToLightList(const glm::ivec3 &localPos,const Light& light);
     bool lightExists(const glm::ivec3 &localPos);
     void removeFromLightList(const glm::ivec3 &localPos);

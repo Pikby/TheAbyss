@@ -2,13 +2,20 @@ template <typename T, int N>
 class Array3D
 {
   private:
-    T array[N*N*N];
-    std::mutex arrayMutex;
+    T* array;
+    //std::mutex arrayMutex;
   public:
     Array3D()
     {
-      memset(array,0,sizeof(array));
+      array = new T[N*N*N];
     }
+
+    ~Array3D()
+    {
+      delete[] array;
+    }
+
+
     T &get(const int x,const int y,const int z)
     {
         return get(glm::ivec3(x,y,z));

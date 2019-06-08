@@ -54,11 +54,13 @@ public:
   static void setPosition(const glm::vec3 &pos);
   static void draw();
 
+
   //Setters and Getters
   static Camera& getCamera(){return mainCam;}
   static uint8_t getHeldItem(){return heldItem;}
   static void setHeldItem(uint8_t id){heldItem = id;}
   static glm::vec3 getPosition(){return playerPos;}
+  static glm::vec3 getViewDirection(){return mainCam.front;}
 };
 
 

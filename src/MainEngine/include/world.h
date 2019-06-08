@@ -42,8 +42,6 @@ class World
 private:
   void checkForUpdates(const glm::ivec3 &local,std::shared_ptr<BSPNode> chunk);
 public:
-  static glm::ivec3 toLocalCoords(const glm::ivec3 &in);
-  static glm::ivec3 toChunkCoords(const glm::ivec3 &in);
 
   std::unique_ptr<Messenger>  messenger;
   std::unique_ptr<Drawer> drawer;
@@ -66,10 +64,12 @@ public:
 
   void calculateViewableChunks();
   bool blockExists(const glm::ivec3 &pos);
-  bool blockExists(const glm::vec3 &pos)
-  {
-    return blockExists(glm::ivec3(floor(pos)));
-  }
+  bool blockExists(const glm::vec3 &pos){return blockExists(glm::ivec3(floor(pos)));}
+
+  static glm::ivec3 toLocalCoords(const glm::ivec3 &in);
+  static glm::ivec3 toChunkCoords(const glm::ivec3 &in);
+
+
 
   int anyExists(const glm::vec3 &pos);
   bool entityExists(const glm::vec3 &pos);
@@ -85,7 +85,6 @@ public:
 
   void buildWorld(char threadNumb);
   bool chunkExists(const glm::ivec3 &pos);
-
 
   void addPlayer(const glm::vec3 &pos, uint8_t id);
   void removePlayer(uint8_t id);
@@ -103,32 +102,5 @@ public:
   void delScan(const glm::vec3& pos);
   void generateChunkFromString(const glm::ivec3 &pos,const char* val);
 };
-
 extern World PlayerWorld;
-
-/*
-#ifdef WORLDIMPLEMENTATION
-
-
-int World::Messenger::fd;
-std::chrono::system_clock::time_point World::Messenger::lastPing;
-Map3D<bool> World::Messenger::requestMap;
-TSafeQueue<OutMessage> World::Messenger::messageQueue;
-
-
-
-WorldStats World::worldStats;
-
-Drawer World::drawer;
-Map3D<std::shared_ptr<BSPNode>> World::BSPmap;
-char World::mainId;
-TSafeQueue<std::shared_ptr<BSPNode>> World::buildQueue;
-TSafeQueue<std::shared_ptr<BSPNode>> World::chunkDeleteQueue;
-int World::horzRenderDistance,World::vertRenderDistance,World::renderBuffer;
-int World::drawnChunks;
-int World::numbOfBuildThreads;
-std::string World::worldName;
-#endif
-
-*/
 #endif
