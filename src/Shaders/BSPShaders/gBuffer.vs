@@ -30,7 +30,16 @@ vec2 getOrigin(int id)
 void main()
 {
   gl_Position = projection*view*model*vec4(position, 1.0f);
-  vs_out.Normal = norm;
+
+  int compactNorm = floatBitsToInt(norm.x);
+  vs_out.Normal = vec3(((compactNorm & 0xff)-128)/127.0f,
+                       (((compactNorm >> 8) & 0xff)-128)/127.0,
+                       (((compactNorm >> 16) & 0xff)-128)/127.0);
+
+  compactNorm = floatBitsToInt(norm.y);
+  vs_out.FlatNormal = vec3(((compactNorm & 0xff)-128)/127.0f,
+                      (((compactNorm >> 8) & 0xff)-128)/127.0,
+                      (((compactNorm >> 16) & 0xff)-128)/127.0);
   vs_out.LocalPos = position;
 
 

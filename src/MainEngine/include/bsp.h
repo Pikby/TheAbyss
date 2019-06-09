@@ -69,6 +69,7 @@ struct VertexData
   RenderType renderType;
   glm::vec3 pos;
   glm::vec3 norm;
+  glm::vec3 flatNorm;
   Faces face;
   AmbientOcclusion ao;
   TextureSides tb,rl;

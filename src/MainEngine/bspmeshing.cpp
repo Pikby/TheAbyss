@@ -618,8 +618,19 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
     curBuffer->push_back(vertex.pos.x);
     curBuffer->push_back(vertex.pos.y);
     curBuffer->push_back(vertex.pos.z);
-    curBuffer->push_back(vertex.norm.x);
-    curBuffer->push_back(vertex.norm.y);
+
+    uint8_t normx = vertex.norm.x*127+128;
+    uint8_t normy = vertex.norm.y*127+128;
+    uint8_t normz = vertex.norm.z*127+128;
+    uint32_t compactNorm = normx | normy << 8 | normz << 16;
+    curBuffer->push_back(*(float*)&compactNorm);
+
+    normx = vertex.flatNorm.x*127+128;
+    normy = vertex.flatNorm.y*127+128;
+    normz = vertex.flatNorm.z*127+128;
+    compactNorm = normx | normy << 8 | normz << 16;
+    curBuffer->push_back(*(float*)&compactNorm);
+
     curBuffer->push_back(vertex.norm.z);
 
     uint32_t compactIds = vertex.texIds[0] | (vertex.texIds[1] << 8) | (vertex.texIds[2] << 16) | (vertex.vId << 24);
@@ -847,7 +858,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
       {
         for(int y = 0;y<CHUNKSIZE;y++)
         {
-+-
+
           glm::ivec3 chunkLocalPos = glm::ivec3(x,y,z);
           RenderType renderType = blockVisibleType(chunkLocalPos);
           uint8_t blockId = getBlock(chunkLocalPos);
@@ -955,6 +966,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
                 shift = (singleList[0].pos+ singleList[1].pos + duplicateList[0].pos + duplicateList[1].pos)/4.0;
                 norm = glm::normalize(glm::cross(tris[0].p[0].pos -tris[0].p[1].pos,tris[0].p[0].pos -tris[0].p[2].pos));
 
+                vertex.flatNorm = norm;
                 flip.x = abs(norm.z) > 0.9 ? -1.0 : 1.0;
                 flip.y = abs(norm.x) > 0.9 ? -1.0 : 1.0;
                 flip.z = abs(norm.y) > 0.9 ? -1.0 : 1.0;
@@ -1012,9 +1024,10 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
               vertex.texIds[0] = tris[i].p[0].id;
               vertex.texIds[1] = tris[i].p[1].id;
               vertex.texIds[2] = tris[i].p[2].id;
+              vertex.flatNorm = glm::normalize(normal);
               for(int j=0;j<3;j++)
               {
-                vertex.norm = tris[i].p[j].norm;
+                vertex.norm = glm::normalize(tris[i].p[j].norm);
                 vertex.pos = glm::dvec3(tris[i].p[j].pos) + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
                 vertex.vId = j;
                 int id = addVertex(vertex);

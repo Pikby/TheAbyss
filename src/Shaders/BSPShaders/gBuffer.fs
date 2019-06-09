@@ -19,7 +19,7 @@ in VS_OUT vs_out;
 
 vec3 getWeights()
 {
-  vec3 absNorm = abs(vs_out.Normal);
+  vec3 absNorm = abs(normalize(vs_out.FlatNormal));
   return absNorm/(absNorm.x+absNorm.y+absNorm.z);
 }
 
