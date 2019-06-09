@@ -64,7 +64,8 @@ struct FaceData
 
 struct VertexData
 {
-  uint8_t ids[3];
+  uint8_t texIds[3];
+  uint8_t vId;
   RenderType renderType;
   glm::vec3 pos;
   glm::vec3 norm;

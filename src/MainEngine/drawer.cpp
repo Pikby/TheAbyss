@@ -68,6 +68,11 @@ void Drawer::createTextureAtlas(const char* texture,int cellWidth)
 
 void Drawer::setupShadersAndTextures(int width, int height)
 {
+
+  try
+  {
+
+
   MSAA = 1;
 
 
@@ -112,13 +117,13 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader->setFloat("fog_dist",CHUNKSIZE);
   blockShader->setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
   blockShader->setBool("shadowsOn",true);
-  gBufferShader = std::make_unique<Shader>(Shader("BSPShaders/gBuffer.fs","BSPShaders/gBuffer.vs","BSPShaders/gBuffer.gs"));
+  gBufferShader = std::make_unique<Shader>(Shader("BSPShaders/gBuffer.fs","BSPShaders/gBuffer.vs"));
   int cellWidth = 128;
   gBufferShader->use();
   gBufferShader->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
   gBufferShader->setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
   gBufferShader->setInt("cellWidth",cellWidth);
-  gBufferShader->setInt("curTexture",0);
+  gBufferShader->setInt("textureAtlas",0);
   gBufferShader->setVec3("objectColor", 0.5f, 0.5f, 0.31f);
 
 
@@ -167,6 +172,14 @@ void Drawer::setupShadersAndTextures(int width, int height)
 
   setAllBuffers();
   renderDirectionalDepthMap();
+
+  }
+  catch(...)
+  {
+    std::cout << "Error setting up shaders\n";
+    exit(-1);
+  }
+
 }
 
 void Drawer::deleteAllBuffers()

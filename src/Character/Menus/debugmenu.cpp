@@ -26,17 +26,20 @@ void GUI::initDebugMenu()
     const int strWidth = 40;
     stringstream ss;
     {
-      static double lastFrame = 0;
-      double curFrame = glfwGetTime();
 
-      static double lastFps;
-      double curFps = 1.0/(curFrame-lastFrame);
+      static double lastTest = 0;
+      static int frameCount = 0;
+      frameCount++;
+      double curTime = glfwGetTime();
+      static int displayCount = 0;
+      if(abs(lastTest-curTime) > 1)
+      {
+        displayCount = frameCount;
+        frameCount = 0;
+        lastTest = curTime;
+      }
 
-      double alpha = 0.09;
-      double expectedFps = lastFps*alpha +curFps*(1-alpha);
-      std::string fpsStr = "FPS: " + std::to_string((int)expectedFps);
-      lastFrame=curFrame;
-      lastFps = expectedFps;
+      std::string fpsStr = "FPS: " + std::to_string(displayCount);
       ss << fpsStr << '\n';
     }
 

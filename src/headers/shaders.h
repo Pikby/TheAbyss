@@ -22,10 +22,50 @@ class Shader
   private:
     static std::string filePath;
     unsigned int id;
+
+    std::string preProcess(std::string code,std::string path)
+    {
+      std::size_t place = code.find("#include");
+      while(place != std::string::npos)
+      {
+        std::size_t endl = code.find('\n',place);
+        std::string includePath = code.substr(place,endl-place);
+        code.erase(place,endl-place);
+
+
+        std::size_t end = path.rfind('/');
+        std::string dir = path.substr(0,path.rfind('/'));
+
+
+
+        std::size_t first = includePath.find('\"')+1;
+        std::size_t last = includePath.rfind('\"');
+        std::string fullPath = dir + '/' + includePath.substr(first,last-first);
+
+        std::ifstream includeFile;
+        includeFile.open(fullPath);
+        if(!includeFile.is_open())
+        {
+          std::cout << "include path wrong: " << fullPath << "\n";
+          return "";
+          throw -1;
+        }
+
+        std::stringstream includeStream;
+        includeStream << includeFile.rdbuf();
+        std::string preProcessStr = preProcess(includeStream.str(),fullPath);
+        code.insert(place,preProcessStr);
+
+        place = code.find("#include");
+      }
+      return code;
+    }
+
+
+
     void compileShader(std::string path)
     {
       std::string extension = path.substr(path.rfind("."),path.size());
-      std::string code;
 
       std::ifstream shaderFile;
 
@@ -35,6 +75,7 @@ class Shader
       {
         std::cout << "Shader path wrong: " << path << "\n";
         return;
+        throw -1;
       }
 
       std::stringstream shaderStream;
@@ -42,9 +83,9 @@ class Shader
 
       shaderFile.close();
 
-      code = shaderStream.str();
-
-      const char* shaderCode = code.c_str();
+      std::string code = shaderStream.str();
+      std::string preProcessCode = preProcess(code,path);
+      const char* shaderCode = preProcessCode.c_str();
       uint shader;
       int success;
       char infoLog[512];
@@ -106,7 +147,10 @@ class Shader
            {
                glGetProgramInfoLog(id, 1024, NULL, infoLog);
                std::cout << "ERROR::PROGRAM_LINKING_ERROR"<< "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+
+               throw -1;
            }
+
     }
 
 

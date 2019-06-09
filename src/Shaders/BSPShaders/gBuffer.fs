@@ -4,32 +4,22 @@ layout (location = 0) out vec3 gPosition;
 layout (location = 1) out vec3 gNormal;
 layout (location = 2) out vec4 gColorSpec;
 
-
-in GS_OUT
-{
-  vec3 TexWeights;
-  vec3 TriPos;
-  vec2 TexCoord;
-  vec2 TexCells;
-  vec2 TexOrigins[3];
-  vec3 FinNormal;
-  vec3 TexNormal;
-  vec3 FragPos;
-  float AO;
-} gs_out;
-
-uniform sampler2D curTexture;
+uniform sampler2D textureAtlas;
 uniform vec3 objectColor;
-
 
 uniform int textureAtlasWidthInCells;
 uniform int textureAtlasHeightInCells;
+float cellWidth = 1.0f/textureAtlasWidthInCells;
+float cellHeight = 1.0f/textureAtlasHeightInCells;
 
+#include "gBuffer.h"
+
+in VS_OUT vs_out;
 
 
 vec3 getWeights()
 {
-  vec3 absNorm = abs(gs_out.TexNormal);
+  vec3 absNorm = abs(vs_out.Normal);
   return absNorm/(absNorm.x+absNorm.y+absNorm.z);
 }
 
@@ -37,41 +27,33 @@ vec3 getWeights()
 vec2 getTextureCoordinates(vec2 texPos,int id)
 {
   vec2 temp;
-  temp.x = mod(texPos.x,1.0f/textureAtlasWidthInCells)+gs_out.TexOrigins[id].x;
-  temp.y = mod(texPos.y,1.0f/textureAtlasHeightInCells)+gs_out.TexOrigins[id].y;
+  temp.x = mod(texPos.x,cellWidth)+vs_out.TexOrigins[id].x;
+  temp.y = mod(texPos.y,cellHeight)+vs_out.TexOrigins[id].y;
 
   return temp;
 }
 
 vec3 getTextureAlbedo(int id)
 {
-  vec2 t1 = getTextureCoordinates(gs_out.TriPos.yz,id);
-  vec2 t2 = getTextureCoordinates(gs_out.TriPos.xz,id);
-  vec2 t3 = getTextureCoordinates(gs_out.TriPos.xy,id);
-
+  vec2 t1 = getTextureCoordinates(vs_out.LocalPos.yz,id);
+  vec2 t2 = getTextureCoordinates(vs_out.LocalPos.xz,id);
+  vec2 t3 = getTextureCoordinates(vs_out.LocalPos.xy,id);
   vec3 weights = getWeights();
-  vec3 albedo = weights.x*texture(curTexture,t1).rgb
-              + weights.y*texture(curTexture,t2).rgb
-              + weights.z*texture(curTexture,t3).rgb;
-
+  vec3 albedo = weights.x*texture(textureAtlas,t1).rgb
+              + weights.y*texture(textureAtlas,t2).rgb
+              + weights.z*texture(textureAtlas,t3).rgb;
   return albedo/3.0f;
 
 }
 
 void main()
 {
+  vec3 albedo = objectColor*(vs_out.TexWeights.x*getTextureAlbedo(0)
+                           + vs_out.TexWeights.y*getTextureAlbedo(1)
+                           + vs_out.TexWeights.z*getTextureAlbedo(2));
 
-
-
-  vec3 objColor = objectColor;
-  vec3 finColor = objColor*(gs_out.TexWeights.x*getTextureAlbedo(0)
-                + gs_out.TexWeights.y*getTextureAlbedo(1)
-                + gs_out.TexWeights.z*getTextureAlbedo(2));
-
-
-  //finColor = getTextureAlbedo(1);
-  gPosition = gs_out.FragPos;
-  gNormal = gs_out.FinNormal;
-  gColorSpec = vec4(finColor,gs_out.AO);
+  gPosition = vs_out.FragPos;
+  gNormal = vs_out.Normal;
+  gColorSpec = vec4(albedo,1);
 
 }

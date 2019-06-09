@@ -622,7 +622,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
     curBuffer->push_back(vertex.norm.y);
     curBuffer->push_back(vertex.norm.z);
 
-    uint32_t compactIds = vertex.ids[0] | (vertex.ids[1] << 8) | (vertex.ids[2] << 16);
+    uint32_t compactIds = vertex.texIds[0] | (vertex.texIds[1] << 8) | (vertex.texIds[2] << 16) | (vertex.vId << 24);
 
     //std::cout << (int)vertex.ids[0] << ":" << (int)vertex.ids[1] << ":" << (int)vertex.ids[2] << ":" << coma<< "\n";
     curBuffer->push_back(*(float*)&compactIds);
@@ -638,7 +638,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
       case (LEFTF):    compactFace = 0b1100; break;
     }
     uint8_t normandtex = compactFace | (vertex.ao << 4)| vertex.tb | vertex.rl;
-    uint8_t texId = vertex.ids[0];
+    uint8_t texId = 0;
 
 
     uint32_t package = pack4chars(normandtex,texId,1,1);
@@ -828,7 +828,18 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
       }
     }
 
-
+    double punit = 1.0/lod;
+    glm::dvec3 p[8] =
+    {
+      glm::dvec3(0,0,punit),
+      glm::dvec3(punit,0,punit),
+      glm::dvec3(punit,0,0),
+      glm::dvec3(0,0,0),
+      glm::dvec3(0,punit,punit),
+      glm::dvec3(punit,punit,punit),
+      glm::dvec3(punit,punit,0),
+      glm::dvec3(0,punit,0),
+    };
 
     for(int x = 0;x<CHUNKSIZE;x++)
     {
@@ -836,19 +847,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
       {
         for(int y = 0;y<CHUNKSIZE;y++)
         {
-
-          double punit = 1.0/lod;
-          glm::dvec3 p[8] =
-          {
-            glm::dvec3(0,0,punit),
-            glm::dvec3(punit,0,punit),
-            glm::dvec3(punit,0,0),
-            glm::dvec3(0,0,0),
-            glm::dvec3(0,punit,punit),
-            glm::dvec3(punit,punit,punit),
-            glm::dvec3(punit,punit,0),
-            glm::dvec3(0,punit,0),
-          };
++-
           glm::ivec3 chunkLocalPos = glm::ivec3(x,y,z);
           RenderType renderType = blockVisibleType(chunkLocalPos);
           uint8_t blockId = getBlock(chunkLocalPos);
@@ -988,7 +987,7 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
                       {
                         norms[i] = fullList[j].norm;
                         points[i] = fullList[j].pos;
-                        vertex.ids[i] = fullList[j].id;
+                        vertex.texIds[i] = fullList[j].id;
                       }
                     }
                   }
@@ -1010,13 +1009,14 @@ int Polygonise(const GRIDCELL& grid, const glm::dvec3* p,const double isolevel,T
             for(int i=0;i<ntris;i++)
             {
               glm::dvec3 normal = glm::cross(tris[i].p[0].pos- tris[i].p[1].pos,tris[i].p[0].pos - tris[i].p[2].pos);
-              vertex.ids[0] = tris[i].p[0].id;
-              vertex.ids[1] = tris[i].p[1].id;
-              vertex.ids[2] = tris[i].p[2].id;
+              vertex.texIds[0] = tris[i].p[0].id;
+              vertex.texIds[1] = tris[i].p[1].id;
+              vertex.texIds[2] = tris[i].p[2].id;
               for(int j=0;j<3;j++)
               {
                 vertex.norm = tris[i].p[j].norm;
                 vertex.pos = glm::dvec3(tris[i].p[j].pos) + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
+                vertex.vId = j;
                 int id = addVertex(vertex);
                 oIndices.push_back(id);
               }
