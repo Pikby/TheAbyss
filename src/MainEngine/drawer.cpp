@@ -171,7 +171,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
                                                      "pointDepthShader.gs"));
 
   setAllBuffers();
-  renderDirectionalDepthMap();
+  //renderDirectionalDepthMap();
 
   }
   catch(...)
@@ -807,7 +807,7 @@ void Drawer::drawFinal()
 
     setLights(shader);
     shader->setVec3("viewPos", viewPos);
-    bindDirectionalShadows(shader);
+    //bindDirectionalShadows(shader);
 
 
     glDisable(GL_DEPTH_TEST);

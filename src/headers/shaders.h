@@ -132,7 +132,7 @@ class Shader
       filePath = FilePath;
     }
     Shader(){};
-    Shader(std::string shader1, std::string shader2 = "",std::string shader3 = "")
+    Shader(const std::string &shader1,const std::string &shader2 = "",const std::string &shader3 = "")
     {
       id = glCreateProgram();
       compileShader(filePath+ shader1);
@@ -159,56 +159,81 @@ class Shader
       glUseProgram(id);
     }
 
-    void setMat4(std::string name, const glm::mat4 &value)
+    void setMat4(const std::string &name, const glm::mat4 &value)
     {
       glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
     }
-    void setMat3(std::string name, const glm::mat3 &value)
+    void setMat3(const std::string &name, const glm::mat3 &value)
     {
       glUniformMatrix3fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
     }
 
-
-
-    void setVec3(std::string name, const glm::vec3 &value)
+    void setVec3(const std::string &name, const glm::vec3 &value)
     {
       glUniform3f(glGetUniformLocation(id, name.c_str()),value.x,value.y,value.z);
     }
 
-    void setVec3(std::string name, float x, float y, float z)
+    void setVec3(const std::string &name, float x, float y, float z)
     {
       glUniform3f(glGetUniformLocation(id, name.c_str()),x,y,z);
     }
 
-    void setInt(std::string name, int x)
+    void setInt(const std::string &name, int x)
     {
       glUniform1i(glGetUniformLocation(id, name.c_str()),x);
     }
-    void setBool(std::string name, bool val)
+    void setBool(const std::string &name, bool val)
     {
       glUniform1i(glGetUniformLocation(id, name.c_str()),val);
     }
-    void setFloat(std::string name, float val)
+    void setFloat(const std::string &name, float val)
     {
       glUniform1f(glGetUniformLocation(id,name.c_str()),val);
     }
-    void setUInt(std::string name, unsigned int x)
+    void setUInt(const std::string &name, unsigned int x)
     {
       glUniform1ui(glGetUniformLocation(id,name.c_str()),x);
     }
-    void setVec2(std::string name, const glm::vec2 & val)
+    void setVec2(const std::string &name, const glm::vec2 & val)
     {
       glUniform2f(glGetUniformLocation(id,name.c_str()),val.x,val.y);
     }
-    void setIVec2(std::string name, const glm::ivec2 &val)
+    void setIVec2(const std::string &name, const glm::ivec2 &val)
     {
       glUniform2i(glGetUniformLocation(id,name.c_str()),val.x,val.y);
     }
-    void setVec4(std::string name, const glm::vec4 &val)
+    void setVec4(const std::string &name, const glm::vec4 &val)
     {
       glUniform4f(glGetUniformLocation(id,name.c_str()),val.x,val.y,val.z,val.w);
     }
 };
+
+class ShaderFeedback : public Shader
+{
+  ShaderFeedback(const std::string &shader)
+  {
+    id = glCreateProgram();
+    compileShader(filePath+ shader1);
+    if(shader2 != "") compileShader(filePath+ shader2);
+    if(shader3 != "") compileShader(filePath+ shader3);
+
+
+    glTransformFeedbackVaryings(id,1,"output",GL_INTERLEAVED_ATTRIBS);
+    glLinkProgram(id);
+
+    int success;
+    char infoLog[512];
+    glGetProgramiv(id, GL_LINK_STATUS, &success);
+         if(!success)
+         {
+             glGetProgramInfoLog(id, 1024, NULL, infoLog);
+             std::cout << "ERROR::PROGRAM_LINKING_ERROR"<< "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+
+             throw -1;
+         }
+
+  }
+}
 
 #ifdef GLSLSHADERSIMPLEMNTATION
 std::string Shader::filePath;

@@ -30,6 +30,8 @@ vec2 getOrigin(int id)
 void main()
 {
   gl_Position = projection*view*model*vec4(position, 1.0f);
+  vs_out.FragPos = vec3(model*vec4(position,1));
+
 
   int compactNorm = floatBitsToInt(norm.x);
   vs_out.Normal = vec3(((compactNorm & 0xff)-128)/127.0f,

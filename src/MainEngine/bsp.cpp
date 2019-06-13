@@ -20,6 +20,12 @@
 #include "include/bsp.h"
 #include "../Objects/include/items.h"
 
+inline int pack4chars(char a, char b, char c, char d)
+{
+return ((a << 24) | (b << 16) | (c << 8) | d);
+}
+
+
 int BSPNode::totalChunks = 0;
 bool BSP::geometryChanged = true;
 BSPNode::~BSPNode()
@@ -264,6 +270,98 @@ void BSP::freeGL()
 }
 
 
+void BSP::addIndices(RenderType renderType,int index1, int index2, int index3, int index4)
+{
+  std::vector<uint>* curBuffer;
+  if(renderType == OPAQUE)
+  {
+    curBuffer = &oIndices;
+  }
+  else if(renderType == TRANSLUCENT)
+  {
+    curBuffer = &tIndices;
+  }
+  else
+  {
+    std::cout << "Indices error\n";
+    return;
+  }
+  //Add the First triangle of the square
+  curBuffer->push_back(index1);
+  curBuffer->push_back(index2);
+  curBuffer->push_back(index3);
+
+  //Add the second triangle of the square
+  curBuffer->push_back(index4);
+  curBuffer->push_back(index1);
+  curBuffer->push_back(index3);
+}
+
+
+int BSP::addVertex(const VertexData &vertex)
+{
+
+  std::vector<float>* curBuffer;
+  if(vertex.renderType == OPAQUE)
+  {
+    curBuffer = &oVertices;
+  }
+  else if(vertex.renderType == TRANSLUCENT)
+  {
+    curBuffer = &tVertices;
+  }
+  else
+  {
+    std::cout << "adding vertex of a transparentobject ???\n";
+  }
+  int numbVert = curBuffer->size()/8;
+  //Adds position vector
+  //curBuffer->push_back(*(float*)&fullPos);
+  curBuffer->push_back(vertex.pos.x);
+  curBuffer->push_back(vertex.pos.y);
+  curBuffer->push_back(vertex.pos.z);
+
+  uint8_t normx = vertex.norm.x*127+128;
+  uint8_t normy = vertex.norm.y*127+128;
+  uint8_t normz = vertex.norm.z*127+128;
+  uint32_t compactNorm = normx | normy << 8 | normz << 16;
+  curBuffer->push_back(*(float*)&compactNorm);
+
+  normx = vertex.flatNorm.x*127+128;
+  normy = vertex.flatNorm.y*127+128;
+  normz = vertex.flatNorm.z*127+128;
+  compactNorm = normx | normy << 8 | normz << 16;
+  curBuffer->push_back(*(float*)&compactNorm);
+
+  curBuffer->push_back(vertex.norm.z);
+
+  uint32_t compactIds = vertex.texIds[0] | (vertex.texIds[1] << 8) | (vertex.texIds[2] << 16) | (vertex.vId << 24);
+
+  //std::cout << (int)vertex.ids[0] << ":" << (int)vertex.ids[1] << ":" << (int)vertex.ids[2] << ":" << coma<< "\n";
+  curBuffer->push_back(*(float*)&compactIds);
+  //Add the normal and texture ids
+  uint8_t compactFace;
+  switch(vertex.face)
+  {
+    case (FRONTF):   compactFace = 0b1001; break;
+    case (BACKF):    compactFace = 0b0001; break;
+    case (TOPF):     compactFace = 0b0010; break;
+    case (BOTTOMF):  compactFace = 0b1010; break;
+    case (RIGHTF):   compactFace = 0b0100; break;
+    case (LEFTF):    compactFace = 0b1100; break;
+  }
+  uint8_t normandtex = compactFace | (vertex.ao << 4)| vertex.tb | vertex.rl;
+  uint8_t texId = 0;
+
+
+  uint32_t package = pack4chars(normandtex,texId,1,1);
+  curBuffer->push_back(*(float*)&package);
+
+
+  return numbVert;
+}
+
+
 bool BSP::empty()
 {
   for(int i=0;i<CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;i++)
@@ -391,9 +489,10 @@ void BSP::setupBufferObjects(RenderType type)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     geometryChanged = true;
-    *curVert = std::vector<float>();
-    *curInd = std::vector<uint>();
+
   }
+  curVert->clear();
+  curInd->clear();
 }
 
 void BSP::render()

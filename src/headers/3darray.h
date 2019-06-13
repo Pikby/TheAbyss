@@ -2,17 +2,17 @@ template <typename T, int N>
 class Array3D
 {
   private:
-    T* array;
+    std::unique_ptr<T[]> array;
     //std::mutex arrayMutex;
   public:
     Array3D()
     {
-      array = new T[N*N*N];
+      array = std::make_unique<T[]>(N*N*N);
     }
 
     ~Array3D()
     {
-      delete[] array;
+
     }
 
 

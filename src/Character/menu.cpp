@@ -7,10 +7,7 @@
 
 Menu::~Menu()
 {
-  for(auto itr = viewableList.begin(); itr!= viewableList.end();itr++)
-  {
-    delete *itr;
-  }
+
 }
 
 void Menu::setFocusTarget(Widget* widget)
