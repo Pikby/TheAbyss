@@ -19,7 +19,7 @@ typedef unsigned int uint;
 
 class Shader
 {
-  private:
+protected:
     static std::string filePath;
     unsigned int id;
 
@@ -194,6 +194,10 @@ class Shader
     {
       glUniform1ui(glGetUniformLocation(id,name.c_str()),x);
     }
+    void setIntArray(const std::string &name,const int* arr,int size)
+    {
+      glUniform1iv(glGetUniformLocation(id,name.c_str()),size,arr);
+    }
     void setVec2(const std::string &name, const glm::vec2 & val)
     {
       glUniform2f(glGetUniformLocation(id,name.c_str()),val.x,val.y);
@@ -210,15 +214,17 @@ class Shader
 
 class ShaderFeedback : public Shader
 {
-  ShaderFeedback(const std::string &shader)
+public:
+  ShaderFeedback(){};
+  ShaderFeedback(const std::string &shader1,const std::string &shader2 = "",const std::string &shader3 = "")
   {
     id = glCreateProgram();
     compileShader(filePath+ shader1);
     if(shader2 != "") compileShader(filePath+ shader2);
     if(shader3 != "") compileShader(filePath+ shader3);
 
-
-    glTransformFeedbackVaryings(id,1,"output",GL_INTERLEAVED_ATTRIBS);
+    const char* feedback[] = { "outValue" };
+    glTransformFeedbackVaryings(id,1,feedback,GL_INTERLEAVED_ATTRIBS);
     glLinkProgram(id);
 
     int success;
@@ -233,7 +239,12 @@ class ShaderFeedback : public Shader
          }
 
   }
-}
+
+  int getProgram()
+  {
+    return id;
+  }
+};
 
 #ifdef GLSLSHADERSIMPLEMNTATION
 std::string Shader::filePath;

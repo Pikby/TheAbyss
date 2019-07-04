@@ -629,12 +629,21 @@ class VertexArray
 {
 private:
   Array3D<Vertex,T> array;
-  Array3D<bool,CHUNKSIZE> renderArr;
+  Array3D<int,CHUNKSIZE> renderArr;
   void setRender(const glm::vec3& rPos)
   {
     if(!(rPos.x < 0 || rPos.y < 0 || rPos.z < 0 || rPos.x > CHUNKSIZE -1 || rPos.y > CHUNKSIZE -1 || rPos.z > CHUNKSIZE -1 ))
     {
-      renderArr.get(rPos) = true;
+      int& val = renderArr.get(rPos);
+      if(val == -1) return;
+      val = 1;
+    }
+  }
+  void setNeverRender(const glm::vec3& rPos)
+  {
+    if(!(rPos.x < 0 || rPos.y < 0 || rPos.z < 0 || rPos.x > CHUNKSIZE -1 || rPos.y > CHUNKSIZE -1 || rPos.z > CHUNKSIZE -1 ))
+    {
+      renderArr.get(rPos) = -1;
     }
   }
 
@@ -643,28 +652,51 @@ public:
   {
     if(pos.x < 0 || pos.y < 0 || pos.z < 0 || pos.x > T-1 || pos.y > T-1|| pos.z > T-1) return;
 
-    glm::ivec3 rPos = pos/2-glm::ivec3(1);
-    setRender(rPos+glm::ivec3(0,0,0));
-    setRender(rPos+glm::ivec3(0,1,0));
-    setRender(rPos+glm::ivec3(0,0,1));
-    setRender(rPos+glm::ivec3(0,1,1));
-
-    setRender(rPos+glm::ivec3(1,0,0));
-    setRender(rPos+glm::ivec3(1,1,0));
-    setRender(rPos+glm::ivec3(1,0,1));
-    setRender(rPos+glm::ivec3(1,1,1));
-
-
     Vertex& v = array.get(pos);
     v.exists = true;
     v.addId(blockId);
     v.addNorm(norm);
 
   }
+  void setRenderFlags(const glm::ivec3& pos)
+  {
+    setNeverRender(pos);
+
+    setRender(pos+glm::ivec3(-1,-1,-1));
+    setRender(pos+glm::ivec3(0,-1,-1));
+    setRender(pos+glm::ivec3(1,-1,-1));
+    setRender(pos+glm::ivec3(-1,0,-1));
+    setRender(pos+glm::ivec3(0,0,-1));
+    setRender(pos+glm::ivec3(1,0,-1));
+    setRender(pos+glm::ivec3(-1,1,-1));
+    setRender(pos+glm::ivec3(0,1,-1));
+    setRender(pos+glm::ivec3(1,1,-1));
+
+    setRender(pos+glm::ivec3(-1,-1,0));
+    setRender(pos+glm::ivec3(0,-1,0));
+    setRender(pos+glm::ivec3(1,-1,0));
+    setRender(pos+glm::ivec3(-1,0,0));
+    //setRender(pos+glm::ivec3(0,0,0));
+    setRender(pos+glm::ivec3(1,0,0));
+    setRender(pos+glm::ivec3(-1,1,0));
+    setRender(pos+glm::ivec3(0,1,0));
+    setRender(pos+glm::ivec3(1,1,0));
+
+    setRender(pos+glm::ivec3(-1,-1,1));
+    setRender(pos+glm::ivec3(0,-1,1));
+    setRender(pos+glm::ivec3(1,-1,1));
+    setRender(pos+glm::ivec3(-1,0,1));
+    setRender(pos+glm::ivec3(0,0,1));
+    setRender(pos+glm::ivec3(1,0,1));
+    setRender(pos+glm::ivec3(-1,1,1));
+    setRender(pos+glm::ivec3(0,1,1));
+    setRender(pos+glm::ivec3(1,1,1));
+  }
+
 
   bool shouldRender(const glm::ivec3& pos)
   {
-    return renderArr.get(pos);
+    return renderArr.get(pos) == 1;
   }
 
   void setCell(GRIDCELL* cell,int index,int x,int y, int z)
@@ -733,10 +765,69 @@ void BSP::build()
         Block curBlock = ItemDatabase::blockDictionary[parent->getBlockOOB(glm::ivec3(x,y,z))];
         if(curBlock.visibleType == OPAQUE)
         {
-          uint8_t blockId = curBlock.getTop();
+          glm::ivec3 pos = glm::ivec3(x,y,z);
+          if(parent->getBlockOOB(pos + glm::ivec3(0,1,0)) > 0 && parent->getBlockOOB(pos + glm::ivec3(0,-1,0)) > 0 &&
+             parent->getBlockOOB(pos + glm::ivec3(1,0,0)) > 0 && parent->getBlockOOB(pos + glm::ivec3(-1,0,0)) > 0 &&
+             parent->getBlockOOB(pos + glm::ivec3(0,0,1)) > 0 && parent->getBlockOOB(pos + glm::ivec3(0,0,-1)) > 0)
+          {
+            continue;
+          }
 
+          uint8_t blockId = curBlock.getTop();
+          glm::vec3 norm = glm::vec3(0,1,0);
+          vArray.setRenderFlags(glm::vec3(x,y,z));
+
+          {
+            const int zn = 0;
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+0,rz+zn),glm::normalize(glm::vec3(-1,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+0,rz+zn),glm::normalize(glm::vec3(0,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+0,rz+zn),glm::normalize(glm::vec3(1,-1,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+1,rz+zn),glm::normalize(glm::vec3(-1,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+1,rz+zn),glm::normalize(glm::vec3(0,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+1,rz+zn),glm::normalize(glm::vec3(1,0,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+2,rz+zn),glm::normalize(glm::vec3(-1,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+2,rz+zn),glm::normalize(glm::vec3(0,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+2,rz+zn),glm::normalize(glm::vec3(1,1,zn-1)));
+          }
+          {
+            const int zn = 1;
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+0,rz+zn),glm::normalize(glm::vec3(-1,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+0,rz+zn),glm::normalize(glm::vec3(0,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+0,rz+zn),glm::normalize(glm::vec3(1,-1,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+1,rz+zn),glm::normalize(glm::vec3(-1,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+1,rz+zn),glm::normalize(glm::vec3(0,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+1,rz+zn),glm::normalize(glm::vec3(1,0,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+2,rz+zn),glm::normalize(glm::vec3(-1,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+2,rz+zn),glm::normalize(glm::vec3(0,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+2,rz+zn),glm::normalize(glm::vec3(1,1,zn-1)));
+          }
+          {
+            const int zn = 2;
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+0,rz+zn),glm::normalize(glm::vec3(-1,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+0,rz+zn),glm::normalize(glm::vec3(0,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+0,rz+zn),glm::normalize(glm::vec3(1,-1,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+1,rz+zn),glm::normalize(glm::vec3(-1,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+1,rz+zn),glm::normalize(glm::vec3(0,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+1,rz+zn),glm::normalize(glm::vec3(1,0,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+2,rz+zn),glm::normalize(glm::vec3(-1,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+2,rz+zn),glm::normalize(glm::vec3(0,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+2,rz+zn),glm::normalize(glm::vec3(1,1,zn-1)));
+          }
+        }
+
+          /*
           for(int xn=0;xn<3;xn++) for(int yn=0;yn<3;yn++) for(int zn=0;zn<3;zn++)
           {
+            /*
             static const glm::vec3 FRONT = glm::vec3(0,0,-1), BACK = glm::vec3(0,0,1);
             static const glm::vec3 LEFT = glm::vec3(-1,0,0), RIGHT = glm::vec3(1,0,0);
             static const glm::vec3 TOP = glm::vec3(0,1,0), BOTTOM = glm::vec3(0,-1,0);
@@ -775,11 +866,11 @@ void BSP::build()
               norm = glm::vec3(0);
             }
             else norm = glm::normalize(vx+vy+vz);
+            */
 
-            vArray.setVertexValue(blockId,glm::vec3(rx+xn,ry+yn,rz+zn),norm);
 
-          }
-        }
+
+
       }
     }
   }

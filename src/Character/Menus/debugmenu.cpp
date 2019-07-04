@@ -71,7 +71,17 @@ void GUI::initDebugMenu()
 
     {
       int chunksInQueue = PlayerWorld.buildQueue.size();
-      std::string str = "Chunks Building:" + std::to_string(chunksInQueue);
+
+      static int lastVal = 0;
+      static double lastTime = glfwGetTime();
+      static int rate = 0;
+      if(glfwGetTime() - lastTime > 1 )
+      {
+        rate = lastVal - chunksInQueue;
+        lastVal = chunksInQueue;
+        lastTime = glfwGetTime();
+      }
+      std::string str = "Chunks Building:" + std::to_string(chunksInQueue) + " Build Rate ps: " + std::to_string(rate);
       ss << str << '\n';
       int chunksInMemory = PlayerWorld.BSPmap.getSize();
       str = "Chunks In Memory " + std::to_string(chunksInMemory);
