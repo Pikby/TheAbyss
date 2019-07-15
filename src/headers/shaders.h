@@ -146,7 +146,7 @@ protected:
            if(!success)
            {
                glGetProgramInfoLog(id, 1024, NULL, infoLog);
-               std::cout << "ERROR::PROGRAM_LINKING_ERROR"<< "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+               std::cout << shader1 << ":  ERROR::PROGRAM_LINKING_ERROR"<< "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
 
                throw -1;
            }
@@ -233,7 +233,7 @@ public:
          if(!success)
          {
              glGetProgramInfoLog(id, 1024, NULL, infoLog);
-             std::cout << "ERROR::PROGRAM_LINKING_ERROR"<< "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+             std::cout << shader1 << "ERROR::PROGRAM_LINKING_ERROR"<< "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
 
              throw -1;
          }

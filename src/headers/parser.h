@@ -7,32 +7,21 @@
 class Parser
 {
 private:
-  std::string filePath;
   std::map<std::string, std::string> dictionary;
 public:
   Parser(){};
-  Parser(std::string filepath)
+  Parser(std::ifstream* file)
   {
     using namespace std;
-    filePath = filepath;
-    ifstream file(filePath);
-
-    if(!file.is_open())
-    {
-      std::cout << "Error opening dicionary at: " << filePath << "\n";
-      return;
-    }
-
-    string line;
-
-    while(getline(file,line))
+    std::string line;
+    while(getline(*file,line))
     {
 
 
       int colonPos = line.find(':');
       if(colonPos == std::string::npos) continue;
 
-      string key = line.substr(0,colonPos-1);
+      string key = line.substr(0,colonPos);
       string value = line.substr(colonPos+1,line.length());
       key.erase( std::remove_if( key.begin(), key.end(), ::isspace ), key.end() );
       value.erase( std::remove_if( value.begin(), value.end(), ::isspace ), value.end() );
@@ -40,8 +29,8 @@ public:
       dictionary[key] = value;
     }
   }
-  /*
-  ~Parser()
+
+  void save(std::string filePath)
   {
       std::ofstream file(filePath);
       if(!file.is_open())
@@ -55,7 +44,6 @@ public:
         file.write(line.c_str(),line.size());
       }
   }
-*/
   void add(std::string key, std::string val)
   {
     dictionary[key] = val;

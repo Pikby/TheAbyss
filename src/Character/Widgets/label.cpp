@@ -77,7 +77,7 @@ void EditBox::draw()
     int positiveDir = 0;
     int negativeDir = 1;
 
-    while(GUI::calculateStringDimensions(displayText,characterScale).x < dimensions.x*GUI::dimensions.x)
+    while(GUI::calculateStringDimensions(displayText,characterScale).x < 64*dimensions.x*GUI::dimensions.x)
     {
       if(stringSize > cursorPosition + charCount)
       {

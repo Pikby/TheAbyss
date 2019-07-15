@@ -41,30 +41,30 @@ MessageCallback( GLenum source,
 
 int main()
 {
+  Settings::initSettings();
+
   glfwInit();
   const int numbBuildThreads = 2;
-  int winWidth = std::stoi(Settings::get("windowWidth"));
-  int winHeight = std::stoi(Settings::get("windowHeight"));
 
   const GLFWvidmode * mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-  winWidth = mode->width;
-  winHeight = mode->height;
+  int winWidth = mode->width;
+  int winHeight = mode->height;
+  Settings::set("windowWidth",std::to_string(winWidth));
+  Settings::set("windowHeight",std::to_string(winHeight));
 
   glfwWindowHint(GLFW_RED_BITS, mode->redBits);
   glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
   glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
   glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
-  GLFWwindow* window = createWindow(winWidth,winHeight);
+  GLFWwindow* window = ThreadHandler::createWindow(winWidth,winHeight);
   glfwMakeContextCurrent(window);
   glfwSetKeyCallback(window, GUI::GLFWKeyCallBack);
   glfwSetCharCallback(window, GUI::GLFWCharCallBack);
   glfwSetCursorPosCallback(window, GUI::GLFWCursorCallback);
   glfwSetMouseButtonCallback(window, GUI::GLFWMouseButtonCallback);
   glfwSetScrollCallback(window, GUI::GLFWScrollCallback);
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  //glfwSetInputMode(newWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
 
   glEnable(GL_MULTISAMPLE);
   glfwSwapInterval(0);//FPS Capping
@@ -93,60 +93,14 @@ int main()
   Shader::setShaderDirectory("../src/Shaders/");
   GUI::initGUI(glm::vec2(winWidth,winHeight),Settings::get("userName"));
 
-
-/*
+  Settings::print();
   while(!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     GUI::drawGUI();
-    GUI::textRenderer.drawAllText();
     glfwSwapBuffers(window);
-
   }
-  return 1;
-*/
-
-
-
-  try
-  {
-      initWorld(numbBuildThreads,winWidth,winHeight);
-  }
-  catch(const char* err)
-  {
-    std::cout << err << "\n";
-    return -1;
-  }
-  std::cout << "staring main\n";
-
-  std::thread renderThread(render);
-  std::thread deleteThread(del);
-  std::thread sendThread(send);
-  std::thread receiveThread(receive);
-  std::thread logicThread(logic);
-
-  renderThread.detach();
-  deleteThread.detach();
-  sendThread.detach();
-  receiveThread.detach();
-  logicThread.detach();
-
-  std::cout << "Render threads created \n";
-  std::thread buildThread(build,0);
-  //std::thread buildThread2(build,1);
-  //buildThread2.detach();
-  buildThread.detach();
-  /*
-  pthread_t buildThreads[numbBuildThreads];
-  for(int i = 0;i<numbBuildThreads;i++)
-  {
-    int *x = new int;
-    *x = i;
-    pthread_create(&buildThreads[i],NULL,build,(void*)x );
-  }
-*/
-  std::cout << "World initalized begin drawing\n";
-  draw();
   glfwTerminate();
+  Settings::save();
 }

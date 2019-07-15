@@ -29,14 +29,14 @@
 
 
 
-void World::initWorld(int NumbBuildThreads,int width,int height)
+void World::initWorld(const std::string& ip, const std::string& userName)
 {
   messenger = std::make_unique<Messenger>();
   drawer = std::make_unique<Drawer>();
-  drawer->directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
+  //drawer->directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
 
   std::cout << "After cons\n";
-  numbOfBuildThreads = NumbBuildThreads;
+  numbOfBuildThreads = 1;
 
 
   ItemDatabase::loadBlockDictionary("../assets/blockDictionary.dat");
@@ -59,30 +59,17 @@ void World::initWorld(int NumbBuildThreads,int width,int height)
 
   //drawer->directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
 
-  worldName = Settings::get("worldName");
-  std::string ipAddress = Settings::get("ipAddress");
   std::string port = Settings::get("port");
-  std::string userName = Settings::get("userName");
-  boost::filesystem::create_directory("saves");
-  boost::filesystem::create_directory("saves/"+worldName);
-  boost::filesystem::create_directory("saves/"+worldName+"/chunks");
-  std::cout << "Loading settings\n";
   drawnChunks = 0;
 
   std::string name;
-
   name = userName;
   name.reserve(24);
-  try
-  {
-    messenger->setupSockets(ipAddress,port);
-    messenger->sendMessage(name.c_str(),24);
-    messenger->receiveMessage(&mainId,sizeof(mainId));
-  }catch(const char* err)
-  {
-    std::ofstream error("errorlog.txt");
-    error << err;
-  }
+
+  messenger->setupSockets(ip,port);
+  messenger->sendMessage(name.c_str(),24);
+  messenger->receiveMessage(&mainId,sizeof(mainId));
+
   std::cout << "Done\n";
 
 

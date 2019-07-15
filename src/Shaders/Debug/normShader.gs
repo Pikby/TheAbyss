@@ -2,17 +2,6 @@
 layout (triangles) in;
 layout (line_strip, max_vertices = 6) out;
 
-in VS_OUT
-{
-
-  vec3 TriPos;
-  vec2 TexCoord;
-  vec2 TexCells;
-  vec2 TexOrigins[3];
-  vec3 FinNormal;
-  vec3 FragPos;
-  float AO;
-} vs_out[];
 
 
 

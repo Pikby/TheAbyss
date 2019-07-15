@@ -144,6 +144,7 @@ void TextRenderer::loadTextAtlas(const FT_Face &face, int fontSize)
 
 void TextRenderer::init()
 {
+	std::cout << "Init TextRendering\n";
 	GUIShaderText = std::make_unique<Shader>(Shader("GUIShaders/guiTextShader.vs","GUIShaders/guiTextShader.fs"));
 	glm::mat4 projection = glm::ortho(0, GUI::dimensions.x, 0,  GUI::dimensions.y);
 	GUIShaderText->use();
@@ -404,7 +405,7 @@ std::vector<std::string> TextRenderer::splitString(const std::string& string,dou
 	{
 		char curChar = *itr;
 		Character c = characters[curChar];
-		horizontalLength += (c.advance>>6) * scale;
+		horizontalLength += (c.advance>>6) * (scale/64.0);
 
 		if(horizontalLength > viewLength)
 		{

@@ -59,7 +59,7 @@ public:
   static void initQuadVAO();
 
   static void setQuadDepth(float newDepth);
-
+  static void initGameJoinMenu();
   static glm::mat3 calculateQuadModel(const glm::vec2& botLeft, const glm::vec2& topRight);
   static void drawImage(const glm::vec2& botLeft, const glm::vec2& topRight, const uint id);
   static void drawImage(const glm::mat3& model, const uint id);

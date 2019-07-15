@@ -12,6 +12,7 @@
 #include <chrono>
 
 #include "../headers/shaders.h"
+#include "include/threads.h"
 #include "include/world.h"
 #include "include/drawer.h"
 #include "include/messenger.h"
@@ -23,11 +24,12 @@
 
 #include "../Objects/include/objects.h"
 #include "../Settings/settings.h"
-static GLFWwindow* window;
+
 
 World PlayerWorld;
+GLFWwindow* ThreadHandler::window;
 
-GLFWwindow* createWindow(int width, int height)
+GLFWwindow* ThreadHandler::createWindow(int width, int height)
 {
   //Initial windows configs
 
@@ -53,13 +55,46 @@ GLFWwindow* createWindow(int width, int height)
   return window;
 }
 
-void initWorld(int numbBuildThreads, int width,  int height)
+void ThreadHandler::enableCursor()
 {
-  PlayerWorld.initWorld(numbBuildThreads,width,height);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+void ThreadHandler::disableCursor()
+{
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+}
+
+void ThreadHandler::dispatchThreads()
+{
+  std::thread renderThread(render);
+  std::thread deleteThread(del);
+  std::thread sendThread(send);
+  std::thread receiveThread(receive);
+  std::thread logicThread(logic);
+
+  renderThread.detach();
+  deleteThread.detach();
+  sendThread.detach();
+  receiveThread.detach();
+  logicThread.detach();
+
+  std::cout << "Render threads created \n";
+  std::thread buildThread(build,0);
+  //std::thread buildThread2(build,1);
+  //buildThread2.detach();
+  buildThread.detach();
+}
+
+
+void ThreadHandler::initWorld(const std::string &ip, const std::string &userName)
+{
+  PlayerWorld.initWorld(ip,userName);
   MainChar::initMainChar(glm::vec3(0,50,0));
 }
 
-void closeGame()
+void ThreadHandler::closeGame()
 {
   glfwSetWindowShouldClose(window, true);
   PlayerWorld.buildQueue.notify_one();
@@ -67,7 +102,7 @@ void closeGame()
 }
 
 
-void draw()
+void ThreadHandler::draw()
 {
 
   glfwMakeContextCurrent(window);
@@ -130,23 +165,18 @@ void draw()
     float directstart = glfwGetTime();
     //if(shadowsOn) PlayerWorld.drawer->renderDirectionalShadows();
     float directend = glfwGetTime();
-
-
-
     PlayerWorld.drawer->renderGBuffer();
     //glDisable(GL_BLEND);
     PlayerWorld.drawer->drawFinal();
     GUI::drawGUI();
-
-
-
     glfwSwapBuffers(window);
 
   }
+  PlayerWorld.buildQueue.notify_one();
   std::cout << "Draw thread done\n";
 }
 
-void render()
+void ThreadHandler::render()
 {
   double lastFrame = 0;
   double currentFrame = 0;
@@ -169,7 +199,7 @@ void render()
 
 }
 
-void del()
+void ThreadHandler::del()
 {
   double lastFrame = 0;
   double currentFrame = 0;
@@ -188,10 +218,10 @@ void del()
     currentFrame = glfwGetTime();
     PlayerWorld.delScan(MainChar::getPosition());
   }
-
+  std::cout << "Delete Thread Done\n";
 }
 
-void logic()
+void ThreadHandler::logic()
 {
   double lastFrame = 0;
   double currentFrame = 0;
@@ -227,7 +257,7 @@ void logic()
   std::cout << "Ending logic thread\n";
 }
 
-void send()
+void ThreadHandler::send()
 {
   while(!glfwWindowShouldClose(window))
   {
@@ -267,9 +297,10 @@ void send()
     }
   }
   PlayerWorld.messenger->requestExit();
+  std::cout << "Send Thread Done\n";
 }
 
-void receive()
+void ThreadHandler::receive()
 {
   while(!glfwWindowShouldClose(window))
   {
@@ -368,7 +399,7 @@ void receive()
   std::cout << "RECEIVE THREAD DONE\n";
 }
 
-void build(char threadNumb)
+void ThreadHandler::build(char threadNumb)
 {
   while(!glfwWindowShouldClose(window))
   {

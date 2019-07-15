@@ -29,18 +29,19 @@ void ChatBox::draw()
   GUI::drawQuad(origin-glm::vec2(padding),origin+dimensions+glm::vec2(padding),glm::vec4(0.5));
   double curTime = glfwGetTime();
   bool extended = curTime < extendTime;
-  glm::vec2 offset = glm::vec2(0.0f,(64.0f/GUI::dimensions.y)*characterScale);
-  int numbOfMainLines = ceil((dimensions.y/offset.y));
+  glm::vec2 offset = glm::vec2(0.0f,characterScale);
+  int numbOfMainLines = ceil(((GUI::dimensions.y*dimensions.y)/offset.y));
   int linesToDraw;
   if(extended)
   {
-    linesToDraw = ceil((1-origin.y)/offset.y);
+    linesToDraw = ceil(((1-origin.y)*GUI::dimensions.y)/offset.y);
   }
   else
   {
     linesToDraw = numbOfMainLines;
   }
   auto target = focusTarget;
+  target = history.begin();
   int i = 2 ;
   while(target != history.end() && i < linesToDraw)
   {
@@ -51,13 +52,13 @@ void ChatBox::draw()
     }
 
     std::string originText = (*target);
-
+    GUI::renderText(originText,origin + (float)i*offset,characterScale,glm::vec4(glm::vec3(color),alpha));
 
     std::vector<std::string> lines = GUI::splitString(originText,characterScale,dimensions.x*GUI::dimensions.x);
     for(auto itr = lines.rbegin(); itr != lines.rend();itr++)
     {
       std::string displayText = *itr;
-      GUI::renderText(displayText,origin + (float)i*offset,characterScale,glm::vec4(glm::vec3(color),alpha));
+      GUI::renderText(displayText,origin + (float)i*(offset/glm::vec2(GUI::dimensions)),characterScale,glm::vec4(glm::vec3(color),alpha));
       i++;
     }
     target++;

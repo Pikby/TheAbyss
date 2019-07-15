@@ -21,7 +21,7 @@
 
 void Messenger::setupSockets(std::string ipAddress,std::string port)
 {
-
+  std::cout << ipAddress << "\n";
 #ifdef _WIN32
   WSADATA wsa_data;
   int initResult;

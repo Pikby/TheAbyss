@@ -31,7 +31,7 @@ NOISEOBJECTSOURCES = $(NOISEOBJECTS:$(NOISESRCPATH)%=%)
 
 LIBRARYLIST = glfw3 freetype2 glew
 CLIENTFLAGSLINUX = $(shell pkg-config --cflags $(LIBRARYLIST)) $(shell pkg-config --libs $(LIBRARYLIST)) \
-									 -lpthread -lboost_system -lboost_filesystem  $(CPPV) -O3
+                   -lXinerama -lXcursor -ldl -lXrandr -lX11 -lXi -lXxf86vm -lpthread -lboost_system -lboost_filesystem  $(CPPV) -O3
 
 
 

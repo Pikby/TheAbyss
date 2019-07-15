@@ -12,7 +12,7 @@ Button::Button(const glm::vec2& Origin, const glm::vec2& Dimensions,const std::s
   {
 
     glm::vec3 stringDims = GUI::calculateStringDimensions(text,1);
-    textScale = (dimensions.x-padding)/(stringDims.x/GUI::dimensions.x);
+    textScale = 64*(dimensions.x-padding)/(stringDims.x/GUI::dimensions.x);
   }
 
 void Button::draw()

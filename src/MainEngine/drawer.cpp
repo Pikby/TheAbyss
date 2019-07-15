@@ -127,14 +127,16 @@ void Drawer::setupShadersAndTextures(int width, int height)
   gBufferShader->setVec3("objectColor", 0.5f, 0.5f, 0.31f);
 
 
-  normDebug = std::make_unique<Shader>(Shader("Debug/normShader.fs","BSPShaders/gBuffer.vs","Debug/normShader.gs"));
+  //normDebug = std::make_unique<Shader>(Shader("Debug/normShader.fs","BSPShaders/gBuffer.vs","Debug/normShader.gs"));
+  normDebug = std::make_unique<Shader>();
+  /*
   normDebug->use();
   normDebug->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
   normDebug->setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
   normDebug->setInt("cellWidth",cellWidth);
   normDebug->setInt("curTexture",0);
   normDebug->setVec3("objectColor", 0.5f, 0.5f, 0.31f);
-
+  */
 
   PPShader = std::make_unique<Shader>(Shader("PPShaders/PPShader.fs","PPShaders/PPShader.vs"));
   PPShader->use();
