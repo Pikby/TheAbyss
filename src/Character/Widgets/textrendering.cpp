@@ -332,10 +332,12 @@ void TextRenderer::renderText(const std::string &text,const glm::vec2 &screenPos
 		if(characterCount == cursorPosition)
 		{
 			glm::vec2 quadPos = glm::vec2(resPos+pos+glm::vec3(padding/4)*scale);
+			quadPos.y = resPos.y-(scale*64)/4.0;
 			quadPos = quadPos/(glm::vec2)GUI::dimensions;
-			GUI::setQuadDepth(-1.0);
-			GUI::drawQuad(quadPos,quadPos+glm::vec2(0.001,scale*(64.0f/GUI::dimensions.y)),glm::vec4(0,0,0,1));
-			GUI::setQuadDepth(0.0);
+	  GUI::setQuadDepth(-0.5);
+			//GUI::drawQuad(glm::vec2(0),glm::vec2(1),glm::vec4(0,0,0,1));
+			GUI::drawQuad(quadPos,quadPos+glm::vec2(0.001,((float)scale*64.0f/(float)GUI::dimensions.y)),glm::vec4(0,0,0,1));
+  	GUI::setQuadDepth(0);
 		}
 		glm::vec3 advance = glm::vec3((ch.advance >> 6) * scale,0,1)*rot;
 

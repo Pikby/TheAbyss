@@ -66,9 +66,8 @@ void GUI::drawGUI()
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_DEPTH_TEST);
+
   currentMenu->drawGUI();
-  glEnable(GL_DEPTH_TEST);
   textRenderer->drawAllText();
 }
 
@@ -143,7 +142,8 @@ void GUI::drawQuad(const glm::mat3& model,const glm::vec4 &color, QuadDrawType t
 
 void GUI::setQuadDepth(float newDepth)
 {
-  GUIShader2D.setFloat("depth",newDepth);
+  GUIShader2D.use();
+  GUIShader2D.setFloat("quadDepth",newDepth);
 }
 
 

@@ -11,5 +11,8 @@ Quad::Quad(const glm::vec2& Origin,const glm::vec2& Dims,uint id)
 void Quad::draw()
 {
   if(onDrawFunction != NULL) onDrawFunction(this);
+
+  GUI::setQuadDepth(0.5);
   GUI::drawQuad(origin,origin+dimensions,color,type);
+  GUI::setQuadDepth(0);
 }

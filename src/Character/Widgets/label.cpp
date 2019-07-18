@@ -97,8 +97,8 @@ void EditBox::draw()
     if(hasCursor && focused) GUI::renderText(displayText+' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,displayCursorPosition);
     else GUI::renderText(displayText+' ',origin,characterScale,glm::vec4(glm::vec3(color),1.0),glm::mat3(1),TEXTALILEFT,-1);
   }
-  glDepthMask(GL_FALSE);
-    GUI::drawQuad(origin-glm::vec2(padding),origin+dimensions+glm::vec2(padding),glm::vec4(glm::vec3(0.5),1));
+    GUI::setQuadDepth(0);
     GUI::drawQuad(origin-glm::vec2(padding/2),origin+dimensions+glm::vec2(padding/2),glm::vec4(glm::vec3(0.3),1));
-  glDepthMask(GL_TRUE);
+    GUI::drawQuad(origin-glm::vec2(padding),origin+dimensions+glm::vec2(padding),glm::vec4(glm::vec3(0.5),1));
+    GUI::setQuadDepth(0);
 }

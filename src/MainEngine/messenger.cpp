@@ -11,6 +11,7 @@
   #include <arpa/inet.h>
   #include <netdb.h>  /* Needed for getaddrinfo() and freeaddrinfo() */
   #include <unistd.h> /* Needed for close() */
+  #include <fcntl.h>
 #endif
 #include <errno.h>
 #include <string>
@@ -18,6 +19,77 @@
 #include <fstream>
 #include "include/world.h"
 #include "include/messenger.h"
+
+int connect_wait (
+	int sockno,
+	struct sockaddr * addr,
+	size_t addrlen,
+	struct timeval * timeout)
+{
+	int res, opt;
+
+	// get socket flags
+	if ((opt = fcntl (sockno, F_GETFL, NULL)) < 0) {
+		return -1;
+	}
+
+	// set socket non-blocking
+	if (fcntl (sockno, F_SETFL, opt | O_NONBLOCK) < 0) {
+		return -1;
+	}
+
+	// try to connect
+	if ((res = connect (sockno, addr, addrlen)) < 0) {
+		if (errno == EINPROGRESS) {
+			fd_set wait_set;
+
+			// make file descriptor set with socket
+			FD_ZERO (&wait_set);
+			FD_SET (sockno, &wait_set);
+
+			// wait for socket to be writable; return after given timeout
+			res = select (sockno + 1, NULL, &wait_set, NULL, timeout);
+		}
+	}
+	// connection was successful immediately
+	else {
+		res = 1;
+	}
+
+	// reset socket flags
+	if (fcntl (sockno, F_SETFL, opt) < 0) {
+		return -1;
+	}
+
+	// an error occured in connect or select
+	if (res < 0) {
+		return -1;
+	}
+	// select timed out
+	else if (res == 0) {
+		errno = ETIMEDOUT;
+		return 1;
+	}
+	// almost finished...
+	else {
+		socklen_t len = sizeof (opt);
+
+		// check for errors in socket layer
+		if (getsockopt (sockno, SOL_SOCKET, SO_ERROR, &opt, &len) < 0) {
+			return -1;
+		}
+
+		// there was an error
+		if (opt) {
+			errno = opt;
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
 
 void Messenger::setupSockets(std::string ipAddress,std::string port)
 {
@@ -81,12 +153,18 @@ void Messenger::setupSockets(std::string ipAddress,std::string port)
   inet_pton(AF_INET, ipAddress.c_str(), &(serveraddress.sin_addr));
 
 
+  struct timeval  timeout;
+  timeout.tv_sec = 10;
+  timeout.tv_usec = 0;
   // connect to the server
-  if (connect(fd, (sockaddr*) &serveraddress, sizeof(serveraddress)) < 0)
+  std::cout << "Attempting to connect to server\n";
+  if (connect_wait(fd, (sockaddr*) &serveraddress, sizeof(serveraddress),&timeout) != 0)
   {
       throw "ERROR: failed to connect to server.";
-      return;
   }
+
+
+  std::cout << "Connected\n";
   #endif
   std::cout << "Successfully connected to server" << std::endl;
 

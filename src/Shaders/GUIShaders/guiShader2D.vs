@@ -5,11 +5,11 @@ out vec2 vs_texCoords;
 uniform mat3 model;
 uniform mat4 projection;
 
-uniform float depth;
+uniform float quadDepth;
 
 void main()
 {
   vec3 pos = model*vec3(vertex.x,vertex.y,1);
-  gl_Position = projection*vec4(pos.x,pos.y, depth, 1.0);
+  gl_Position = projection*vec4(pos.x,pos.y, quadDepth, 1.0);
   vs_texCoords = texCoords;
 }

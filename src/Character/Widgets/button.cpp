@@ -7,7 +7,7 @@
 
 
 
-Button::Button(const glm::vec2& Origin, const glm::vec2& Dimensions,const std::string& Text,std::function<void(int)> ClickHandler)
+Button::Button(const std::string& Text,const glm::vec2& Origin, const glm::vec2& Dimensions,std::function<void(int)> ClickHandler)
     : Widget(Origin,Dimensions),text(Text),clickHandler(ClickHandler)
   {
 

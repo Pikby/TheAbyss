@@ -90,7 +90,10 @@ void ThreadHandler::dispatchThreads()
 
 void ThreadHandler::initWorld(const std::string &ip, const std::string &userName)
 {
-  PlayerWorld.initWorld(ip,userName);
+
+  PlayerWorld.connectToServer(ip,userName);
+  std::cout << "Connected\n";
+  PlayerWorld.initWorld();
   MainChar::initMainChar(glm::vec3(0,50,0));
 }
 

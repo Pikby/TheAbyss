@@ -113,7 +113,7 @@ private:
   std::string text = "";
   std::function<void(int)> clickHandler = NULL;
 public:
-  Button(const glm::vec2& Origin, const glm::vec2& Dimensions,const std::string& Text,std::function<void(int)> ClickHandler = std::function<void(int)>(NULL));
+  Button(const std::string& Text,const glm::vec2& Origin, const glm::vec2& Dimensions,std::function<void(int)> ClickHandler = std::function<void(int)>(NULL));
   ~Button(){};
 
   void draw() override;

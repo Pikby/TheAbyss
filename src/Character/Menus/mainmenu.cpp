@@ -14,20 +14,34 @@
 
 
 Menu gameJoinMenu;
+EditBox* ipEditBox;
+EditBox* userNameBox;
+
 void GUI::initGameJoinMenu()
 {
   Quad* background = new Quad(glm::vec2(0),glm::vec2(1));
-  EditBox* ipEditBox = new EditBox("Enter Ip",glm::vec2(0.4,0.5),glm::vec2(0.2,0.05),32,[](std::string input)
+  ipEditBox = new EditBox("Enter Ip",glm::vec2(0.4,0.5),glm::vec2(0.2,0.05),32,[](std::string input)
   {
     std::cout << input << "\n";
     Settings::set("Ip",input);
+
+  });
+  ipEditBox->updateText(Settings::get("ip"));
+  userNameBox = new EditBox("Enter Username",glm::vec2(0.4,0.7),glm::vec2(0.2,0.05),32,[](std::string input)
+  {
+    Settings::set("UserName",input);
+  });
+
+  Button* joinGameButton = new Button("Join Game!",glm::vec2(0.4,0.2),glm::vec2(0.2,0.05),[](int action)
+  {
+    std::cout << "Kero\n";
     try
     {
-      ThreadHandler::initWorld(input,Settings::get("UserName"));
+      ThreadHandler::initWorld(ipEditBox->getText(),userNameBox->getText());
     }
     catch(const char* err)
     {
-      std::cout << "Unable to connect to server\n";
+      std::cout << err << "\n";
       return;
     }
     ThreadHandler::dispatchThreads();
@@ -36,14 +50,13 @@ void GUI::initGameJoinMenu()
     ThreadHandler::draw();
     std::cout << "done\n";
   });
-  ipEditBox->updateText(Settings::get("ip"));
-  EditBox* userNameBox = new EditBox("Enter Username",glm::vec2(0.4,0.7),glm::vec2(0.2,0.05),32,[](std::string input)
-  {
-    Settings::set("UserName",input);
-  });
+
+
+
   userNameBox->updateText(Settings::get("username"));
   gameJoinMenu.addWidget(background);
   gameJoinMenu.addWidget(userNameBox);
+  gameJoinMenu.addWidget(joinGameButton);
   background->setColor(glm::vec4(COLORPALETTE[4],1));
   gameJoinMenu.addWidget(ipEditBox);
   gameJoinMenu.setFocusTarget(ipEditBox);
@@ -66,18 +79,18 @@ void GUI::initMainMenu()
 
   Quad* quad = new Quad(glm::vec2(0),glm::vec2(1));
   const glm::vec2 offset = glm::vec2(0.1);
-  Button* startGame = new Button(glm::vec2(0.3,0.7),glm::vec2(0.1,0.03),"Start Game",[](int action)
+  Button* startGame = new Button("Start Game",glm::vec2(0.3,0.7),glm::vec2(0.1,0.03),[](int action)
   {
     std::cout << "PRESSED START\n";
     setMenu(&gameJoinMenu);
   });
 
-  Button* controlsButton = new Button(glm::vec2(0.3,0.7),glm::vec2(0.1,0.03),"Controls",[](int action)
+  Button* controlsButton = new Button("Controls",glm::vec2(0.3,0.7),glm::vec2(0.1,0.03),[](int action)
   {
     std::cout << "Control\n";
   });
 
-  Button* optionsButton = new Button(glm::vec2(0.3,0.7),glm::vec2(0.1,0.03),"Settings",[](int action)
+  Button* optionsButton = new Button("Settings",glm::vec2(0.3,0.7),glm::vec2(0.1,0.03),[](int action)
   {
     std::cout << "Options\n";
   });

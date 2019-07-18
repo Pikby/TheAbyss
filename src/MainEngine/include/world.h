@@ -60,7 +60,8 @@ public:
 
   //The name of the world, for saving and loading
   std::string worldName;
-  void initWorld(const std::string& ip,const std::string& username);
+  void initWorld();
+  void connectToServer(const std::string& ip,const std::string& username);
 
   void calculateViewableChunks();
   bool blockExists(const glm::ivec3 &pos);

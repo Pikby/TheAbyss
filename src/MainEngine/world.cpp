@@ -28,13 +28,28 @@
 //Initialize all the static objects for world
 
 
-
-void World::initWorld(const std::string& ip, const std::string& userName)
+void World::connectToServer(const std::string& ip, const std::string& userName)
 {
+
+  std::string port = Settings::get("port");
+
   messenger = std::make_unique<Messenger>();
+  std::string name;
+  name = userName;
+  name.reserve(24);
+
+  messenger->setupSockets(ip,port);
+  std::cout << "Getting name\n";
+  messenger->sendMessage(name.c_str(),24);
+  messenger->receiveMessage(&mainId,sizeof(mainId));
+}
+
+void World::initWorld()
+{
+
   drawer = std::make_unique<Drawer>();
   //drawer->directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
-
+  drawnChunks = 0;
   std::cout << "After cons\n";
   numbOfBuildThreads = 1;
 
@@ -59,18 +74,6 @@ void World::initWorld(const std::string& ip, const std::string& userName)
 
   //drawer->directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
 
-  std::string port = Settings::get("port");
-  drawnChunks = 0;
-
-  std::string name;
-  name = userName;
-  name.reserve(24);
-
-  messenger->setupSockets(ip,port);
-  messenger->sendMessage(name.c_str(),24);
-  messenger->receiveMessage(&mainId,sizeof(mainId));
-
-  std::cout << "Done\n";
 
 
 }
