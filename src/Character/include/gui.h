@@ -38,8 +38,9 @@ private:
   static Menu* currentMenu;
   static Shader GUIShader2D,GUIShaderImage;
   static uint quadVAO,quadVBO;
+
 public:
-  static std::unique_ptr<Menu> debugMenu,gameMenu,mainMenu;
+  static std::unique_ptr<Menu> debugMenu,gameMenu,mainMenu,optionsMenu,pauseMenu;
   static std::unique_ptr<ChatBox> chatBox;
   static std::unique_ptr<InGame> inGame;
   static std::string username;
@@ -48,7 +49,7 @@ public:
   static glm::ivec2 dimensions;
 
 
-  static void setMenu(Menu* newMenu){currentMenu = newMenu;}
+  static void setMenu(Menu* newMenu);
   static glm::vec2 getMousePos(){return mousePos;}
   static void renderText(std::string text, glm::vec2 pos, float scale=1, glm::vec4 color=glm::vec4(1),glm::mat3 rot = glm::mat3(1),TextAlignment alignment = TEXTALILEFT,int cursorPosition = -1);
   static glm::vec3 calculateStringDimensions(const std::string &line, double scale);
@@ -79,11 +80,13 @@ public:
 
   static void initDebugMenu();
   static void initMainMenu();
+  static void initOptionsMenu();
+  static void initGameMenus();
 };
 #ifdef GUILIBRARYIMPLEMENTATION
 std::unique_ptr<InGame> GUI::inGame;
 std::unique_ptr<ChatBox> GUI::chatBox;
-std::unique_ptr<Menu> GUI::debugMenu, GUI::gameMenu,GUI::mainMenu;
+std::unique_ptr<Menu> GUI::debugMenu, GUI::gameMenu,GUI::mainMenu,GUI::optionsMenu,GUI::pauseMenu;
 glm::vec2 GUI::mousePos;
 glm::ivec2 GUI::dimensions;
 Menu* GUI::currentMenu = NULL;

@@ -25,6 +25,7 @@ public:
   TSafeQueue<OutMessage> messageQueue;
   void setupSockets(std::string ipAddress,std::string port);
   InMessage receiveAndDecodeMessage();
+  void disconnect();
   void requestChunk(int x, int y, int z);
   void createMoveRequest(float x, float y, float z);
   void createAddBlockRequest(int x, int y, int z, uint8_t id);

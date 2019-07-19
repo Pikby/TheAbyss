@@ -9,12 +9,15 @@ class Widget;
 class Menu
 {
 private:
+  bool cursor;
   std::list<Widget*> viewableList;
   std::map<int,std::function<void()>> actionMap;
   Widget* focusTarget = NULL;
 public:
   Menu(){}
   ~Menu();
+  void setCursor(bool b) {cursor = b;}
+  bool hasCursor(){return cursor;}
   void setFocusTarget(Widget* widget);
   void GLFWKeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mode);
   void GLFWCharCallBack(GLFWwindow* window, uint character);

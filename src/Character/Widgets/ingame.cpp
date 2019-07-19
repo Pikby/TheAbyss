@@ -35,22 +35,9 @@ void InGame::handleScrollInput(double xoffset,double yoffset)
 
 }
 
-void InGame::handleMouseMovement(double xpos, double ypos)
+void InGame::handleMouseMovement(double xoffset, double yoffset)
 {
-  static float lastX,lastY;
-  static bool firstMouse = true;
-  if (firstMouse)
-  {
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
-	//std::cout << xpos << ":" << ypos << "\n";
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos;
 
-	lastX = xpos;
-	lastY = ypos;
 	MainChar::processMouseMovement(xoffset, yoffset);
 
 }

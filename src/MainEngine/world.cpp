@@ -74,10 +74,13 @@ void World::initWorld()
 
   //drawer->directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
 
+}
+
+void World::destroyWorld()
+{
 
 
 }
-
 
 
 void World::movePlayer(const glm::vec3 &pos, uint8_t id)

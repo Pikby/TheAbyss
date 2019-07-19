@@ -13,6 +13,7 @@ Menu::~Menu()
 void Menu::setFocusTarget(Widget* widget)
 {
   focusTarget = widget;
+  widget->setFocused(true);
 }
 
 void Menu::GLFWKeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mode)

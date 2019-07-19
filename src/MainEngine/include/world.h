@@ -62,6 +62,8 @@ public:
   std::string worldName;
   void initWorld();
   void connectToServer(const std::string& ip,const std::string& username);
+  void destroyWorld();
+
 
   void calculateViewableChunks();
   bool blockExists(const glm::ivec3 &pos);

@@ -171,6 +171,12 @@ void Messenger::setupSockets(std::string ipAddress,std::string port)
 
 }
 
+void Messenger::disconnect()
+{
+  requestExit();
+  close(fd);
+}
+
 InMessage Messenger::receiveAndDecodeMessage()
 {
   int buf[5];

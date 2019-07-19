@@ -7,8 +7,10 @@ class ThreadHandler
 {
 private:
   static GLFWwindow* window;
+  static bool threadsOn;
 public:
   static void dispatchThreads();
+  static void endThreads();
   static GLFWwindow* createWindow(int width, int height);
   static void enableCursor();
   static void disableCursor();

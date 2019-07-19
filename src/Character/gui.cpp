@@ -11,6 +11,7 @@
 
 #include "Widgets/widgets.h"
 #include "Widgets/textrenderer.h"
+#include "../MainEngine/include/threads.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 #include <GL/glew.h>
@@ -28,6 +29,8 @@ void GUI::initGUI(const glm::ivec2 Dimensions,const std::string &name)
   debugMenu = std::make_unique<Menu>();
   gameMenu = std::make_unique<Menu>();
   mainMenu = std::make_unique<Menu>();
+  optionsMenu = std::make_unique<Menu>();
+
 
   username = name;
 
@@ -58,6 +61,8 @@ void GUI::initGUI(const glm::ivec2 Dimensions,const std::string &name)
   chatBox->setColor(glm::vec4(0,0,0,1));
   initDebugMenu();
   initMainMenu();
+  initOptionsMenu();
+  initGameMenus();
 }
 
 void GUI::drawGUI()
@@ -75,6 +80,18 @@ void GUI::freeGUI()
 {
 }
 
+void GUI::setMenu(Menu* newMenu)
+{
+  currentMenu = newMenu;
+  if(newMenu->hasCursor())
+  {
+    ThreadHandler::enableCursor();
+  }
+  else
+  {
+    ThreadHandler::disableCursor();
+  }
+}
 
 glm::mat3 GUI::calculateQuadModel(const glm::vec2& botLeft, const glm::vec2& topRight)
 {
@@ -257,9 +274,24 @@ void GUI::GLFWCharCallBack(GLFWwindow* window, uint character)
 
 void GUI::GLFWCursorCallback(GLFWwindow* window, double xpos, double ypos)
 {
+  static float lastX,lastY;
+  static bool firstMouse = true;
+  if (firstMouse)
+  {
+    lastX = xpos;
+    lastY = ypos;
+    firstMouse = false;
+  }
+  //std::cout << xpos << ":" << ypos << "\n";
+  float xoffset = xpos - lastX;
+  float yoffset = lastY - ypos;
+
+  lastX = xpos;
+  lastY = ypos;
+
   mousePos = glm::vec2(xpos/dimensions.x,1-ypos/dimensions.y);
   if(currentMenu == NULL) return;
-  currentMenu->GLFWCursorCallback(window,xpos,ypos);
+  currentMenu->GLFWCursorCallback(window,xoffset,yoffset);
 }
 void GUI::handleMouseHover()
 {

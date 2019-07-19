@@ -32,6 +32,18 @@ void GUI::initGameJoinMenu()
     Settings::set("UserName",input);
   });
 
+  Label* txt = new Label("I dont think trying to code a 3d engine by myself from the ground up was the best idea ive had",glm::vec2(0.8,0.8),32,TEXTALICENTER);
+  txt->setOnDraw([](Widget* parent)
+  {
+    double x = glfwGetTime();
+    glm::mat3 rot = glm::rotate(glm::mat3(1),(float)x);
+    ((Label*)parent)->setRotMat(rot);
+    parent->setOrigin(glm::vec2(0.5+0.3*sin(x),0.5+0.5*cos(x)));
+  });
+  txt->setColor(glm::vec4(glm::vec3(0),1));
+
+
+
   Button* joinGameButton = new Button("Join Game!",glm::vec2(0.4,0.2),glm::vec2(0.2,0.05),[](int action)
   {
     std::cout << "Kero\n";
@@ -45,7 +57,7 @@ void GUI::initGameJoinMenu()
       return;
     }
     ThreadHandler::dispatchThreads();
-    ThreadHandler::disableCursor();
+
     setMenu(debugMenu.get());
     ThreadHandler::draw();
     std::cout << "done\n";
@@ -57,9 +69,11 @@ void GUI::initGameJoinMenu()
   gameJoinMenu.addWidget(background);
   gameJoinMenu.addWidget(userNameBox);
   gameJoinMenu.addWidget(joinGameButton);
+  gameJoinMenu.addWidget(txt);
   background->setColor(glm::vec4(COLORPALETTE[4],1));
   gameJoinMenu.addWidget(ipEditBox);
   gameJoinMenu.setFocusTarget(ipEditBox);
+  gameJoinMenu.setCursor(true);
 }
 
 
@@ -67,7 +81,7 @@ void GUI::initGameJoinMenu()
 void GUI::initMainMenu()
 {
   initGameJoinMenu();
-  Label* title = new Label("The Abyss",glm::vec2(0.5,0.9),32.0,TEXTALICENTER);
+  Label* title = new Label("The Abyss",glm::vec2(0.5,0.9),128.0,TEXTALICENTER);
 
   title->setOnDraw([](Widget* parent)
   {
@@ -109,6 +123,7 @@ void GUI::initMainMenu()
   mainMenu->addWidget(menuList);
   mainMenu->addWidget(title);
   mainMenu->setFocusTarget(menuList);
+  mainMenu->setCursor(true);
   //mainMenu.addWidget(startGame);
 
   setMenu(mainMenu.get());

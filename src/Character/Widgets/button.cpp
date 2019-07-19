@@ -21,7 +21,7 @@ void Button::draw()
   glm::vec4 drawColor = color;
   if(glfwGetTime() < pressedTime) drawColor = color*0.5f;
   glm::vec2 textOrigin = origin + glm::vec2(0,dimensions.y/2);
-  GUI::drawQuad(origin,origin+ dimensions,drawColor,CIRCLEQUAD);
+  GUI::drawQuad(origin,origin+ dimensions,drawColor,quadType);
   GUI::renderText(text,textOrigin,textScale,textColor);
 }
 

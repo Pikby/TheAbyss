@@ -167,8 +167,14 @@ void GUI::initDebugMenu()
   {
     setMenu(gameMenu.get());
   });
+  debugMenu->setKeyMapping(GLFW_KEY_ESCAPE,[]()
+  {
+    setMenu(pauseMenu.get());
+  });
+  debugMenu->setCursor(false);
 
   gameMenu->addWidget(chatBox.get());
+  gameMenu->setCursor(false);
   gameMenu->setFocusTarget(inGame.get());
   gameMenu->setKeyMapping(GLFW_KEY_F1,[]()
   {
@@ -180,7 +186,7 @@ void GUI::initDebugMenu()
   });
   gameMenu->setKeyMapping(GLFW_KEY_ESCAPE,[]()
   {
-    gameMenu->setFocusTarget(inGame.get());
+    setMenu(pauseMenu.get());
   });
 
   setMenu(debugMenu.get());

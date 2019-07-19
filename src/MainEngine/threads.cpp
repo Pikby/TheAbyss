@@ -28,6 +28,7 @@
 
 World PlayerWorld;
 GLFWwindow* ThreadHandler::window;
+bool ThreadHandler::threadsOn;
 
 GLFWwindow* ThreadHandler::createWindow(int width, int height)
 {
@@ -66,8 +67,14 @@ void ThreadHandler::disableCursor()
 
 }
 
+void ThreadHandler::endThreads()
+{
+  threadsOn=false;
+}
+
 void ThreadHandler::dispatchThreads()
 {
+  threadsOn = true;
   std::thread renderThread(render);
   std::thread deleteThread(del);
   std::thread sendThread(send);
@@ -133,7 +140,7 @@ void ThreadHandler::draw()
   glm::vec3 terrainColor = glm::vec3(1.0f);
   float sunX=0.01,sunZ=0.01;
   bool shadowsOn = true;
-  while(!glfwWindowShouldClose(window))
+  while(!glfwWindowShouldClose(window) && threadsOn)
   {
 
     static const char* current_item = "1.0";
@@ -185,7 +192,7 @@ void ThreadHandler::render()
   double currentFrame = 0;
   double ticksPerSecond = 27000;
   double tickRate = 1.0f/ticksPerSecond;
-  while(!glfwWindowShouldClose(window))
+  while(!glfwWindowShouldClose(window) && threadsOn)
   {
     lastFrame = currentFrame;
     currentFrame = glfwGetTime();
@@ -208,7 +215,7 @@ void ThreadHandler::del()
   double currentFrame = 0;
   double ticksPerSecond = 0.2f;
   double tickRate = 1.0f/ticksPerSecond;
-  while(!glfwWindowShouldClose(window))
+  while(!glfwWindowShouldClose(window) && threadsOn)
   {
     lastFrame = currentFrame;
     currentFrame = glfwGetTime();
@@ -230,7 +237,7 @@ void ThreadHandler::logic()
   double currentFrame = 0;
   double ticksPerSecond = 60;
   double tickRate = 1.0f/ticksPerSecond;
-  while(!glfwWindowShouldClose(window))
+  while(!glfwWindowShouldClose(window) && threadsOn)
   {
     lastFrame = currentFrame;
     currentFrame = glfwGetTime();
@@ -262,7 +269,7 @@ void ThreadHandler::logic()
 
 void ThreadHandler::send()
 {
-  while(!glfwWindowShouldClose(window))
+  while(!glfwWindowShouldClose(window) && threadsOn)
   {
     PlayerWorld.messenger->messageQueue.waitForData();
     while(!PlayerWorld.messenger->messageQueue.empty())
@@ -305,7 +312,7 @@ void ThreadHandler::send()
 
 void ThreadHandler::receive()
 {
-  while(!glfwWindowShouldClose(window))
+  while(!glfwWindowShouldClose(window) && threadsOn)
   {
     InMessage msg;
     try
@@ -338,7 +345,7 @@ void ThreadHandler::receive()
         PlayerWorld.addBlock(glm::ivec3(msg.x.i,msg.y.i,msg.z.i),msg.ext1);
         break;
       case(10):
-        //MainChar::(msg.x,msg.y,msg.z);
+        //MainChar::(msg.x,msg.y,msg.z); && threadsOn
         break;
       case(90):
         PlayerWorld.addPlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
@@ -404,7 +411,7 @@ void ThreadHandler::receive()
 
 void ThreadHandler::build(char threadNumb)
 {
-  while(!glfwWindowShouldClose(window))
+  while(!glfwWindowShouldClose(window)  && threadsOn)
   {
     PlayerWorld.buildWorld(threadNumb);
   }

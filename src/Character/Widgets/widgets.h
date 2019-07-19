@@ -108,6 +108,7 @@ class Button : public Widget
 private:
   double textScale;
   double pressedTime;
+  QuadDrawType quadType = DEFAULTQUAD;
 
   glm::vec4 textColor = glm::vec4(0,0,0,1);
   std::string text = "";
@@ -116,6 +117,7 @@ public:
   Button(const std::string& Text,const glm::vec2& Origin, const glm::vec2& Dimensions,std::function<void(int)> ClickHandler = std::function<void(int)>(NULL));
   ~Button(){};
 
+  void setStyle(QuadDrawType t){quadType =t;}
   void draw() override;
   void handleMouseInput(int button, int action) override;
   void submitEvent() override;

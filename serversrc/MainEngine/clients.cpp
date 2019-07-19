@@ -155,16 +155,17 @@ void Client::disconnect()
   Server::remove(id);
   msgQueue.emptyQueue();
   chunkQueue.emptyQueue();
-
+  close(fd);
 }
 
 void Client::errorDisconnect()
 {
-  std::cout << "Client disconnectting due to error\n";
+
   open = false;
   fatalError = true;
   Server::remove(id);
-
+  close(fd);
+  std::cout << "Client disconnectting due to error\n";
 }
 
 void Client::recvMessages()

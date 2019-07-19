@@ -98,5 +98,9 @@ void ChatBox::handleScrollInput(double xoffset, double yoffset)
 void ChatBox::handleKeyInput(int key, int action)
 {
   inputBox.handleKeyInput(key,action);
-  if(key == GLFW_KEY_ENTER && action == GLFW_PRESS) inputBox.updateText("");
+  if(key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+  {
+    inputBox.updateText("");
+    GUI::setMenu(GUI::pauseMenu.get());
+  }
 }
