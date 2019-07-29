@@ -19,6 +19,7 @@
 #include <GLFW/glfw3.h>
 #include "include/bsp.h"
 #include "../Objects/include/items.h"
+#include "../Objects/include/objects.h"
 
 inline int pack4chars(char a, char b, char c, char d)
 {
@@ -501,8 +502,22 @@ void BSP::render()
   setupBufferObjects(TRANSLUCENT);
 }
 
+void BSPNode::drawChunkOutline(Shader* shader, const glm::vec3 &pos)
+{
+  glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    WireframeCube cube(glm::vec3(CHUNKSIZE*getPosition()+glm::ivec3(CHUNKSIZE/2)));
+    cube.setScale(16);
+    cube.setColor(glm::vec4(1));
+    shader->use();
+    cube.draw(shader,pos);
+  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+}
+
 void BSP::drawOpaque(Shader* shader, const glm::vec3 &pos)
 {
+
+
+
   if(oIndicesSize != 0)
   {
     glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-pos);

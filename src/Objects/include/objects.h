@@ -29,6 +29,8 @@ protected:
   glm::mat4 modelMat;
   bool isRendered = false;
   public:
+  static void initObjects();
+
   void updateModelMat()
   {
     /*
@@ -83,13 +85,12 @@ protected:
   {
     pos = newPos;
   }
+  void setScale(double Scale){scale=glm::vec3(Scale);}
   virtual void draw(Shader* shader,const glm::vec3 &viewPos)
   {
     std::cout << "ERROR DRAWING DEFAULT OBJECT\n";
   }
-  virtual void render(){
-    std::cout << "ERROR RENDERING DEFAULT OBJECT\n";
-  }
+
   void setModel()
   {
   }
@@ -108,9 +109,22 @@ public:
   using Object::Object;
 
   void draw(Shader* shader,const glm::vec3 &viewPos);
-  void render();
+  static void render();
   bool isCollided(Cube* cube);
 };
+
+class WireframeCube : public Object
+{
+private:
+  static unsigned int VAO,VBO,EBO;
+public:
+  using Object::Object;
+
+  void draw(Shader* shader, const glm::vec3 &viewPos);
+  static void render();
+
+};
+
 
 class Player : public Object
 {
@@ -120,6 +134,6 @@ public:
   using Object::Object;
 
   void draw(Shader* shader,const glm::vec3 &viewPos);
-  void render();
+  static void render();
   bool isCollided(Cube* cube);
 };

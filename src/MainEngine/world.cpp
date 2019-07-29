@@ -48,6 +48,7 @@ void World::initWorld()
 {
 
   drawer = std::make_unique<Drawer>();
+  Object::initObjects();
   //drawer->directionalShadowResolution = std::stoi(Settings::get("dirShadowResolution"));
   drawnChunks = 0;
   std::cout << "After cons\n";

@@ -109,10 +109,18 @@ void GUI::initMainMenu()
     std::cout << "Options\n";
   });
 
+  Button* exitButton = new Button("Exit Button",glm::vec2(0.3,0.7),glm::vec2(0.1,0.03),[](int action)
+  {
+    exit(1);
+  });
+
+
+
   WidgetList* menuList = new WidgetList(glm::vec2(0.5,0.5));
   menuList->addWidget(startGame);
   menuList->addWidget(controlsButton);
   menuList->addWidget(optionsButton);
+  menuList->addWidget(exitButton);
 
   startGame->setColor(glm::vec4(COLORPALETTE[1],1));
   quad->setColor(glm::vec4(COLORPALETTE[4],1));

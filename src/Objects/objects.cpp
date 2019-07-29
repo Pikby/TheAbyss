@@ -13,42 +13,49 @@
 
 unsigned int Cube::VAO, Cube::VBO, Cube::EBO;
 unsigned int Player::VAO, Player::VBO, Player::EBO;
-
-
-
-float cubeVertices[] =
+unsigned int WireframeCube::VAO,WireframeCube::VBO,WireframeCube::EBO;
+void Object::initObjects()
 {
-    // Back face
-    -1.0f, -1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // Bottom-left
-     1.0f,  1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // top-right
-     1.0f, -1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // bottom-right
-    -1.0f,  1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // top-left
-    // Front face
-    -1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
-     1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 1.0f, 0.0f, // bottom-right
-     1.0f,  1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top-right
-    -1.0f,  1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 0.0f, 1.0f, // top-left
-    // Left face
-    -1.0f,  1.0f,  1.0f,  -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
-    -1.0f,  1.0f, -1.0f,  -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-left
-    -1.0f, -1.0f, -1.0f,  -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
-    -1.0f, -1.0f,  1.0f,  -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-right
-    // Right face
-     1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-left
-     1.0f, -1.0f, -1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-right
-     1.0f,  1.0f, -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-right
-     1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-left
-    // Bottom face
-    -1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
-     1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, // top-left
-     1.0f, -1.0f,  1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom-left
-    -1.0f, -1.0f,  1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom-right
-    // Top face
-    -1.0f,  1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top-left
-     1.0f,  1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
-     1.0f,  1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // top-right
-    -1.0f,  1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f  // bottom-left
-};
+  Cube::render();
+  WireframeCube::render();
+  Player::render();
+}
+
+
+  float cubeVertices[] =
+  {
+      // Back face
+      -1.0f, -1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // Bottom-left
+       1.0f,  1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // top-right
+       1.0f, -1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // bottom-right
+      -1.0f,  1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // top-left
+      // Front face
+      -1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
+       1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 1.0f, 0.0f, // bottom-right
+       1.0f,  1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top-right
+      -1.0f,  1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 0.0f, 1.0f, // top-left
+      // Left face
+      -1.0f,  1.0f,  1.0f,  -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
+      -1.0f,  1.0f, -1.0f,  -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-left
+      -1.0f, -1.0f, -1.0f,  -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
+      -1.0f, -1.0f,  1.0f,  -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-right
+      // Right face
+       1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-left
+       1.0f, -1.0f, -1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-right
+       1.0f,  1.0f, -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-right
+       1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-left
+      // Bottom face
+      -1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
+       1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, // top-left
+       1.0f, -1.0f,  1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom-left
+      -1.0f, -1.0f,  1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom-right
+      // Top face
+      -1.0f,  1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top-left
+       1.0f,  1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
+       1.0f,  1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // top-right
+      -1.0f,  1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f  // bottom-left
+  };
+
 
 unsigned cubeIndices[] =
 {
@@ -74,6 +81,8 @@ unsigned cubeIndices[] =
 
 void Cube::render()
 {
+
+
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
   glGenBuffers(1, &EBO);
@@ -98,16 +107,92 @@ void Cube::render()
   glBindVertexArray(0);
 }
 
+void WireframeCube::render()
+{
+
+  float cubeVertices[] =
+  {
+      // Back face
+      -1.0f, -1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // Bottom-left
+       1.0f, -1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // bottom-right
+       1.0f,  1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // top-right
+      -1.0f,  1.0f, -1.0f,  0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // top-left
+      // Front face
+      -1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
+       1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 1.0f, 0.0f, // bottom-right
+       1.0f,  1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top-right
+      -1.0f,  1.0f,  1.0f,  0.0f, 0.0f, 1.0f, 0.0f, 1.0f, // top-left
+
+  };
+
+  unsigned cubeIndices[] =
+  {
+    0,1,1,2,
+    2,3,3,0,
+
+    4,5,5,6,
+    6,7,7,4,
+
+    0,4,1,5,
+    2,6,3,7
+
+
+  };
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+
+  glBindVertexArray(VAO);
+  glBindBuffer(GL_ARRAY_BUFFER,VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices),cubeVertices,GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices),cubeIndices,GL_STATIC_DRAW);
+
+
+  glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+
+  glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+  glEnableVertexAttribArray(1);
+
+  glVertexAttribPointer(2,2,GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+  glEnableVertexAttribArray(2);
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+
+}
+
+void WireframeCube::draw(Shader* shader, const glm::vec3 &viewPos)
+{
+  //return;
+  glm::mat4 model = glm::translate(glm::mat4(1),pos-viewPos);
+  model = glm::scale(model,glm::vec3(scale));
+  shader->use();
+  shader->setMat4("modelMat",model);
+  shader->setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
+
+  glDisable(GL_CULL_FACE);
+  glBindVertexArray(VAO);
+  glDrawElements(GL_LINES,24,GL_UNSIGNED_INT,0);
+  glBindVertexArray(0);
+  glEnable(GL_CULL_FACE);
+}
+
 
 void Cube::draw(Shader* shader, const glm::vec3 &viewPos)
 {
-  glm::mat4 model = glm::translate(modelMat,-viewPos);
+  glm::mat4 model = glm::translate(glm::mat4(1),pos-viewPos);
+  model = glm::scale(model,glm::vec3(scale));
   shader->use();
   shader->setMat4("modelMat",model);
-  shader->setVec3("objectColor",glm::vec3(0.5,0.5f,0.5f));
-  glBindVertexArray(VAO);
-  glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
-  glBindVertexArray(0);
+  shader->setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
+    glBindVertexArray(0);
+
 }
 
 void Player::render()

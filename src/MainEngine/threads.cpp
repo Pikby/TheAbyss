@@ -116,17 +116,14 @@ void ThreadHandler::draw()
 {
 
   glfwMakeContextCurrent(window);
+
+
+
   float deltaTime;
   float lastFrame;
   //PlayerWorld.drawer->createDirectionalLight(glm::vec3(-0.0f,-1.0f,-0.0001f),glm::vec3(0.8f,0.8f,0.8f));
   PlayerWorld.drawer->updateDirectionalLight(glm::vec3(-0.5,-1.0f,-0.5f),glm::vec3(0.2f),glm::vec3(0.5f),glm::vec3(1.0f));
   SkyBox skyBox("../assets/alps");
-
-  Cube cube;
-  cube.render();
-
-  Player player;
-  player.render();
 
 
   PlayerWorld.drawer->addCube(glm::vec3(0,50,0));
@@ -180,7 +177,7 @@ void ThreadHandler::draw()
     PlayerWorld.drawer->drawFinal();
     GUI::drawGUI();
     glfwSwapBuffers(window);
-
+    glFlush();
   }
   PlayerWorld.buildQueue.notify_one();
   std::cout << "Draw thread done\n";

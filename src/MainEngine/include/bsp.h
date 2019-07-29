@@ -129,6 +129,7 @@ class BSP
     void build();
     void drawOpaque(Shader* shader,const glm::vec3 &viewPos);
     void drawTranslucent(Shader* shader, const glm::vec3 &viewPos);
+    void drawChunkOutline(Shader* shader, const glm::vec3 &viewPos);
 };
 
 class BSPNode
@@ -163,6 +164,8 @@ class BSPNode
     void build();
     void drawOpaque(Shader* shader, const glm::vec3 &pos);
     void drawTranslucent(Shader* shader, const glm::vec3 &pos);
+    void drawChunkOutline(Shader* shader, const glm::vec3 &pos);
+
     std::string getCompressedChunk();
     void delBlock(const glm::ivec3 &pos);
     void addBlock(const glm::ivec3 &pos, uint8_t id);

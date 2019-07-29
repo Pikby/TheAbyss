@@ -69,15 +69,13 @@ private:
   uint pingPongFBO[2],pingPongTexture[2];
   std::unique_ptr<Shader> PPShader;
   std::unique_ptr<Shader> objShader,dirDepthShader,pointDepthShader,blockShader,gBufferShader;
-  std::unique_ptr<Shader> transShader;
-  std::unique_ptr<Shader> GBlurShader;
-  std::unique_ptr<Shader>  quadShader;
-  std::unique_ptr<Shader>  depthBufferLoadingShader;
-  std::unique_ptr<Shader> normDebug;
+  std::unique_ptr<Shader> transShader,GBlurShader,quadShader,depthBufferLoadingShader,normDebug;
+
   void calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::vec3 &front,const glm::vec3 &right,const glm::vec3 &up, float camZoomInDegrees,float ar,float near, float far);
   void calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin,glm::vec3* finmax);
   void renderQuad();
   void createTextureAtlas(const char* texture, int cellWidth);
+  glm::ivec3 toChunkCoords(const glm::ivec3& in);
 public:
   Drawer();
 
@@ -95,6 +93,7 @@ public:
   int screenWidth,screenHeight;
 
 
+  void drawCube(const glm::vec3& pos,double size);
   void setExposure(float exp);
   void updateViewProjection(float camZoom,float near=0, float far=0);
   void setupShadersAndTextures(int screenWidth, int screenHeight);
