@@ -15,6 +15,7 @@
 #include "../Settings/settings.h"
 #include "../Objects/include/objects.h"
 #include "../TextureLoading/textureloading.h"
+#include "../Character/include/mainchar.h"
 
 #include "include/drawer.h"
 #include "include/bsp.h"
@@ -433,6 +434,9 @@ void Drawer::renderGBuffer()
     drawObjects();
     drawPlayers();
 
+    glBindTexture(GL_TEXTURE_2D, textureAtlas);
+
+    MainChar::drawPreviewBlock(shader);
 
 
     /*
@@ -568,7 +572,8 @@ void Drawer::drawFinal()
   glViewport(0,0,screenWidth,screenHeight);
   Shader* shader = blockShader.get();
   shader->use();
-
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
  //glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gPosition);

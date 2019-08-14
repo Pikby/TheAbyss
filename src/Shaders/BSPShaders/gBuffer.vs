@@ -2,7 +2,7 @@
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 norm;
 layout (location = 2) in float texIds;
-layout (location = 3) in float packagef;
+layout (location = 3) in float alpha;
 
 #include "gBuffer.h"
 
@@ -62,5 +62,5 @@ void main()
     vec3(0,0,1)
   };
   vs_out.TexWeights = weightTable[gl_VertexID % 3];
-
+  vs_out.alpha = alpha;
 }

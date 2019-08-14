@@ -7,4 +7,5 @@ struct VS_OUT
   vec3 FlatNormal;
   vec3 FragPos;
   float AO;
+  float alpha;
 };

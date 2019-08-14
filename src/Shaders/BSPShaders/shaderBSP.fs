@@ -58,7 +58,7 @@ vec4 transColorAO = texelFetch(transTexture, texCoord,0).rgba;
 vec3 transColor = transColorAO.rgb;
 float transColorCount = transColorAO.a;
 
-float AO = objColorAO.a;
+float AO = 1;
 vec3 normal = normalize(texelFetch(gNormal, texCoord,0).rgb);
 vec3 fragPosition = texelFetch(gPosition,texCoord,0).rgb;
 float fragDepth = length(fragPosition);
@@ -246,7 +246,7 @@ void main()
     }
     else
     {
-      brightColor = vec4(vec3(0.0f),1.0f);
+      brightColor = vec4(vec3(0.0f),transColorAO.rgb);
     }
 
 

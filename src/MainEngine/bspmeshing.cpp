@@ -1,5 +1,8 @@
 
 
+#define GLEW_STATIC
+#include <GL/glew.h>
+
 #include <list>
 #include <memory>
 #include <iostream>
@@ -9,7 +12,7 @@
 
 #include "../Objects/include/items.h"
 #include "include/bsp.h"
-
+#include "../headers/shaders.h"
 
 
 struct VERTEX
@@ -727,13 +730,363 @@ public:
 };
 
 
+
+
+void BSP::drawPreviewBlock(Shader* shader,const glm::ivec3& pos, const glm::vec3& viewPos)
+{
+  std::cout << glm::to_string(pos);
+  VertexArray<12> vArray;
+  int lod = 2;
+  std::vector<VertexData> vertices;
+  for(int x = 0; x <= 2;x++)
+  {
+    for(int z = 0; z <= 2;z++)
+    {
+      for(int y = 0; y <= 2;y++)
+      {
+        Block curBlock = ItemDatabase::blockDictionary[parent->getBlockOOB(glm::ivec3(x,y,z)-glm::ivec3(1)+pos)];
+        if(curBlock.visibleType == OPAQUE || (x == 1 && y==1 && z==1))
+        {
+          glm::ivec3 pos = glm::ivec3(x,y,z);
+          int rx = x*2;
+          int ry = y*2;
+          int rz = z*2;
+
+
+          uint8_t blockId = curBlock.getTop();
+          if((x == 1 && y==1 && z==1)) blockId   = 1;
+
+
+          glm::vec3 norm = glm::vec3(0,1,0);
+
+
+          {
+            const int zn = 0;
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+0,rz+zn),glm::normalize(glm::vec3(-1,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+0,rz+zn),glm::normalize(glm::vec3(0,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+0,rz+zn),glm::normalize(glm::vec3(1,-1,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+1,rz+zn),glm::normalize(glm::vec3(-1,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+1,rz+zn),glm::normalize(glm::vec3(0,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+1,rz+zn),glm::normalize(glm::vec3(1,0,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+2,rz+zn),glm::normalize(glm::vec3(-1,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+2,rz+zn),glm::normalize(glm::vec3(0,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+2,rz+zn),glm::normalize(glm::vec3(1,1,zn-1)));
+          }
+          {
+            const int zn = 1;
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+0,rz+zn),glm::normalize(glm::vec3(-1,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+0,rz+zn),glm::normalize(glm::vec3(0,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+0,rz+zn),glm::normalize(glm::vec3(1,-1,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+1,rz+zn),glm::normalize(glm::vec3(-1,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+1,rz+zn),glm::normalize(glm::vec3(0,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+1,rz+zn),glm::normalize(glm::vec3(1,0,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+2,rz+zn),glm::normalize(glm::vec3(-1,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+2,rz+zn),glm::normalize(glm::vec3(0,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+2,rz+zn),glm::normalize(glm::vec3(1,1,zn-1)));
+          }
+          {
+            const int zn = 2;
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+0,rz+zn),glm::normalize(glm::vec3(-1,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+0,rz+zn),glm::normalize(glm::vec3(0,-1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+0,rz+zn),glm::normalize(glm::vec3(1,-1,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+1,rz+zn),glm::normalize(glm::vec3(-1,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+1,rz+zn),glm::normalize(glm::vec3(0,0,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+1,rz+zn),glm::normalize(glm::vec3(1,0,zn-1)));
+
+            vArray.setVertexValue(blockId,glm::vec3(rx+0,ry+2,rz+zn),glm::normalize(glm::vec3(-1,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+1,ry+2,rz+zn),glm::normalize(glm::vec3(0,1,zn-1)));
+            vArray.setVertexValue(blockId,glm::vec3(rx+2,ry+2,rz+zn),glm::normalize(glm::vec3(1,1,zn-1)));
+          }
+        }
+      }
+    }
+  }
+  double punit = 1.0/2.0;
+  glm::dvec3 p[8] =
+  {
+    glm::dvec3(0,0,punit),
+    glm::dvec3(punit,0,punit),
+    glm::dvec3(punit,0,0),
+    glm::dvec3(0,0,0),
+    glm::dvec3(0,punit,punit),
+    glm::dvec3(punit,punit,punit),
+    glm::dvec3(punit,punit,0),
+    glm::dvec3(0,punit,0),
+  };
+
+  std::cout << "Values set, being forming\n";
+  for(int x = 0;x<=2;x++)
+  {
+    for(int z = 0;z<=2;z++)
+    {
+      for(int y = 0;y<=2;y++)
+      {
+        glm::ivec3 chunkLocalPos = glm::ivec3(x,y,z);
+
+        VertexData vertex;
+        vertex.renderType = OPAQUE;
+        vertex.ao = NOAO;
+        vertex.tb = BOTTOMTS;
+        vertex.rl = LEFTTS;
+        vertex.face = FRONTF;
+
+        GRIDCELL cell;
+
+        int rx = x*lod;
+        int ry = y*lod;
+        int rz = z*lod;
+
+
+        static const glm::dvec3 subCubeLookup[8]=
+        {
+          glm::dvec3(0,0,1), glm::dvec3(1,0,1),glm::dvec3(1,0,0),glm::dvec3(0,0,0),
+          glm::dvec3(0,1,1), glm::dvec3(1,1,1),glm::dvec3(1,1,0),glm::dvec3(0,1,0),
+        };
+
+
+
+        for(int subCubes=0;subCubes<8;subCubes++)
+        {
+          int tx = rx + subCubeLookup[subCubes].x;
+          int ty = ry + subCubeLookup[subCubes].y;
+          int tz = rz + subCubeLookup[subCubes].z;
+
+
+          vArray.setCell(&cell,0,tx,ty,tz+1);
+          vArray.setCell(&cell,1,tx+1,ty,tz+1);
+          vArray.setCell(&cell,2,tx+1,ty,tz);
+          vArray.setCell(&cell,3,tx,ty,tz);
+
+          vArray.setCell(&cell,4,tx,ty+1,tz+1);
+          vArray.setCell(&cell,5,tx+1,ty+1,tz+1);
+          vArray.setCell(&cell,6,tx+1,ty+1,tz);
+          vArray.setCell(&cell,7,tx,ty+1,tz);
+
+          TRIANGLE tris[6];
+          int ntris = Polygonise(cell,p,50,tris);
+
+
+          /* If ntris is 2 intialize the quad checking algorithm in order to test
+          if the given quad should be flipped in order to deal with problems of anistropy.
+          Otherwise just render normally.
+
+          */
+
+          if(ntris == 2)
+          {
+
+            std::vector<VERTEX> singleList;
+            std::vector<VERTEX> duplicateList;
+            std::vector<VERTEX> fullList;
+            for(int i=0;i<3;i++)
+            {
+
+              auto itr = std::find(singleList.begin(),singleList.end(),tris[0].p[i]);
+              if(itr == singleList.end())
+              {
+                fullList.push_back(tris[0].p[i]);
+                singleList.push_back(tris[0].p[i]);
+              }
+              else
+              {
+
+                duplicateList.push_back(tris[0].p[i]);
+                singleList.erase(itr);
+              }
+            }
+            for(int i=0;i<3;i++)
+            {
+              auto itr = std::find(singleList.begin(),singleList.end(),tris[1].p[i]);
+              if(itr == singleList.end())
+              {
+                fullList.push_back(tris[1].p[i]);
+                singleList.push_back(tris[1].p[i]);
+              }
+              else
+              {
+
+                duplicateList.push_back(tris[1].p[i]);
+                singleList.erase(itr);
+              }
+            }
+            int startId;
+
+            glm::dvec3 flip,shift,norm;
+            glm::dmat4 rot;
+            bool shouldFlip = false;
+            if( (duplicateList[0].id != duplicateList[1].id) && (singleList[0].id !=  duplicateList[0].id || singleList[0].id !=  duplicateList[1].id))
+            {
+              shouldFlip = true;
+            }
+            if(fullList.size() == 4 && duplicateList.size() == 2)
+            {
+              shift = (singleList[0].pos+ singleList[1].pos + duplicateList[0].pos + duplicateList[1].pos)/4.0;
+              norm = glm::normalize(glm::cross(tris[0].p[0].pos -tris[0].p[1].pos,tris[0].p[0].pos -tris[0].p[2].pos));
+
+              vertex.flatNorm = norm;
+              flip.x = abs(norm.z) > 0.9 ? -1.0 : 1.0;
+              flip.y = abs(norm.x) > 0.9 ? -1.0 : 1.0;
+              flip.z = abs(norm.y) > 0.9 ? -1.0 : 1.0;
+
+              if(!(flip.x != 1.0f || flip.y != 1.0f || flip.z != 1.0f))
+              {
+                //If the quad is not axis alligned dont try to flip it
+                shouldFlip = false;
+              }
+              rot = glm::scale(flip);
+            }
+            if(shouldFlip)
+            {
+              for(int tri =0;tri<2;tri++)
+              {
+                //Change ordering since the quad is going to be flipped
+                glm::dvec3 points[3];
+                glm::vec3 norms[3];
+                points[1] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[tri].p[0].pos) -shift,1)) +shift;
+                points[0] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[tri].p[1].pos) -shift,1)) +shift;
+                points[2] = glm::dvec3(rot*glm::dvec4(glm::dvec3(tris[tri].p[2].pos) -shift,1)) +shift;
+
+
+                for(int i=0;i<3;i++)
+                {
+                  for(int j=0;j<4;j++)
+                  {
+                    //The new positions arent exactly the same as the old positions, so find nearest
+                    if(abs(glm::length(glm::dvec3(fullList[j].pos)- points[i])) < 0.01)
+                    {
+                      norms[i] = fullList[j].norm;
+                      points[i] = fullList[j].pos;
+                      vertex.texIds[i] = fullList[j].id;
+                    }
+                  }
+                }
+
+                for(int j=0;j<3;j++)
+                {
+                  vertex.pos = glm::dvec3(-1)+glm::dvec3(pos)+points[j] + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
+                  vertex.norm = norms[j];
+                  vertices.push_back(vertex);
+
+                }
+              }
+              //Skip normal rendering
+              continue;
+            }
+          }
+
+          //Normal rendering
+          for(int i=0;i<ntris;i++)
+          {
+            glm::dvec3 normal = glm::cross(tris[i].p[0].pos- tris[i].p[1].pos,tris[i].p[0].pos - tris[i].p[2].pos);
+            vertex.texIds[0] = tris[i].p[0].id;
+            vertex.texIds[1] = tris[i].p[1].id;
+            vertex.texIds[2] = tris[i].p[2].id;
+            vertex.flatNorm = glm::normalize(normal);
+            for(int j=0;j<3;j++)
+            {
+              vertex.norm = glm::normalize(tris[i].p[j].norm);
+              vertex.pos = glm::dvec3(-1)+glm::dvec3(pos) + glm::dvec3(tris[i].p[j].pos) + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
+              vertex.vId = j;
+              vertices.push_back(vertex);
+
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+
+  static uint VBO,VAO=0;
+  if(VAO == 0)
+  {
+    glGenVertexArrays(1,&VAO);
+    glGenBuffers(1,&VBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER,VBO);
+      const int vertexSize = 8*sizeof(float);
+      glBufferData(GL_ARRAY_BUFFER,3*6*6*6*6*vertexSize,NULL, GL_DYNAMIC_DRAW);
+
+      glVertexAttribPointer(0,3,GL_FLOAT, GL_FALSE,vertexSize, (void*)0);
+      glEnableVertexAttribArray(0);
+
+      glVertexAttribPointer(1,3,GL_FLOAT, GL_FALSE,vertexSize, (void*)(3*sizeof(float)));
+      glEnableVertexAttribArray(1);
+
+      glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(6*sizeof(float)));
+      glEnableVertexAttribArray(2);
+
+      glVertexAttribPointer(3,1,GL_FLOAT,GL_FALSE,vertexSize, (void*)(7*sizeof(float)));
+      glEnableVertexAttribArray(3);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+  }
+
+
+  std::vector<float> buffer;
+  for(auto itr = vertices.begin(); itr!= vertices.end(); itr++)
+  {
+    //std::cout << "Vertex count" << vertices.size() << "\n";
+    //std::cout << glm::to_string((*itr).pos) << "\n";
+
+    VertexData vertex = (*itr);
+
+    buffer.push_back(vertex.pos.x);
+    buffer.push_back(vertex.pos.y);
+    buffer.push_back(vertex.pos.z);
+
+    {
+      uint8_t normx = vertex.norm.x*127+128;
+      uint8_t normy = vertex.norm.y*127+128;
+      uint8_t normz = vertex.norm.z*127+128;
+      uint32_t compactNorm = normx | normy << 8 | normz << 16;
+      buffer.push_back(*(float*)&compactNorm);
+    }
+
+    {
+      uint8_t normx = vertex.flatNorm.x*127+128;
+      uint8_t normy = vertex.flatNorm.y*127+128;
+      uint8_t normz = vertex.flatNorm.z*127+128;
+      uint32_t compactNorm = normx | normy << 8 | normz << 16;
+      buffer.push_back(*(float*)&compactNorm);
+    }
+
+    float filler = 0;
+    buffer.push_back(filler);
+    uint32_t compactIds = vertex.texIds[0] | (vertex.texIds[1] << 8) | (vertex.texIds[2] << 16) | (vertex.vId << 24);
+    buffer.push_back(*(float*)&compactIds);
+    buffer.push_back(1);
+  }
+
+
+  glBindVertexArray(VAO);
+  glBindBuffer(GL_ARRAY_BUFFER,VBO);
+  std::cout << buffer.size()/8 << "\n";
+  glBufferSubData(GL_ARRAY_BUFFER,0,buffer.size()*sizeof(float),(&buffer.front()));
+
+  glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-viewPos);
+  shader->use();
+  shader->setMat4("model",model);
+
+  glDrawArrays(GL_TRIANGLES,0,buffer.size()/8);
+  glBindVertexArray(0);
+
+}
+
+
 void BSP::build()
 {
-
-
-
-
-
   //Delete and reserve space for the vectors;
   oVertices.clear();
   oIndices.clear();
@@ -750,8 +1103,6 @@ void BSP::build()
 
   VertexArray<arrSize> vArray;
 
-  using namespace std::chrono;
-  auto t1 = high_resolution_clock::now();
   for(int x = -1; x<CHUNKSIZE+1;x++)
   {
     for(int z = -1; z<CHUNKSIZE+1;z++)
@@ -824,60 +1175,10 @@ void BSP::build()
           }
         }
 
-          /*
-          for(int xn=0;xn<3;xn++) for(int yn=0;yn<3;yn++) for(int zn=0;zn<3;zn++)
-          {
-            /*
-            static const glm::vec3 FRONT = glm::vec3(0,0,-1), BACK = glm::vec3(0,0,1);
-            static const glm::vec3 LEFT = glm::vec3(-1,0,0), RIGHT = glm::vec3(1,0,0);
-            static const glm::vec3 TOP = glm::vec3(0,1,0), BOTTOM = glm::vec3(0,-1,0);
-            static const glm::vec3 NONE = glm::vec3(0);
-
-            glm::vec3 vx,vy,vz;
-
-            static const glm::vec3 xnarr[3] =
-            {
-              LEFT,
-              NONE,
-              RIGHT,
-            };
-
-            static const glm::vec3 ynarr[3] =
-            {
-              BOTTOM,
-              NONE,
-              TOP,
-            };
-
-            static const glm::vec3  znarr[3] =
-            {
-              FRONT,
-              NONE,
-              BACK,
-            };
-
-            vx = xnarr[xn];
-            vy = ynarr[yn];
-            vz = znarr[zn];
-
-            glm::vec3 norm;
-            if(xn == 1 && yn == 1 && zn == 1)
-            {
-              norm = glm::vec3(0);
-            }
-            else norm = glm::normalize(vx+vy+vz);
-            */
-
-
-
-
       }
     }
   }
-  auto t2 = high_resolution_clock::now();
 
-  auto t2t1 = duration_cast<milliseconds> (t2-t1);
-  //std::cout << "Step1 takes:" << t2t1.count() << "ms\n";
 
   double punit = 1.0/lod;
   glm::dvec3 p[8] =
@@ -1078,10 +1379,6 @@ void BSP::build()
       }
     }
   }
-
-  auto t3 = high_resolution_clock::now();
-  auto t3t2 = duration_cast<milliseconds> (t3-t2);
-  //std::cout << "Step2 takes:" << t3t2.count() << "ms\n";
 
   oVertices.shrink_to_fit();
   oIndices.shrink_to_fit();

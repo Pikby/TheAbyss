@@ -54,6 +54,6 @@ void main()
 
   gPosition = vs_out.FragPos;
   gNormal = vs_out.Normal;
-  gColorSpec = vec4(albedo,1);
+  gColorSpec = vec4(albedo,vs_out.alpha);
 
 }

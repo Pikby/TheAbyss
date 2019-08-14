@@ -54,6 +54,7 @@ public:
   static void setPosition(const glm::vec3 &pos);
   static void draw();
 
+  static void drawPreviewBlock(Shader* shader);
 
   //Setters and Getters
   static Camera& getCamera(){return mainCam;}

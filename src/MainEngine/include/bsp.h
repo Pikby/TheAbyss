@@ -118,6 +118,7 @@ class BSP
     void removeFromLightList(const glm::ivec3 &localPos);
     std::list<Light> getFromLightList(int count);
 
+    void drawPreviewBlock(Shader* shader,const glm::ivec3& pos,const glm::vec3& viewpos);
     RenderType blockVisibleType(const glm::ivec3 &pos);
     void render();
     void freeGL();
@@ -165,6 +166,7 @@ class BSPNode
     void drawOpaque(Shader* shader, const glm::vec3 &pos);
     void drawTranslucent(Shader* shader, const glm::vec3 &pos);
     void drawChunkOutline(Shader* shader, const glm::vec3 &pos);
+    void drawPreviewBlock(Shader* shader,const glm::ivec3& pos,const glm::vec3& viewpos);
 
     std::string getCompressedChunk();
     void delBlock(const glm::ivec3 &pos);

@@ -570,6 +570,19 @@ bool World::blockExists(const glm::ivec3 &pos)
   return false;
 }
 
+void World::drawPreviewBlock(Shader* shader,const glm::ivec3 &pos)
+{
+  glm::ivec3 local = toLocalCoords(pos);
+  glm::ivec3 chunk = toChunkCoords(pos);
+  std::shared_ptr<BSPNode>  tempChunk = getChunk(chunk);
+  if(tempChunk != NULL)
+  {
+    tempChunk->drawPreviewBlock(shader,local,drawer->getViewPos());
+  }
+
+
+}
+
 void World::addBlock(const glm::ivec3 &pos,uint8_t id)
 {
   glm::ivec3 local = toLocalCoords(pos);

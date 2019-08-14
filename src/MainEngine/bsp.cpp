@@ -49,6 +49,11 @@ void BSPNode::build()
   BSPMutex.unlock();
 }
 
+void BSPNode::drawPreviewBlock(Shader* shader,const glm::ivec3& pos,const glm::vec3& viewPos)
+{
+  curBSP.drawPreviewBlock(shader,pos,viewPos);
+}
+
 void BSPNode::drawOpaque(Shader* shader, const glm::vec3 &pos)
 {
   if(toDelete) return;
@@ -322,18 +327,21 @@ int BSP::addVertex(const VertexData &vertex)
   curBuffer->push_back(vertex.pos.y);
   curBuffer->push_back(vertex.pos.z);
 
-  uint8_t normx = vertex.norm.x*127+128;
-  uint8_t normy = vertex.norm.y*127+128;
-  uint8_t normz = vertex.norm.z*127+128;
-  uint32_t compactNorm = normx | normy << 8 | normz << 16;
-  curBuffer->push_back(*(float*)&compactNorm);
+  {
+    uint8_t normx = vertex.norm.x*127+128;
+    uint8_t normy = vertex.norm.y*127+128;
+    uint8_t normz = vertex.norm.z*127+128;
+    uint32_t compactNorm = normx | normy << 8 | normz << 16;
+    curBuffer->push_back(*(float*)&compactNorm);
+  }
 
-  normx = vertex.flatNorm.x*127+128;
-  normy = vertex.flatNorm.y*127+128;
-  normz = vertex.flatNorm.z*127+128;
-  compactNorm = normx | normy << 8 | normz << 16;
-  curBuffer->push_back(*(float*)&compactNorm);
-
+  {
+    uint8_t normx = vertex.flatNorm.x*127+128;
+    uint8_t normy = vertex.flatNorm.y*127+128;
+    uint8_t normz = vertex.flatNorm.z*127+128;
+    uint32_t compactNorm = normx | normy << 8 | normz << 16;
+    curBuffer->push_back(*(float*)&compactNorm);
+  }
   curBuffer->push_back(vertex.norm.z);
 
   uint32_t compactIds = vertex.texIds[0] | (vertex.texIds[1] << 8) | (vertex.texIds[2] << 16) | (vertex.vId << 24);
@@ -356,7 +364,7 @@ int BSP::addVertex(const VertexData &vertex)
 
 
   uint32_t package = pack4chars(normandtex,texId,1,1);
-  curBuffer->push_back(*(float*)&package);
+  curBuffer->push_back(1);
 
 
   return numbVert;

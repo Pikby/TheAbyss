@@ -154,7 +154,35 @@ void MainChar::destroyBlock()
   glm::vec4 block = PlayerWorld.rayCast(mainCam.position,mainCam.front,reach);
   if(block.w == NOTHING) return;
   PlayerWorld.messenger->createDelBlockRequest(floor(block.x),floor(block.y),floor(block.z));
+
 }
+
+void MainChar::drawPreviewBlock(Shader* shader)
+{
+  glm::vec4 block = PlayerWorld.rayCast(mainCam.position,mainCam.front,reach);
+  if(block.w == NOTHING) return;
+
+  glm::vec3 p1 = glm::vec3(block);
+  glm::vec3 p2 = p1 - glm::vec3(mainCam.front)/10.0f;
+
+  int x = floor(p1.x)-floor(p2.x);
+  int y = floor(p1.y)-floor(p2.y);
+  int z = floor(p1.z)-floor(p2.z);
+
+  if(x != 0)
+  {
+    PlayerWorld.drawPreviewBlock(shader,glm::vec3(floor(p1.x)-sign(x),floor(p1.y),floor(p1.z)));
+  }
+  else if(y != 0)
+  {
+    PlayerWorld.drawPreviewBlock(shader,glm::vec3(floor(p1.x),floor(p1.y)-sign(y),floor(p1.z)));
+  }
+  else if(z != 0)
+  {
+    PlayerWorld.drawPreviewBlock(shader,glm::vec3(floor(p1.x),floor(p2.y),floor(p1.z)-sign(z)));
+  }
+}
+
 
 void MainChar::addBlock(int id)
 {
