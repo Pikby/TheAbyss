@@ -1,5 +1,5 @@
 # Chunks
-Currently a chunk has size of 32x32x32 blocks, with infinite amounts of chunk in all directions
+A chunk has size of 32x32x32 blocks,and an infinite amounts of chunks are generated in all directions.
 For accessing a chunks neighbors the following definitions are used:
 
 * X+ = right
@@ -10,7 +10,7 @@ For accessing a chunks neighbors the following definitions are used:
 * Z- = back
 
 ### Vertex Data
-A vertex of a block within the chunk is encoded as such:
+Vertex data is encoded as such:
 
 || Position x | Position y | Position z | Normal vector | Texture Coordinates | TexID | Blocks repeated in x direction  | Blocks repeated in y direction| Total Size|
 | :---:  | :---        |:--- | :---| :---| :--- |:--- | :--- | :--- | :--- |
@@ -20,23 +20,23 @@ A vertex of a block within the chunk is encoded as such:
 Positions are single precision floating points in world space
 
 #### Normal Vector
-Normal vectors use a 6 bit encoding where bits one through six determine if the block is front,back,top,bottom,left,right respectively. Can be implemented in 3 bits however this setup allows for slanted sides with proper normal vectors such as a side which is inbetween front and top facing;
+Normal vectors use a 6 bit encoding where bits one through six determine if the block is front,back,top,bottom,left,right respectively. Can be implemented in 3 bits however this setup allows for slanted sides with proper normal vectors such as a side which is in between front and top facing;
 
 #### Texture Coordinates
-the two bits directly after the normal vectors where bit one determines if the texture is (0) bottom or (1) top, and bit two determines if the texture is (0) left or (1) right
+The two bits directly after the normal vectors where bit one determines if the texture is (0) bottom or (1) top, and bit two determines if the texture is (0) left or (1) right
 
 
 ### Implementation
-The same naming scheme is used for defining neighboring blocks.
+The same naming scheme used for chunks is used for defining neighboring blocks.
 The implementation of Chunks and Blocks can be found in MainEngine/bsp
-The blocks inside a chunk are implemented using a 3dArray class, which is class which encapsulates a 1d array and allows for lookups in 3d space such as get(x,y,z) or set(x,y,z,id) as well as the traditional arr[number] = value
+The blocks inside a chunk are implemented using a 3dArray class, which encapsulates a 1d array and allows for constant lookup in 3d space such as get(x,y,z) or set(x,y,z,id) as well as the traditional arr[number] = value
 
-Furthermore, each chunk has access to 6 pointers, all pointing to there neighboring chunks, for constant time neighbor lookup
+Furthermore, each chunk has access to 6 pointers to their respective neighbours
 
 # Worlds
 A world is a data type which is used to combine a string of chunks and entities in order to create a world that can be drawn. The world is broken up into 3 classes, the main class known as World which has access to functions such as deleting and removing blocks defined in world space by finding the chunk they're located in, translating the world space coordinates to a local space coordinate, and modifying the given block inside of the given chunk.
 
-Furthermore, there is a nested class inside of the World known as drawer, this class during each draw loops takes a list of objects and chunks and draws then using a given camera settings. This is the class responsible for calculating shadows, calculating lighting, and communicating with the GLSL shaders. Optimization such as HSR can be done here as well.
+There is a nested class inside of the World known as Drawer. Each draw loop, drawer takes a list of objects and chunks and draws then based off the camera. Drawer is responsible for calculating shadows, calculating lighting, and communicating with the GLSL shaders. 
 
 Lastly, there is the messenger class. The messenger class is responsible for sending and receiving messages from a given server. It is used to implement TCP socket programming, and is able to compile for both winsocks and unix sockets
 Using messenger.receiveAndDecodeMessage() attempts to read the current message from the server and returns a Message Struct.
