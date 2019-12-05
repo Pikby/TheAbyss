@@ -1,12 +1,13 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <cstring>
 #include "widgets.h"
 #include "../include/gui.h"
 ImageGrid::ImageGrid(glm::vec2 Origin,int Rows, int Cols,glm::vec2 CellDimensions, glm::vec2 CellOffset)
           : Widget(Origin), rows(Rows), columns(Cols),cellDimensions(CellDimensions)  ,cellOffset(CellOffset)
 {
   textureArray = new uint[rows * columns];
-  memset(textureArray,0,sizeof(uint)*rows*columns);
+  std::memset(textureArray,0,sizeof(uint)*rows*columns);
   dimensions = glm::vec2(rows,-columns)*(cellDimensions+cellOffset);
 }
 
