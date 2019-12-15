@@ -25,6 +25,7 @@
 #include "../TextureLoading/textureloading.h"
 #include "../Objects/include/items.h"
 #include "../Objects/include/objects.h"
+#include "../Character/include/mainchar.h"
 //Initialize all the static objects for world
 
 
@@ -150,8 +151,14 @@ std::shared_ptr<BSPNode> World::chunkRayCast(const glm::vec3 &pos, const glm::ve
 
 void World::calculateViewableChunks()
 {
-  glm::ivec3 min = toChunkCoords(drawer->viewMin) + glm::ivec3(-1,-1,-1);
-  glm::ivec3 max = toChunkCoords(drawer->viewMax) + glm::ivec3(1,1,1);;
+  glm::vec3 viewMin, viewMax;
+
+  glm::vec3 viewFrustrum[8];
+  MainChar::getCamera().calculateFrustrum(viewFrustrum);
+  drawer->calculateMinandMaxPoints(viewFrustrum,8,&viewMin,&viewMax);
+
+  glm::ivec3 min = toChunkCoords(viewMin) + glm::ivec3(-1,-1,-1);
+  glm::ivec3 max = toChunkCoords(viewMax) + glm::ivec3(1,1,1);;
   drawer->chunksToDraw = BSPmap.findAll(min,max);
 
   auto check = [](glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 target)
@@ -162,7 +169,7 @@ void World::calculateViewableChunks()
       glm::vec3 chunkVec = target - a;
       return (glm::dot(chunkVec,UVCross) < 0);
   };
-  glm::vec3* viewFrustrum = drawer->viewFrustrum;
+
 
   if(drawer->chunksToDraw->empty()) return;
   for(auto it = drawer->chunksToDraw->cbegin();it != drawer->chunksToDraw->cend();)
@@ -318,37 +325,51 @@ void World::renderWorld(const glm::vec3& pos)
   double currentFrame = 0;
   double ticksPerSecond = 500;
   double tickRate = 1.0f/ticksPerSecond;
-  for(int x =0;x<horzRenderDistance*2;x++)
+  auto requestChunk = [&](int x, int y, int z)
   {
-    for(int z=0;z<horzRenderDistance*2;z++)
-    {
-      for(int y=0;y<vertRenderDistance*2;y++)
-      {
-        int horzSquared = horzRenderDistance*horzRenderDistance;
-        int vertSquared = vertRenderDistance*vertRenderDistance;
-        int curx = (x%2 == 0) ? x/2 : -(x/2+1);
-        int cury = (y%2 == 0) ? y/2 : -(y/2+1);
-        int curz = (z%2 == 0) ? z/2 : -(z/2+1);
+    int xchunk = round(pos.x);
+    int ychunk = round(pos.y);
+    int zchunk = round(pos.z);
+    xchunk/= CHUNKSIZE;
+    ychunk/= CHUNKSIZE;
+    zchunk/= CHUNKSIZE;
+    if(chunkExists(pos+glm::vec3(xchunk+x,ychunk+y,zchunk+z))) return;
+    messenger->createChunkRequest(xchunk+x,ychunk+y,zchunk+z);
+    lastFrame = currentFrame;
+    currentFrame = glfwGetTime();
+    double deltaFrame = currentFrame-lastFrame;
+    int waitTime = (tickRate-deltaFrame)*1000;
+    std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+    currentFrame = glfwGetTime();
+  };
 
-        if((curx*curx)/horzSquared + (cury*cury)/vertSquared + (curz*curz)/horzSquared > 1) continue;
-        int xchunk = round(pos.x);
-        int ychunk = round(pos.y);
-        int zchunk = round(pos.z);
-        xchunk/= CHUNKSIZE;
-        ychunk/= CHUNKSIZE;
-        zchunk/= CHUNKSIZE;
-        if(!chunkExists(glm::ivec3(xchunk+curx,ychunk+cury,zchunk+curz)))
-        {
-          messenger->createChunkRequest(xchunk+curx,ychunk+cury,zchunk+curz);
-          lastFrame = currentFrame;
-          currentFrame = glfwGetTime();
-          double deltaFrame = currentFrame-lastFrame;
-          int waitTime = (tickRate-deltaFrame)*1000;
-          std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
-          currentFrame = glfwGetTime();
-        }
+  int z = 0;
+  int x = 0, y = 0;
+  int d = 1, m = 1;
+  while(x < horzRenderDistance && z < horzRenderDistance)
+  {
+    while(2*x*d < m)
+    {
+      for(int y =-vertRenderDistance; y<vertRenderDistance;y++)
+      {
+        requestChunk(x,y,z);
       }
+      x = x + d;
+
     }
+    while(2*z*d < m)
+    {
+      for(int y =-vertRenderDistance; y<vertRenderDistance;y++)
+      {
+        requestChunk(x,y,z);
+      }
+      z = z + d;
+    }
+    d = -d;
+    m++;
+
+
+
   }
 }
 
@@ -570,14 +591,14 @@ bool World::blockExists(const glm::ivec3 &pos)
   return false;
 }
 
-void World::drawPreviewBlock(Shader* shader,const glm::ivec3 &pos)
+void World::drawPreviewBlock(const glm::ivec3 &pos)
 {
   glm::ivec3 local = toLocalCoords(pos);
   glm::ivec3 chunk = toChunkCoords(pos);
   std::shared_ptr<BSPNode>  tempChunk = getChunk(chunk);
   if(tempChunk != NULL)
   {
-    tempChunk->drawPreviewBlock(shader,local,drawer->getViewPos());
+    tempChunk->drawPreviewBlock(local,MainChar::getPosition());
   }
 
 

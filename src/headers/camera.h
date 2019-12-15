@@ -1,6 +1,8 @@
 #pragma once
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 enum Camera_Movement {
 	FORWARD,
 	BACKWARD,
@@ -24,17 +26,23 @@ public:
     glm::vec3 up;			// The vector perpendicular to front and points straight up
     glm::vec3 right;		// The vector perpendicular to front and points straight right
     glm::vec3 worldUp;		// The vector that points straight up in the world
+
+		glm::mat4 projection;
     // Eular Angles
     float yaw;
     float pitch;
     // Camera options
     float movementSpeed;
     float mouseSensitivity;
-    float zoom;
+
+		float zoomInDegrees=45.0f;
+		float near = 0.1f;
+		float far = 100.0;
+		float ar = 1;
 
 		Camera(){};
     Camera(glm::vec3 newPos, glm::vec3 up, float newYaw,	float newPitch) : front(glm::vec3(0.0f, 0.0f, -1.0f)),
-    	movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
+    	movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoomInDegrees(ZOOM)
     {
     	position = newPos;
     	worldUp = up;
@@ -51,12 +59,12 @@ public:
       updateCameraVectors();
 			movementSpeed = 20.f;
 			mouseSensitivity = 0.3f;
-			zoom = 45.0f;
+			zoomInDegrees= 45.0f;
     }
 
     Camera(float positionX, float positionY, float positionZ, float upX, float upY,
     	float upZ, float newYaw, float newPitch) : front(glm::vec3(0.0f, 0.0f, -1.0f)),
-    	movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
+    	movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoomInDegrees(ZOOM)
     {
     	position = glm::vec3(positionX, positionY, positionZ);
     	worldUp = glm::vec3(upX, upY, upZ);
@@ -64,12 +72,40 @@ public:
     	pitch = newPitch;
     	updateCameraVectors();
     }
+		void updateViewProjection()
+		{
+			projection = glm::perspective(glm::radians(zoomInDegrees),ar,near,far);
+		}
+		void setAspectRatio(float Ar)
+		{
+			ar = Ar;
+			updateViewProjection();
+		}
+
+		void setCameraZoom(float cameraZoomInDegrees)
+		{
+			zoomInDegrees = cameraZoomInDegrees;
+			updateViewProjection();
+		}
+
+		void setCameraNearFar(float camNear, float camFar)
+		{
+			near = camNear;
+			far = camFar;
+			updateViewProjection();
+		}
 
 
     glm::mat4 getViewMatrix() const
     {
     	return glm::lookAt(glm::vec3(0), glm::vec3(0) + front, up);
     }
+
+		glm::mat4 getProjectionMatrix()
+		{
+			updateViewProjection();
+			return projection;
+		}
 
 		glm::vec3 getPosition() const
 		{
@@ -96,6 +132,46 @@ public:
     		return right * velocity;
     	}
     }
+
+		void calculateFrustrum(glm::vec3* arr)
+		{
+			float buffer = 0;
+		  float fovH = glm::radians(((zoomInDegrees+buffer)/2)*ar);
+		  float fovV = glm::radians((zoomInDegrees+buffer)/2);
+		  glm::vec3 curPos = position - front*((float)32*2);
+		  glm::vec3 rightaxis = glm::rotate(front,fovH,up);
+		  glm::vec3 toprightaxis = glm::rotate(rightaxis,fovV,right);
+		  glm::vec3 bottomrightaxis = glm::rotate(rightaxis,-fovV,right);
+		  glm::vec3 leftaxis = glm::rotate(front,-fovH,up);
+		  glm::vec3 topleftaxis = glm::rotate(leftaxis,fovV,right);
+		  glm::vec3 bottomleftaxis = glm::rotate(leftaxis,-fovV,right);
+
+
+		  //std::cout << "nnear and far" << near << ":" << far <<  "\n";
+		  float d;
+		  float a = near;
+		  d = a/(glm::dot(bottomleftaxis,front));
+		  arr[0] = d*bottomleftaxis+curPos;
+		  d = a/(glm::dot(topleftaxis,front));
+		  arr[1] = d*topleftaxis+curPos;
+		  d = a/(glm::dot(toprightaxis,front));
+		  arr[2] =  d*toprightaxis+curPos;
+		  d = a/(glm::dot(bottomrightaxis,front));
+		  arr[3] = d*bottomrightaxis+curPos;
+
+
+		  a = far;
+		  d = a/(glm::dot(bottomleftaxis,front));
+		  arr[4] = d*bottomleftaxis+curPos;
+		  d = a/(glm::dot(topleftaxis,front));
+		  arr[5] = d*topleftaxis+curPos;
+		  d = a/(glm::dot(toprightaxis,front));
+		  arr[6] =  d*toprightaxis+curPos;
+		  d = a/(glm::dot(bottomrightaxis,front));
+		  arr[7] = d*bottomrightaxis+curPos;
+
+		}
+
 
     void processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch)
     {
@@ -128,17 +204,17 @@ public:
     }
     void processMouseScroll(float yoffset)
     {
-    	if (zoom >= 1.0f && zoom <= 45.0f)
+    	if (zoomInDegrees >= 1.0f && zoomInDegrees <= 45.0f)
     	{
-    		zoom -= yoffset;
+    		zoomInDegrees -= yoffset;
     	}
-    	if (zoom <= 1.0f)
+    	if (zoomInDegrees <= 1.0f)
     	{
-    		zoom = 1.0f;
+    		zoomInDegrees= 1.0f;
     	}
-    	if (zoom >= 45.0f)
+    	if (zoomInDegrees>= 45.0f)
     	{
-    		zoom = 45.0f;
+    		zoomInDegrees = 45.0f;
     	}
     }
 

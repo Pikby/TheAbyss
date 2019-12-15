@@ -12,7 +12,7 @@ private:
   static std::set<int> keySet;
   static std::string userName;
 
-  static Camera mainCam;
+  static Camera camera;
 
   //Character attributes
   static float gravity;
@@ -54,14 +54,14 @@ public:
   static void setPosition(const glm::vec3 &pos);
   static void draw();
 
-  static void drawPreviewBlock(Shader* shader);
+  static void drawPreviewBlock();
 
   //Setters and Getters
-  static Camera& getCamera(){return mainCam;}
+  static Camera& getCamera(){return camera;}
   static uint8_t getHeldItem(){return heldItem;}
   static void setHeldItem(uint8_t id){heldItem = id;}
   static glm::vec3 getPosition(){return playerPos;}
-  static glm::vec3 getViewDirection(){return mainCam.front;}
+  static glm::vec3 getViewDirection(){return camera.front;}
 };
 
 
@@ -69,7 +69,7 @@ public:
   std::string MainChar::userName;
   float MainChar::gravity, MainChar::moveSpeed = 0.2f;
   int MainChar::reach = 200;
-  Camera MainChar::mainCam;
+  Camera MainChar::camera;
   glm::vec3 MainChar::playerPos, MainChar::deltaPos;
   uint8_t MainChar::heldItem=1;
   bool MainChar::isGrounded;

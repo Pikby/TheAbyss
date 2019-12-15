@@ -203,7 +203,7 @@ void Client::recvMessages()
         sendAddBlockAll(x.i,y.i,z.i,ext1);
         break;
       case (91):
-        sendPositionAll(x.f,y.f,z.f);
+        //sendPositionAll(x.f,y.f,z.f);
         break;
       case (92):
         sendViewDirectionAll(x.f,y.f,z.f);

@@ -732,9 +732,8 @@ public:
 
 
 
-void BSP::drawPreviewBlock(Shader* shader,const glm::ivec3& pos, const glm::vec3& viewPos)
+void BSP::drawPreviewBlock(const glm::ivec3& pos, const glm::vec3& viewPos)
 {
-  std::cout << glm::to_string(pos);
   VertexArray<12> vArray;
   int lod = 2;
   std::vector<VertexData> vertices;
@@ -747,7 +746,7 @@ void BSP::drawPreviewBlock(Shader* shader,const glm::ivec3& pos, const glm::vec3
         Block curBlock = ItemDatabase::blockDictionary[parent->getBlockOOB(glm::ivec3(x,y,z)-glm::ivec3(1)+pos)];
         if(curBlock.visibleType == OPAQUE || (x == 1 && y==1 && z==1))
         {
-          glm::ivec3 pos = glm::ivec3(x,y,z);
+
           int rx = x*2;
           int ry = y*2;
           int rz = z*2;
@@ -822,7 +821,6 @@ void BSP::drawPreviewBlock(Shader* shader,const glm::ivec3& pos, const glm::vec3
     glm::dvec3(0,punit,0),
   };
 
-  std::cout << "Values set, being forming\n";
   for(int x = 0;x<=2;x++)
   {
     for(int z = 0;z<=2;z++)
@@ -1072,12 +1070,11 @@ void BSP::drawPreviewBlock(Shader* shader,const glm::ivec3& pos, const glm::vec3
 
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER,VBO);
-  std::cout << buffer.size()/8 << "\n";
   glBufferSubData(GL_ARRAY_BUFFER,0,buffer.size()*sizeof(float),(&buffer.front()));
 
   glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-viewPos);
-  shader->use();
-  shader->setMat4("model",model);
+  oShader.use();
+  oShader.setMat4("model",model);
 
   glDrawArrays(GL_TRIANGLES,0,buffer.size()/8);
   glBindVertexArray(0);
@@ -1092,7 +1089,6 @@ void BSP::build()
   oIndices.clear();
   tVertices.clear();
   tIndices.clear();
-
   lightList.clear();
   //oVertices.reserve(200000);
 //  oIndices.reserve(100000);

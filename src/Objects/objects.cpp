@@ -11,6 +11,7 @@
 #include "include/objects.h"
 #include "../TextureLoading/textureloading.h"
 
+Shader Object::shader;
 unsigned int Cube::VAO, Cube::VBO, Cube::EBO;
 unsigned int Player::VAO, Player::VBO, Player::EBO;
 unsigned int WireframeCube::VAO,WireframeCube::VBO,WireframeCube::EBO;
@@ -21,6 +22,23 @@ void Object::initObjects()
   Player::render();
 }
 
+void Object::initializeObjectShader()
+{
+  shader = Shader("EntityShaders/entShader.vs","EntityShaders/entShader.fs");
+  shader.use();
+  shader.setInt("curTexture",0);
+  shader.setInt("dirLight.shadow",4);
+  shader.setInt("pointLights[0].shadow",5);
+  shader.setInt("pointLights[1].shadow",6);
+  shader.setFloat("far_plane",25.0f);
+}
+
+void Object::updateMatrices(Camera& camera)
+{
+  shader.use();
+  shader.setMat4("projection",camera.getProjectionMatrix());
+  shader.setMat4("view",camera.getViewMatrix());
+}
 
   float cubeVertices[] =
   {
@@ -164,14 +182,14 @@ void WireframeCube::render()
 
 }
 
-void WireframeCube::draw(Shader* shader, const glm::vec3 &viewPos)
+void WireframeCube::draw(const glm::vec3 &viewPos)
 {
   //return;
   glm::mat4 model = glm::translate(glm::mat4(1),pos-viewPos);
   model = glm::scale(model,glm::vec3(scale));
-  shader->use();
-  shader->setMat4("modelMat",model);
-  shader->setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
+  shader.use();
+  shader.setMat4("modelMat",model);
+  shader.setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
 
   glDisable(GL_CULL_FACE);
   glBindVertexArray(VAO);
@@ -181,13 +199,13 @@ void WireframeCube::draw(Shader* shader, const glm::vec3 &viewPos)
 }
 
 
-void Cube::draw(Shader* shader, const glm::vec3 &viewPos)
+void Cube::draw(const glm::vec3 &viewPos)
 {
   glm::mat4 model = glm::translate(glm::mat4(1),pos-viewPos);
   model = glm::scale(model,glm::vec3(scale));
-  shader->use();
-  shader->setMat4("modelMat",model);
-  shader->setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
+  shader.use();
+  shader.setMat4("modelMat",model);
+  shader.setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
 
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
@@ -221,7 +239,7 @@ void Player::render()
   glBindVertexArray(0);
 }
 
-void Player::draw(Shader* shader,const glm::vec3 &viewPos)
+void Player::draw(const glm::vec3 &viewPos)
 {
 
   glm::mat4 model = glm::translate(glm::mat4(1),pos-viewPos);
@@ -252,17 +270,17 @@ void Player::draw(Shader* shader,const glm::vec3 &viewPos)
 
   model  = model*rotationMat;
 
-  shader->use();
-  shader->setMat4("modelMat",model);
-  shader->setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
+  shader.use();
+  shader.setMat4("modelMat",model);
+  shader.setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
   glBindVertexArray(0);
 
   glm::mat4 faceModel = glm::translate(model,glm::vec3(0,1.5,0));
   faceModel = glm::scale(faceModel,glm::vec3(0.5));
-  shader->setMat4("modelMat",faceModel);
-  shader->setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
+  shader.setMat4("modelMat",faceModel);
+  shader.setVec3("objectColor",glm::vec3(0.5f,0.5f,0.5f));
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
   glBindVertexArray(0);

@@ -9,7 +9,7 @@
 
 
 #include <random>
-#include <limits> 
+#include <limits>
 
 #include "../Settings/settings.h"
 #include "../Objects/include/objects.h"
@@ -21,7 +21,7 @@
 
 void Drawer::renderDirectionalDepthMap()
 {
-
+  /*
   for(int i=0;i<NUMBOFCASCADEDSHADOWS;i++)
   {
     std::cout << "Creating depth map\n";
@@ -39,7 +39,7 @@ void Drawer::renderDirectionalDepthMap()
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, dirLight.depthMap[i], 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
-
+  */
 }
 
 void Drawer::renderPointDepthMap(int id)
@@ -128,7 +128,7 @@ void Drawer::setLights(Shader* shader)
 
 void Drawer::renderDirectionalShadows()
 {
-
+  /*
   const int PI = 3.14159265;
   float distToSun = (vertRenderDistance*2)*CHUNKSIZE;
   //Makes sure the light is always at the correct angle above the player
@@ -282,7 +282,7 @@ void Drawer::renderDirectionalShadows()
     //std::cout << chunkList->size() << "\n";
 
     */
-
+/*
     glViewport(0,0,viewWidth,viewWidth);
       glBindFramebuffer(GL_FRAMEBUFFER, dirLight.depthMapFBO[x]);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -297,7 +297,7 @@ void Drawer::renderDirectionalShadows()
     //std::cout << "Calculating took" << 1000*(end-start) << "\n";
   }
   glViewport(0,0,screenWidth,screenHeight);
-
+  */
 }
 
 
@@ -315,6 +315,7 @@ void Drawer::bindDirectionalShadows(Shader* shader)
 
 void Drawer::renderPointShadows()
 {
+  /*
   pointDepthShader->use();
   for(int i=0;i<objList.size();i++)
   {
@@ -331,11 +332,12 @@ void Drawer::renderPointShadows()
       }
     glBindFramebuffer(GL_FRAMEBUFFER,0);
   }
+  */
 }
 
 void Drawer::bindPointShadows()
 {
-  objShader->use();
+
   unsigned int numbOfLights = lightList.size();
   for(uint i=0;i<numbOfLights;i++)
   {

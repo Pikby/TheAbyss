@@ -20,7 +20,7 @@
 #include "include/bsp.h"
 #include "../Objects/include/items.h"
 #include "../Objects/include/objects.h"
-
+#include "../Settings/settings.h"
 inline int pack4chars(char a, char b, char c, char d)
 {
 return ((a << 24) | (b << 16) | (c << 8) | d);
@@ -29,10 +29,15 @@ return ((a << 24) | (b << 16) | (c << 8) | d);
 
 int BSPNode::totalChunks = 0;
 bool BSP::geometryChanged = true;
+Shader BSP::tShader, BSP::oShader;
+
 BSPNode::~BSPNode()
 {
   totalChunks--;
 }
+
+
+
 
 BSPNode::BSPNode(const glm::ivec3 &pos,const char *val) : curBSP(val,pos,this),chunkPos(pos)
 {
@@ -49,12 +54,14 @@ void BSPNode::build()
   BSPMutex.unlock();
 }
 
-void BSPNode::drawPreviewBlock(Shader* shader,const glm::ivec3& pos,const glm::vec3& viewPos)
+void BSPNode::drawPreviewBlock(const glm::ivec3& pos,const glm::vec3& viewPos)
 {
-  curBSP.drawPreviewBlock(shader,pos,viewPos);
+  curBSP.drawPreviewBlock(pos,viewPos);
 }
 
-void BSPNode::drawOpaque(Shader* shader, const glm::vec3 &pos)
+
+
+void BSPNode::drawOpaque(const glm::vec3 &pos)
 {
   if(toDelete) return;
   if(toRender == true)
@@ -67,12 +74,12 @@ void BSPNode::drawOpaque(Shader* shader, const glm::vec3 &pos)
       BSPMutex.unlock();
     }
   }
-  curBSP.drawOpaque(shader,pos);
+  curBSP.drawOpaque(pos);
 }
 
-void BSPNode::drawTranslucent(Shader* shader, const glm::vec3 &pos)
+void BSPNode::drawTranslucent(const glm::vec3 &pos)
 {
-  curBSP.drawTranslucent(shader,pos);
+  curBSP.drawTranslucent(pos);
 }
 std::list<Light> BSPNode::getFromLightList(int count)
 {
@@ -217,6 +224,33 @@ glm::ivec3 BSPNode::getRealWorldPosition()
 {
   return (CHUNKSIZE*chunkPos) + glm::ivec3(CHUNKSIZE/2);
 }
+
+void BSP::updateMatrices(Camera& camera)
+{
+  oShader.use();
+  oShader.setMat4("projection",camera.getProjectionMatrix());
+  oShader.setMat4("view",camera.getViewMatrix());
+}
+
+void BSP::initializeBSPShader(const glm::vec2& textureAtlasDimensions)
+{
+  int cellWidth = 128;
+  oShader = Shader("BSPShaders/gBuffer.fs","BSPShaders/gBuffer.vs");
+  oShader.use();
+  oShader.setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
+  oShader.setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
+  oShader.setInt("cellWidth",cellWidth);
+  oShader.setInt("textureAtlas",0);
+  oShader.setVec3("objectColor", 0.5f, 0.5f, 0.31f);
+
+}
+
+void BSP::setTerrainColor(const glm::vec3& color)
+{
+  oShader.use();
+  oShader.setVec3("objectColor", color);
+}
+
 
 BSP::BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent) : parent(Parent)
 {
@@ -465,6 +499,14 @@ void BSP::setupBufferObjects(RenderType type)
   *indicesSize = curInd->size();
   if(*indicesSize != 0)
   {
+
+    if(*VAO == 0 )
+    {
+      glGenVertexArrays(1, VAO);
+      glGenBuffers(1, EBO);
+      glGenBuffers(1, VBO);
+    }
+    /*
     glDeleteBuffers(1, VBO);
     glDeleteBuffers(1, EBO);
     glDeleteVertexArrays(1, VAO);
@@ -472,6 +514,7 @@ void BSP::setupBufferObjects(RenderType type)
     glGenVertexArrays(1, VAO);
     glGenBuffers(1, EBO);
     glGenBuffers(1, VBO);
+    */
     glBindVertexArray(*VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER,*VBO);
@@ -510,18 +553,17 @@ void BSP::render()
   setupBufferObjects(TRANSLUCENT);
 }
 
-void BSPNode::drawChunkOutline(Shader* shader, const glm::vec3 &pos)
+void BSPNode::drawChunkOutline(const glm::vec3 &pos)
 {
   glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     WireframeCube cube(glm::vec3(CHUNKSIZE*getPosition()+glm::ivec3(CHUNKSIZE/2)));
     cube.setScale(16);
     cube.setColor(glm::vec4(1));
-    shader->use();
-    cube.draw(shader,pos);
+    cube.draw(pos);
   glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 }
 
-void BSP::drawOpaque(Shader* shader, const glm::vec3 &pos)
+void BSP::drawOpaque(const glm::vec3 &pos)
 {
 
 
@@ -530,8 +572,8 @@ void BSP::drawOpaque(Shader* shader, const glm::vec3 &pos)
   {
     glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-pos);
     //std::cout << glm::to_string(glm::vec3(parent->chunkPos) - pos) << "\n";
-    shader->use();
-    shader->setMat4("model",model);
+    oShader.use();
+    oShader.setMat4("model",model);
     glBindVertexArray(oVAO);
     glDrawElements(GL_TRIANGLES, oIndicesSize, GL_UNSIGNED_INT,0);
     glBindVertexArray(0);
@@ -539,12 +581,13 @@ void BSP::drawOpaque(Shader* shader, const glm::vec3 &pos)
   }
 }
 
-void BSP::drawTranslucent(Shader* shader,const glm::vec3 &pos)
+void BSP::drawTranslucent(const glm::vec3 &pos)
 {
   if(tIndicesSize)
   {
     glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-pos);
-    shader->setMat4("model",model);
+    tShader.use();
+    tShader.setMat4("model",model);
     glBindVertexArray(tVAO);
     glDrawElements(GL_TRIANGLES, tIndicesSize, GL_UNSIGNED_INT,0);
     glBindVertexArray(0);

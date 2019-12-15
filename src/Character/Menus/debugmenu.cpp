@@ -3,6 +3,7 @@
 #include <iomanip>
 
 #include "../../MainEngine/include/world.h"
+#include "../../MainEngine/include/drawer.h"
 #include "../../Character/include/mainchar.h"
 #include "../include/gui.h"
 #include "../include/menus.h"
@@ -10,6 +11,7 @@
 
 void GUI::initDebugMenu()
 {
+  /*
   Label* test = new Label("DEBUG!!!\nnewlineDEBUG",glm::vec2(0.5),12.0);
 
   test->setOnDraw([](Widget* parent)
@@ -18,7 +20,7 @@ void GUI::initDebugMenu()
     glm::vec3 color = glm::vec3((sin(x)+1)/2.0,(cos(x)+1)/2.0 ,1);
     parent->setColor(glm::vec4(color,1.0));
   });
-
+  */
   Label* debugstring= new Label("DEBUdsd!!",glm::vec2(0,0.98),24.0);
   debugstring->setColor(glm::vec4(1));
   debugstring->setOnDraw([](Widget* parent)
@@ -159,7 +161,7 @@ void GUI::initDebugMenu()
     }
   }
   */
-  debugMenu->addWidget(test);
+  //debugMenu->addWidget(test);
   debugMenu->addWidget(debugstring);
   debugMenu->addWidget(inGame.get());
   debugMenu->setFocusTarget(inGame.get());
@@ -170,6 +172,13 @@ void GUI::initDebugMenu()
   debugMenu->setKeyMapping(GLFW_KEY_ESCAPE,[]()
   {
     setMenu(pauseMenu.get());
+  });
+
+  debugMenu->setKeyMapping(GLFW_KEY_F3,[]()
+  {
+    static bool b  = true;
+    PlayerWorld.drawer->setDrawChunkOutlines(b);
+    b = !b;
   });
   debugMenu->setCursor(false);
 

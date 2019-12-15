@@ -102,7 +102,7 @@ public:
   void findChunkToRequest(const float mainx, const float mainy, const float mainz);
   void addBlock(const glm::ivec3 &pos, uint8_t id);
   void updateBlock(const glm::ivec3 &pos);
-  void drawPreviewBlock(Shader* shader,const glm::ivec3 &pos);
+  void drawPreviewBlock(const glm::ivec3 &pos);
   void delScan(const glm::vec3& pos);
   void generateChunkFromString(const glm::ivec3 &pos,const char* val);
 };

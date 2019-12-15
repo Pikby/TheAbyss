@@ -15,7 +15,9 @@
 #include <map>
 
 #include "../../headers/3darray.h"
+#include "../../headers/camera.h"
 #include "types.h"
+
 
 class Shader;
 
@@ -86,10 +88,12 @@ struct Light
 class BSP
 {
   private:
+    static Shader oShader,tShader;
+
     std::map<int,Light> lightList;
     glm::mat4 modelMat;
     static std::string worldName;
-    Array3D<uint8_t, CHUNKSIZE> worldArray;
+    Array3D<uint16_t, CHUNKSIZE> worldArray;
     BSPNode* parent;
 
 
@@ -109,6 +113,11 @@ class BSP
 
 
   public:
+    static void initializeBSPShader(const glm::vec2& textureAtlasDimensions);
+    static void updateMatrices(Camera& camera);
+    static void setTerrainColor(const glm::vec3& color);
+
+
     BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent);
     static bool geometryChanged;
 
@@ -118,7 +127,7 @@ class BSP
     void removeFromLightList(const glm::ivec3 &localPos);
     std::list<Light> getFromLightList(int count);
 
-    void drawPreviewBlock(Shader* shader,const glm::ivec3& pos,const glm::vec3& viewpos);
+    void drawPreviewBlock(const glm::ivec3& pos,const glm::vec3& viewpos);
     RenderType blockVisibleType(const glm::ivec3 &pos);
     void render();
     void freeGL();
@@ -128,9 +137,9 @@ class BSP
     void delBlock(const glm::ivec3 &pos);
 
     void build();
-    void drawOpaque(Shader* shader,const glm::vec3 &viewPos);
-    void drawTranslucent(Shader* shader, const glm::vec3 &viewPos);
-    void drawChunkOutline(Shader* shader, const glm::vec3 &viewPos);
+    void drawOpaque(const glm::vec3 &viewPos);
+    void drawTranslucent(const glm::vec3 &viewPos);
+    void drawChunkOutline(const glm::vec3 &viewPos);
 };
 
 class BSPNode
@@ -163,10 +172,10 @@ class BSPNode
 
     std::list<Light> getFromLightList(int count);
     void build();
-    void drawOpaque(Shader* shader, const glm::vec3 &pos);
-    void drawTranslucent(Shader* shader, const glm::vec3 &pos);
-    void drawChunkOutline(Shader* shader, const glm::vec3 &pos);
-    void drawPreviewBlock(Shader* shader,const glm::ivec3& pos,const glm::vec3& viewpos);
+    void drawOpaque(const glm::vec3 &pos);
+    void drawTranslucent(const glm::vec3 &pos);
+    void drawChunkOutline(const glm::vec3 &pos);
+    void drawPreviewBlock(const glm::ivec3& pos,const glm::vec3& viewpos);
 
     std::string getCompressedChunk();
     void delBlock(const glm::ivec3 &pos);

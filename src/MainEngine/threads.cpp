@@ -41,7 +41,7 @@ GLFWwindow* ThreadHandler::createWindow(int width, int height)
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   //Create the window
-  window = glfwCreateWindow(width, height, "Prototype 1.000", glfwGetPrimaryMonitor(), nullptr);
+  window = glfwCreateWindow(width, height, "The Abyss", glfwGetPrimaryMonitor(), nullptr);
   if(window == NULL)
   {
     std::cout << "Window creation failed\n";
@@ -146,7 +146,7 @@ void ThreadHandler::draw()
     {
       old_item = current_item;
       std::cout << "Updating to " << std::stof(current_item) << "\n";
-      PlayerWorld.drawer->updateAntiAliasing(std::stof(current_item));
+      //PlayerWorld.drawer->updateAntiAliasing(std::stof(current_item));
     }
     PlayerWorld.drawer->setTerrainColor(terrainColor);
     glm::vec3 dirLight(0.1,-1.0f,0.1);
@@ -163,7 +163,7 @@ void ThreadHandler::draw()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-    PlayerWorld.drawer->updateCameraMatrices(MainChar::getCamera());
+    //PlayerWorld.drawer->updateCameraMatrices(MainChar::getCamera());
 
     float findstart = glfwGetTime();
     PlayerWorld.calculateViewableChunks();
@@ -177,7 +177,6 @@ void ThreadHandler::draw()
     PlayerWorld.drawer->drawFinal();
     GUI::drawGUI();
     glfwSwapBuffers(window);
-    glFlush();
   }
   PlayerWorld.buildQueue.notify_one();
   std::cout << "Draw thread done\n";
@@ -351,7 +350,8 @@ void ThreadHandler::receive()
         //std::cout << "Moving player" << msg.x.f << msg.y.f << msg.z.f << "\n";
         if(msg.ext1 == PlayerWorld.mainId)
         {
-          //MainChar::setPosition(glm::vec3(msg.x.f,msg.y.f,msg.z.f));
+          std::cout << "Moving" << msg.x.f << ":" << msg.y.f << ":" << msg.z.f << "\n";
+          MainChar::setPosition(glm::vec3(msg.x.f,msg.y.f,msg.z.f));
         }
         else PlayerWorld.movePlayer(glm::vec3(msg.x.f,msg.y.f,msg.z.f),msg.ext1);
         break;
@@ -397,7 +397,7 @@ void ThreadHandler::receive()
        }
       case(255):
         std::cout << "Received exit message\n";
-        closeGame();
+        //closeGame();
         break;
       default:
         std::cout << "Receiving unknown opcode " << (int)msg.opcode << "\n";

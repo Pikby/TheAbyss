@@ -29,17 +29,11 @@ Drawer::Drawer()
   int horzRenderDistance = std::stoi(Settings::get("vertRenderDistance"));
   int renderBuffer = std::stoi(Settings::get("renderBuffer"));
   setRenderDistances(vertRenderDistance,horzRenderDistance,renderBuffer);
-  std::cout << "Initializing drawer\n";
-  std::cout << Settings::get("windowsWidth") << Settings::get("windowsHeight") << std::endl;
+
   int width = std::stoi(Settings::get("windowWidth"));
   int height = std::stoi(Settings::get("windowHeight"));
   setupShadersAndTextures(width,height);
 
-
-
-  std::cout << width << ":" << height << ":" <<vertRenderDistance << ":" << horzRenderDistance << ":" << renderBuffer << "\n";
-
-  updateViewProjection(45.0f,0.1f,(horzRenderDistance)*CHUNKSIZE);
 }
 
 void Drawer::createTextureAtlas(const char* texture,int cellWidth)
@@ -74,33 +68,19 @@ void Drawer::setupShadersAndTextures(int width, int height)
   {
 
 
-  MSAA = 1;
   createTextureAtlas("../assets/textures/atlas.png",128);
 
   screenWidth = width;
   screenHeight = height;
 
   skyBox = SkyBox("../assets/alps");
-
-  objShader = std::make_unique<Shader>(Shader("EntityShaders/entShader.vs",
-                     "EntityShaders/entShader.fs"));
-  objShader->use();
-  objShader->setInt("curTexture",0);
-  objShader->setInt("dirLight.shadow",4);
-  objShader->setInt("pointLights[0].shadow",5);
-  objShader->setInt("pointLights[1].shadow",6);
-  objShader->setFloat("far_plane",25.0f);
-
+  Object::initializeObjectShader();
 
   depthBufferLoadingShader = std::make_unique<Shader>(Shader("depthBufferLoadingShader.vs","depthBufferLoadingShader.fs"));
   depthBufferLoadingShader->use();
 
-
-  quadShader = std::make_unique<Shader>(Shader("old/debugQuad.vs","old/debugQuad.fs"));
-  quadShader->use();
-
   //blockShader->setInt("depthMap",0);
-
+  std::cout << "Blockshader\n";
   blockShader = std::make_unique<Shader>(Shader("BSPShaders/shaderBSP.fs","BSPShaders/shaderBSP.vs"));
   blockShader->use();
   blockShader->setInt("gPosition", 0);
@@ -112,46 +92,14 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader->setInt("dirLight.shadow[2]",6);
   blockShader->setInt("dirLight.shadow[3]",7);
   blockShader->setFloat("far_plane",25.0f);
-  blockShader->setFloat("fog_start",CHUNKSIZE*(horzRenderDistance-2));
+  blockShader->setFloat("fog_start",CHUNKSIZE*(std::stoi(Settings::get("horzRenderDistance"))-2));
   blockShader->setFloat("fog_dist",CHUNKSIZE);
   blockShader->setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
   blockShader->setBool("shadowsOn",true);
-  gBufferShader = std::make_unique<Shader>(Shader("BSPShaders/gBuffer.fs","BSPShaders/gBuffer.vs"));
-  int cellWidth = 128;
-  gBufferShader->use();
-  gBufferShader->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
-  gBufferShader->setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
-  gBufferShader->setInt("cellWidth",cellWidth);
-  gBufferShader->setInt("textureAtlas",0);
-  gBufferShader->setVec3("objectColor", 0.5f, 0.5f, 0.31f);
+  BSP::initializeBSPShader(textureAtlasDimensions);
 
-
-  //normDebug = std::make_unique<Shader>(Shader("Debug/normShader.fs","BSPShaders/gBuffer.vs","Debug/normShader.gs"));
-  normDebug = std::make_unique<Shader>();
-  /*
-  normDebug->use();
-  normDebug->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
-  normDebug->setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
-  normDebug->setInt("cellWidth",cellWidth);
-  normDebug->setInt("curTexture",0);
-  normDebug->setVec3("objectColor", 0.5f, 0.5f, 0.31f);
-  */
-
-  PPShader = std::make_unique<Shader>(Shader("PPShaders/PPShader.fs","PPShaders/PPShader.vs"));
-  PPShader->use();
-  PPShader->setInt("curTexture",0);
-  PPShader->setInt("bloomTexture",1);
-  PPShader->setFloat("exposure",1.0f);
-
-
-  transShader = std::make_unique<Shader>(Shader("BSPShaders/transShader.fs","BSPShaders/transShader.vs"));
-  GBlurShader = std::make_unique<Shader>(Shader("PPShaders/GBlurShader.fs","PPShaders/GBlurShader.vs"));
-
-  GBlurShader->use();
-  GBlurShader->setInt("image",0);
-
-
-
+/*
+  transShader = std::make_unique<Shader>(Shader("BSPShaders/transShader.fs","BSPShaders/gBuffer.vs"));
   transShader->use();
   transShader->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
   transShader->setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
@@ -160,8 +108,27 @@ void Drawer::setupShadersAndTextures(int width, int height)
   transShader->setVec3("objectColor", 1.0f, 1.0f, 1.0f);
 
 
-  //std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
+  PPShader = std::make_unique<Shader>(Shader("PPShaders/PPShader.fs","PPShaders/PPShader.vs"));
+  PPShader->use();
+  PPShader->setInt("curTexture",0);
+  PPShader->setInt("bloomTexture",1);
+  PPShader->setFloat("exposure",1.0f);
+  */
 
+  transShader = std::make_unique<Shader>(Shader("BSPShaders/transShader.fs","BSPShaders/transShader.vs"));
+  /*
+  GBlurShader = std::make_unique<Shader>(Shader("PPShaders/GBlurShader.fs","PPShaders/GBlurShader.vs"));
+
+  GBlurShader->use();
+  GBlurShader->setInt("image",0);
+
+*/
+
+
+
+
+  //std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
+/*
   dirDepthShader = std::make_unique<Shader>(Shader("dirDepthShader.fs",
                                                    "dirDepthShader.vs"));
   dirDepthShader->use();
@@ -170,7 +137,7 @@ void Drawer::setupShadersAndTextures(int width, int height)
   pointDepthShader = std::make_unique<Shader>(Shader("pointDepthShader.fs",
                                                      "pointDepthShader.vs",
                                                      "pointDepthShader.gs"));
-
+                                                     */
   setAllBuffers();
   //renderDirectionalDepthMap();
 
@@ -197,6 +164,16 @@ void Drawer::deleteAllBuffers()
 
 }
 
+
+void Drawer::genMultisampleTexture(uint* name,int samples,GLenum attachment)
+{
+  glGenTextures(1,name);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,*name);
+
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples ,GL_RGB16F, screenWidth, screenHeight,true);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D_MULTISAMPLE, *name, 0);
+}
+
 void Drawer::setAllBuffers()
 {
 
@@ -204,30 +181,15 @@ void Drawer::setAllBuffers()
   glGenFramebuffers(1, &gBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
+    genMultisampleTexture(&gPosition,1,GL_COLOR_ATTACHMENT0);
+    genMultisampleTexture(&gNormal,1,GL_COLOR_ATTACHMENT1);
+    genMultisampleTexture(&gColorSpec,1,GL_COLOR_ATTACHMENT2);
 
-    glGenTextures(1, &gPosition);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gPosition);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples ,GL_RGB16F, screenWidth, screenHeight,true);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, gPosition, 0);
-
-
-    glGenTextures(1, &gNormal);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gNormal);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples , GL_RGB16F, screenWidth, screenHeight,true);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, gNormal, 0);
+    unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+    glDrawBuffers(3, attachments);
 
 
-    glGenTextures(1, &gColorSpec);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gColorSpec);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples , GL_RGBA, screenWidth, screenHeight,true);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, gColorSpec, 0);
-
-    {
-      unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-      glDrawBuffers(3, attachments);
-    }
-
-   unsigned int rbo;
+    unsigned int rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
     glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, screenWidth, screenHeight);
@@ -242,13 +204,7 @@ void Drawer::setAllBuffers()
 
   glGenFramebuffers(1, &transBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, transBuffer);
-
-    glGenTextures(1, &transTexture);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, transTexture);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,8,GL_RGBA16F,screenWidth,screenHeight,true);
-
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, transTexture, 0);
-
+     genMultisampleTexture(&transTexture,8,GL_COLOR_ATTACHMENT0);
      glGenTextures(1, &transDepth);
      glBindTexture(GL_TEXTURE_2D, transDepth);
      glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,screenWidth,screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -262,6 +218,7 @@ void Drawer::setAllBuffers()
        std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << endl;
  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+ /*
   glGenFramebuffers(1,&PPBuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
     glGenTextures(1, &PPTexture);
@@ -303,24 +260,19 @@ void Drawer::setAllBuffers()
         GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingPongTexture[i], 0
     );
 }
+*/
 
 
 
-}
-
-
-void Drawer::updateAntiAliasing(float msaa)
-{
-  MSAA = msaa;
-  deleteAllBuffers();
-  setAllBuffers();
 }
 
 void Drawer::setRenderDistances(int vert, int horz, int buffer)
 {
+  /*
   vertRenderDistance = vert;
   horzRenderDistance = horz;
   renderBuffer = buffer;
+*/
 }
 void Drawer::addCube(Cube newCube)
 {
@@ -329,122 +281,29 @@ void Drawer::addCube(Cube newCube)
 
 void Drawer::setExposure(float exposure)
 {
+  /*
   PPShader->use();
   PPShader->setFloat("exposure",exposure);
-}
-
-
-
-void Drawer::drawCube(const glm::vec3& pos,double size)
-{
-  static uint cubeVAO = 0;
-  static uint cubeVBO;
-  static Shader cubeShader;
-  if(cubeVAO == 0)
-  {
-    cubeShader = Shader("BSPShaders/basicShader.vs","BSPShaders/basicShader.fs");
-    float cubeVertices[] = {
-      -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-       0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-       0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-       0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-      -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-      -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-      -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-       0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-       0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-       0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-      -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-      -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-      -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-      -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-      -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-      -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-      -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-      -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-       0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-       0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-       0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-       0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-       0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-       0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-      -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-       0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-       0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-       0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-      -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-      -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-      -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-       0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-       0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-       0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-      -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-      -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    // setup plane VAO
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &cubeVBO);
-    glBindVertexArray(cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
-  }
-
-  cubeShader.use();
-  cubeShader.setMat4("projection",viewProj);
-  cubeShader.setMat4("view",viewMat);
-  glm::mat4 model = glm::translate(glm::mat4(1.0f),pos);
-
-  cubeShader.setMat4("model",glm::mat4(1));
-
-  glDisable(GL_CULL_FACE);
-    glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
-  glEnable(GL_CULL_FACE);
+  */
 }
 
 
 void Drawer::renderGBuffer()
 {
   glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport(0,0,screenWidth*MSAA,screenHeight*MSAA);
+    glViewport(0,0,screenWidth,screenHeight);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureAtlas);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    Shader* shader = gBufferShader.get();
-    shader->use();
-    shader->setMat4("view", viewMat);
 
-    //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-    //glDisable(GL_CULL_FACE);
-    drawTerrainOpaque(shader,chunksToDraw);
+    glBindTexture(GL_TEXTURE_2D, textureAtlas);
+    drawTerrainOpaque(chunksToDraw);
+    MainChar::drawPreviewBlock();
     //skyBox.draw(&viewMat);
     drawObjects();
     drawPlayers();
 
-    glBindTexture(GL_TEXTURE_2D, textureAtlas);
-
-    MainChar::drawPreviewBlock(shader);
-
-
-    /*
-    shader = normDebug.get();
-    shader->use();
-    shader->setMat4("view", viewMat);
-    drawTerrainOpaque(shader,chunksToDraw);
-    */
     //glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   glBindFramebuffer(GL_FRAMEBUFFER,0);
 
@@ -462,7 +321,7 @@ void Drawer::renderGBuffer()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureAtlas);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    shader = &transShader;
+    shader = transShader.get();
     shader->use();
     shader->setMat4("view", viewMat);
     glDepthMask(GL_FALSE);
@@ -473,7 +332,7 @@ void Drawer::renderGBuffer()
     glDepthMask(GL_TRUE);
     //glEnable(GL_DEPTH_TEST);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  //std::cout << GL_DEPTH_SCALE << ":"<< GL_DEPTH_BIAS <<"\n";
+
   */
 
   glFlush();
@@ -526,43 +385,31 @@ void Drawer::drawObjects()
 {
 
   glViewport(0,0,screenWidth,screenHeight);
-  objShader->use();
+
 
   glBindTexture(GL_TEXTURE_CUBE_MAP,0);
   glBindTexture(GL_TEXTURE_2D,0);
-  objShader->setMat4("view",viewMat);
-  objShader->setVec3("viewPos",viewPos);
+  glm::vec3 viewPos = MainChar::getCamera().getPosition();
+  Object::updateMatrices(MainChar::getCamera());
+
 
   for(int i=0;i<objList.size();i++)
   {
     //std::cout << objList.size() << "\n";
-    objList[i]->draw(objShader.get(),viewPos);
+    objList[i]->draw(viewPos);
   }
-
-
-
-  glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-  WireframeCube cube(glm::vec3(0,55,0));
-  cube.setColor(glm::vec4(1));
-  objShader->use();
-    cube.draw(objShader.get(),viewPos);
-  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 }
 
 
 void Drawer::drawPlayers()
 {
   glViewport(0,0,screenWidth,screenHeight);
-  objShader->use();
-
   glBindTexture(GL_TEXTURE_CUBE_MAP,0);
   glBindTexture(GL_TEXTURE_2D,0);
-  objShader->setMat4("view",viewMat);
-  objShader->setVec3("viewPos",viewPos);
-
+  glm::vec3 viewPos = MainChar::getCamera().getPosition();
   for(auto it = playerList.begin(); it != playerList.end();it++)
   {
-    it->second->draw(objShader.get(),viewPos);
+    it->second->draw(viewPos);
   }
 }
 
@@ -585,7 +432,7 @@ void Drawer::drawFinal()
     //glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,gPosition);
 
     setLights(shader);
-    shader->setVec3("viewPos", viewPos);
+    shader->setVec3("viewPos", MainChar::getCamera().getPosition());
     //bindDirectionalShadows(shader);
 
 
@@ -662,6 +509,7 @@ void Drawer::drawFinal()
 
 
 
+
 void Drawer::updateShadows(bool val)
 {
   blockShader->use();
@@ -669,81 +517,7 @@ void Drawer::updateShadows(bool val)
 }
 
 
-void Drawer::updateViewProjection(float camZoom,float near,float far)
-{
 
-  camZoomInDegrees = camZoom;
-  camNear = near == 0 ? camNear : near;
-  camFar  = far  == 0 ? camFar  : far;
-  viewProj = glm::perspective(glm::radians(camZoom),
-                              (float)screenWidth/(float)screenHeight,
-                              camNear,camFar+5*CHUNKSIZE);
-
-  objShader->use();
-  objShader->setMat4("projection",viewProj);
-  blockShader->use();
-  blockShader->setMat4("projection",viewProj);
-  gBufferShader->use();
-  gBufferShader->setMat4("projection",viewProj);
-  normDebug->use();
-  normDebug->setMat4("projection",viewProj);
-  transShader->use();
-  transShader->setMat4("projection",viewProj);
-}
-
-void Drawer::updateCameraMatrices(const Camera& cam)
-{
-  viewMat = cam.getViewMatrix();
-  viewPos = cam.getPosition();
-  viewFront = cam.front;
-  viewUp = cam.up;
-  viewRight = cam.right;
-  calculateFrustrum(viewFrustrum,viewPos,viewFront,viewRight,viewUp,camZoomInDegrees,(float)screenWidth/(float)screenHeight,camNear,camFar);
-  calculateMinandMaxPoints(viewFrustrum,8,&viewMin,&viewMax);
-
-}
-
-
-//Caculates the viewing frustrum, likely could  be optimized, since this algorithm has more calculations then necessary, but it functions
-void Drawer::calculateFrustrum(glm::vec3* arr,const glm::vec3 &pos,const glm::vec3 &front,const glm::vec3 &right,const glm::vec3 &up, float camZoomInDegrees,float ar,float near, float far)
-{
-  float buffer = 0;
-  float fovH = glm::radians(((camZoomInDegrees+buffer)/2)*ar);
-  float fovV = glm::radians((camZoomInDegrees+buffer)/2);
-  glm::vec3 curPos = pos - front*((float)CHUNKSIZE*2);
-  glm::vec3 rightaxis = glm::rotate(front,fovH,up);
-  glm::vec3 toprightaxis = glm::rotate(rightaxis,fovV,right);
-  glm::vec3 bottomrightaxis = glm::rotate(rightaxis,-fovV,right);
-  glm::vec3 leftaxis = glm::rotate(front,-fovH,up);
-  glm::vec3 topleftaxis = glm::rotate(leftaxis,fovV,right);
-  glm::vec3 bottomleftaxis = glm::rotate(leftaxis,-fovV,right);
-
-
-  //std::cout << "nnear and far" << near << ":" << far <<  "\n";
-  float d;
-  float a = near;
-  d = a/(glm::dot(bottomleftaxis,front));
-  arr[0] = d*bottomleftaxis+curPos;
-  d = a/(glm::dot(topleftaxis,front));
-  arr[1] = d*topleftaxis+curPos;
-  d = a/(glm::dot(toprightaxis,front));
-  arr[2] =  d*toprightaxis+curPos;
-  d = a/(glm::dot(bottomrightaxis,front));
-  arr[3] = d*bottomrightaxis+curPos;
-
-
-  a = far;
-  d = a/(glm::dot(bottomleftaxis,front));
-  arr[4] = d*bottomleftaxis+curPos;
-  d = a/(glm::dot(topleftaxis,front));
-  arr[5] = d*topleftaxis+curPos;
-  d = a/(glm::dot(toprightaxis,front));
-  arr[6] =  d*toprightaxis+curPos;
-  d = a/(glm::dot(bottomrightaxis,front));
-  arr[7] = d*bottomrightaxis+curPos;
-
-
-}
 
 //Takes array of variable size and the sets the min and max points
 void Drawer::calculateMinandMaxPoints(const glm::vec3* array, int arrsize, glm::vec3* finmin, glm::vec3* finmax)
@@ -793,22 +567,24 @@ void Drawer::updateDirectionalLight(glm::vec3 dir,glm::vec3 amb,glm::vec3 dif,gl
 }
 
 
-void Drawer::drawTerrainOpaque(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
+void Drawer::drawTerrainOpaque(std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
 {
   if(list->empty()) return;
 
+  glm::vec3 viewPos = MainChar::getCamera().getPosition();
+  BSP::updateMatrices(MainChar::getCamera());
   for(auto it = list->cbegin();it != list->cend();++it)
   {
     std::shared_ptr<BSPNode> curNode = (*it);
-    curNode->drawOpaque(shader,viewPos);
-    curNode->drawChunkOutline(objShader.get(),viewPos);
+    curNode->drawOpaque(viewPos);
+    if(drawChunkOutlines) curNode->drawChunkOutline(viewPos);
   }
 
 
 }
 
 //Same as draw terrain, but for translucent blocks.
-void Drawer::drawTerrainTranslucent(Shader* shader,std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
+void Drawer::drawTerrainTranslucent(std::shared_ptr<std::list<std::shared_ptr<BSPNode>>> list)
 {
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, textureAtlas);
@@ -818,12 +594,11 @@ void Drawer::drawTerrainTranslucent(Shader* shader,std::shared_ptr<std::list<std
   {
 
     std::shared_ptr<BSPNode> curNode = (*it);
-    curNode->drawTranslucent(shader,viewPos);
+    curNode->drawTranslucent(MainChar::getCamera().getPosition());
   }
 }
 
 void Drawer::setTerrainColor(const glm::vec3 &color)
 {
-  gBufferShader->use();
-  gBufferShader->setVec3("objectColor", color);
+  BSP::setTerrainColor(color);
 }

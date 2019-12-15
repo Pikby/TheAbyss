@@ -8,6 +8,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>
 #include <iostream>
+#include "../../headers/camera.h"
 
 
 
@@ -17,6 +18,9 @@ class Shader;
 class Object
 {
 protected:
+  static Shader shader;
+
+
   glm::vec3 pos,scale,curFacing = glm::vec3(0,1,0),nextFacing =  glm::vec3(0,1,0),color;
   double rotateTimeStart;
   double rotateTimeEnd;
@@ -30,6 +34,8 @@ protected:
   bool isRendered = false;
   public:
   static void initObjects();
+  static void initializeObjectShader();
+  static void updateMatrices(Camera& camera);
 
   void updateModelMat()
   {
@@ -86,7 +92,7 @@ protected:
     pos = newPos;
   }
   void setScale(double Scale){scale=glm::vec3(Scale);}
-  virtual void draw(Shader* shader,const glm::vec3 &viewPos)
+  virtual void draw(const glm::vec3 &viewPos)
   {
     std::cout << "ERROR DRAWING DEFAULT OBJECT\n";
   }
@@ -108,7 +114,7 @@ private:
 public:
   using Object::Object;
 
-  void draw(Shader* shader,const glm::vec3 &viewPos);
+  void draw(const glm::vec3 &viewPos);
   static void render();
   bool isCollided(Cube* cube);
 };
@@ -120,7 +126,7 @@ private:
 public:
   using Object::Object;
 
-  void draw(Shader* shader, const glm::vec3 &viewPos);
+  void draw(const glm::vec3 &viewPos);
   static void render();
 
 };
@@ -133,7 +139,7 @@ private:
 public:
   using Object::Object;
 
-  void draw(Shader* shader,const glm::vec3 &viewPos);
+  void draw(const glm::vec3 &viewPos);
   static void render();
   bool isCollided(Cube* cube);
 };
