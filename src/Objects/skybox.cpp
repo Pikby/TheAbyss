@@ -17,7 +17,7 @@ static const float skyboxVertices[] =
      1.0f, -1.0f, -1.0f,
      1.0f, -1.0f, -1.0f,
      1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f, 
+    -1.0f,  1.0f, -1.0f,
 
     -1.0f, -1.0f,  1.0f,
     -1.0f, -1.0f, -1.0f,
@@ -61,8 +61,8 @@ SkyBox::SkyBox(const std::string &filePath)
   skyboxShader = std::make_unique<Shader>(Shader("skyShader.vs","skyShader.fs"));
   std::vector<std::string> faces
   {
-    filePath + "_ft.tga",
     filePath + "_bk.tga",
+    filePath + "_ft.tga",
     filePath + "_up.tga",
     filePath + "_dn.tga",
     filePath + "_rt.tga",
@@ -76,12 +76,17 @@ SkyBox::SkyBox(const std::string &filePath)
   int width, height, nrChannels;
   for(int i =0; i < 6;i++)
   {
+    std::cout << faces[i] << "\n";
     unsigned char *data = loadTexture(faces[i].c_str(), &width,&height,&nrChannels);
     if(data)
     {
       glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i,
-                  0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                  0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
       freeTexture(data);
+    }
+    else
+    {
+      std::cout << "Cant find texture "  << faces[i].c_str() << "\n";
     }
   }
 
@@ -111,12 +116,12 @@ SkyBox::SkyBox(const std::string &filePath)
 
 }
 
-void SkyBox::draw(glm::mat4* view)
+void SkyBox::draw(const glm::mat4 &view)
 {
 
   skyboxShader->use();
   skyboxShader->setMat4("projection",projectMat);
-  skyboxShader->setMat4("view", glm::mat4(glm::mat3(*view)));
+  skyboxShader->setMat4("view", glm::mat4(glm::mat3(view)));
   glDepthFunc(GL_LEQUAL);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, texID);

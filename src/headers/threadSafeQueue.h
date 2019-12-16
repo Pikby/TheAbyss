@@ -46,6 +46,7 @@ public:
   }
   void notify_one()
   {
+    std::lock_guard<std::mutex> lock(queueMutex);
     cv.notify_one();
   }
   void pop()

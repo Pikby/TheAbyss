@@ -230,6 +230,10 @@ void BSP::updateMatrices(Camera& camera)
   oShader.use();
   oShader.setMat4("projection",camera.getProjectionMatrix());
   oShader.setMat4("view",camera.getViewMatrix());
+
+  tShader.use();
+  tShader.setMat4("projection",camera.getProjectionMatrix());
+  tShader.setMat4("view",camera.getViewMatrix());
 }
 
 void BSP::initializeBSPShader(const glm::vec2& textureAtlasDimensions)
@@ -243,12 +247,24 @@ void BSP::initializeBSPShader(const glm::vec2& textureAtlasDimensions)
   oShader.setInt("textureAtlas",0);
   oShader.setVec3("objectColor", 0.5f, 0.5f, 0.31f);
 
+
+  tShader = Shader("BSPShaders/transShader.fs","BSPShaders/gBuffer.vs");
+  tShader.use();
+  tShader.setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
+  tShader.setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
+  tShader.setInt("cellWidth",cellWidth);
+  tShader.setInt("textureAtlas",0);
+  tShader.setVec3("objectColor", 0.5f, 0.5f, 0.31f);
+
 }
 
 void BSP::setTerrainColor(const glm::vec3& color)
 {
   oShader.use();
   oShader.setVec3("objectColor", color);
+
+  tShader.use();
+  tShader.setVec3("objectColor",color);
 }
 
 

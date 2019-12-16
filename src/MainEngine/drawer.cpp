@@ -69,17 +69,15 @@ void Drawer::setupShadersAndTextures(int width, int height)
 
 
   createTextureAtlas("../assets/textures/atlas.png",128);
-
   screenWidth = width;
   screenHeight = height;
 
-  skyBox = SkyBox("../assets/alps");
+  skyBox = SkyBox("../assets/textures/skybox/sky");
   Object::initializeObjectShader();
 
   depthBufferLoadingShader = std::make_unique<Shader>(Shader("depthBufferLoadingShader.vs","depthBufferLoadingShader.fs"));
   depthBufferLoadingShader->use();
 
-  //blockShader->setInt("depthMap",0);
   std::cout << "Blockshader\n";
   blockShader = std::make_unique<Shader>(Shader("BSPShaders/shaderBSP.fs","BSPShaders/shaderBSP.vs"));
   blockShader->use();
@@ -96,50 +94,10 @@ void Drawer::setupShadersAndTextures(int width, int height)
   blockShader->setFloat("fog_dist",CHUNKSIZE);
   blockShader->setIVec2("resolution",glm::ivec2(screenWidth,screenHeight));
   blockShader->setBool("shadowsOn",true);
+
   BSP::initializeBSPShader(textureAtlasDimensions);
-
-/*
-  transShader = std::make_unique<Shader>(Shader("BSPShaders/transShader.fs","BSPShaders/gBuffer.vs"));
-  transShader->use();
-  transShader->setInt("textureAtlasWidthInCells",textureAtlasDimensions.x/cellWidth);
-  transShader->setInt("textureAtlasHeightInCells",textureAtlasDimensions.y/cellWidth);
-  transShader->setInt("cellWidth",cellWidth);
-  transShader->setInt("curTexture",0);
-  transShader->setVec3("objectColor", 1.0f, 1.0f, 1.0f);
-
-
-  PPShader = std::make_unique<Shader>(Shader("PPShaders/PPShader.fs","PPShaders/PPShader.vs"));
-  PPShader->use();
-  PPShader->setInt("curTexture",0);
-  PPShader->setInt("bloomTexture",1);
-  PPShader->setFloat("exposure",1.0f);
-  */
-
-  transShader = std::make_unique<Shader>(Shader("BSPShaders/transShader.fs","BSPShaders/transShader.vs"));
-  /*
-  GBlurShader = std::make_unique<Shader>(Shader("PPShaders/GBlurShader.fs","PPShaders/GBlurShader.vs"));
-
-  GBlurShader->use();
-  GBlurShader->setInt("image",0);
-
-*/
-
-
-
-
-  //std::cout << texWidth/cellWidth << ":" << texHeight/cellWidth << "\n";
-/*
-  dirDepthShader = std::make_unique<Shader>(Shader("dirDepthShader.fs",
-                                                   "dirDepthShader.vs"));
-  dirDepthShader->use();
-  glm::mat4 model(1.0f);
-  dirDepthShader->setMat4("model",model);
-  pointDepthShader = std::make_unique<Shader>(Shader("pointDepthShader.fs",
-                                                     "pointDepthShader.vs",
-                                                     "pointDepthShader.gs"));
-                                                     */
   setAllBuffers();
-  //renderDirectionalDepthMap();
+
 
   }
   catch(...)
@@ -217,53 +175,6 @@ void Drawer::setAllBuffers()
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
        std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << endl;
  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
- /*
-  glGenFramebuffers(1,&PPBuffer);
-  glBindFramebuffer(GL_FRAMEBUFFER, PPBuffer);
-    glGenTextures(1, &PPTexture);
-    glBindTexture(GL_TEXTURE_2D,PPTexture);
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA16F,screenWidth,screenHeight,0,GL_RGBA,GL_FLOAT,0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, PPTexture, 0);
-
-    glGenTextures(1, &PPTextureBright);
-    glBindTexture(GL_TEXTURE_2D,PPTextureBright);
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA16F,screenWidth,screenHeight,0,GL_RGBA,GL_FLOAT,0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, PPTextureBright, 0);
-
-    {
-      unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-      glDrawBuffers(2, attachments);
-    }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-  glGenFramebuffers(2,pingPongFBO);
-  glGenTextures(2,pingPongTexture);
-  for (unsigned int i = 0; i < 2; i++)
-{
-    std::cout << pingPongTexture[i] << "\n";
-    glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[i]);
-    glBindTexture(GL_TEXTURE_2D, pingPongTexture[i]);
-    glTexImage2D(
-        GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL
-    );
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingPongTexture[i], 0
-    );
-}
-*/
-
-
-
 }
 
 void Drawer::setRenderDistances(int vert, int horz, int buffer)
@@ -296,11 +207,10 @@ void Drawer::renderGBuffer()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureAtlas);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-    glBindTexture(GL_TEXTURE_2D, textureAtlas);
+    glm::mat4 view = MainChar::getCamera().getViewMatrix();
+    skyBox.draw(view);
     drawTerrainOpaque(chunksToDraw);
     MainChar::drawPreviewBlock();
-    //skyBox.draw(&viewMat);
     drawObjects();
     drawPlayers();
 
@@ -438,73 +348,9 @@ void Drawer::drawFinal()
 
     glDisable(GL_DEPTH_TEST);
       renderQuad();
-
     glEnable(GL_DEPTH_TEST);
 
 
-  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-
-  /*
-
-  float blurStart = glfwGetTime();
-  bool horizontal = false;
-  const int amount = 10;
-
-  GBlurShader->use();
-  glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[0]);
-    GBlurShader->setBool("horizontal",true);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, PPTextureBright);
-    renderQuad();
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
-
-  for(int i = 0;i<amount;i++)
-  {
-
-    if(horizontal)
-    {
-      glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[0]);
-        GBlurShader->setBool("horizontal",true);
-        glBindTexture(GL_TEXTURE_2D, pingPongTexture[1]);
-        renderQuad();
-        horizontal = false;
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-    else
-    {
-      glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[1]);
-        GBlurShader->setBool("horizontal",false);
-        glBindTexture(GL_TEXTURE_2D,pingPongTexture[0]);
-        renderQuad();
-        horizontal = true;
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-  }
-
-  float blurEnd = glfwGetTime();
-
-  std::cout << "blurring takes " << (blurEnd - blurStart) *1000.0f << " ms\n";
-
-  shader = &PPShader;
-  shader->use();
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D,PPTexture);
-
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D,pingPongTexture[0]);
-
-
-
-  glDisable(GL_DEPTH_TEST);
-  renderQuad();
-  glEnable(GL_DEPTH_TEST);
-
-  */
 }
 
 

@@ -11,6 +11,6 @@ private:
   public:
   SkyBox(const std::string &filePath);
   SkyBox(){};
-  void draw(glm::mat4* view);
+  void draw(const glm::mat4 &view);
 
 };

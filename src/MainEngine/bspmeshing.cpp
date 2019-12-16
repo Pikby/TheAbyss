@@ -708,7 +708,8 @@ public:
     cell->id[index] = v.getId();
     cell->norm[index] = v.getNorm();
 
-    cell->val[index] = v.exists * 100;
+    if(v.getId() == 0) cell->val[index] = v.exists * 20;
+    else cell->val[index] = v.exists * 10.1;
     /*
     if(v.exists)
     {
@@ -744,7 +745,7 @@ void BSP::drawPreviewBlock(const glm::ivec3& pos, const glm::vec3& viewPos)
       for(int y = 0; y <= 2;y++)
       {
         Block curBlock = ItemDatabase::blockDictionary[parent->getBlockOOB(glm::ivec3(x,y,z)-glm::ivec3(1)+pos)];
-        if(curBlock.visibleType == OPAQUE || (x == 1 && y==1 && z==1))
+        if(curBlock.visibleType == OPAQUE || curBlock.visibleType == TRANSLUCENT || (x == 1 && y==1 && z==1))
         {
 
           int rx = x*2;
@@ -869,7 +870,7 @@ void BSP::drawPreviewBlock(const glm::ivec3& pos, const glm::vec3& viewPos)
           vArray.setCell(&cell,7,tx,ty+1,tz);
 
           TRIANGLE tris[6];
-          int ntris = Polygonise(cell,p,50,tris);
+          int ntris = Polygonise(cell,p,10,tris);
 
 
           /* If ntris is 2 intialize the quad checking algorithm in order to test
@@ -877,7 +878,7 @@ void BSP::drawPreviewBlock(const glm::ivec3& pos, const glm::vec3& viewPos)
           Otherwise just render normally.
 
           */
-
+          /*
           if(ntris == 2)
           {
 
@@ -979,7 +980,7 @@ void BSP::drawPreviewBlock(const glm::ivec3& pos, const glm::vec3& viewPos)
               continue;
             }
           }
-
+          */
           //Normal rendering
           for(int i=0;i<ntris;i++)
           {
@@ -1072,9 +1073,15 @@ void BSP::drawPreviewBlock(const glm::ivec3& pos, const glm::vec3& viewPos)
   glBindBuffer(GL_ARRAY_BUFFER,VBO);
   glBufferSubData(GL_ARRAY_BUFFER,0,buffer.size()*sizeof(float),(&buffer.front()));
 
-  glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-viewPos);
-  oShader.use();
-  oShader.setMat4("model",model);
+  glm::vec3 bias(0.05);
+  glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-viewPos-bias);
+  tShader.use();
+  tShader.setMat4("model",model);
+  tShader.setFloat("opacity",0.99);
+  tShader.setVec3("objectColor",glm::vec3(1));
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ONE, GL_ONE);
+
 
   glDrawArrays(GL_TRIANGLES,0,buffer.size()/8);
   glBindVertexArray(0);
@@ -1110,7 +1117,7 @@ void BSP::build()
         int rz = z*lod;
 
         Block curBlock = ItemDatabase::blockDictionary[parent->getBlockOOB(glm::ivec3(x,y,z))];
-        if(curBlock.visibleType == OPAQUE)
+        if(curBlock.visibleType == OPAQUE || curBlock.visibleType == TRANSLUCENT)
         {
           glm::ivec3 pos = glm::ivec3(x,y,z);
           if(parent->getBlockOOB(pos + glm::ivec3(0,1,0)) > 0 && parent->getBlockOOB(pos + glm::ivec3(0,-1,0)) > 0 &&
@@ -1244,7 +1251,7 @@ void BSP::build()
           vArray.setCell(&cell,7,tx,ty+1,tz);
 
           TRIANGLE tris[6];
-          int ntris = Polygonise(cell,p,50,tris);
+          int ntris = Polygonise(cell,p,10,tris);
 
 
           /* If ntris is 2 intialize the quad checking algorithm in order to test
@@ -1252,6 +1259,7 @@ void BSP::build()
           Otherwise just render normally.
 
           */
+          /*
           if(ntris == 2)
           {
 
@@ -1353,7 +1361,7 @@ void BSP::build()
               continue;
             }
           }
-
+          */
           //Normal rendering
           for(int i=0;i<ntris;i++)
           {

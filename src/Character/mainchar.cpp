@@ -227,6 +227,6 @@ void MainChar::handleMouseClick(int key)
   switch(key)
   {
     case GLFW_MOUSE_BUTTON_LEFT: destroyBlock() ; break;
-    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(1); break;
+    case GLFW_MOUSE_BUTTON_RIGHT:  addBlock(3); break;
   }
 }

@@ -12,6 +12,8 @@
 #include <chrono>
 
 #include "../headers/shaders.h"
+
+#define THREADIMPLEMENTATION
 #include "include/threads.h"
 #include "include/world.h"
 #include "include/drawer.h"
@@ -27,8 +29,7 @@
 
 
 World PlayerWorld;
-GLFWwindow* ThreadHandler::window;
-bool ThreadHandler::threadsOn;
+
 
 GLFWwindow* ThreadHandler::createWindow(int width, int height)
 {
@@ -75,11 +76,11 @@ void ThreadHandler::endThreads()
 void ThreadHandler::dispatchThreads()
 {
   threadsOn = true;
-  std::thread renderThread(render);
-  std::thread deleteThread(del);
-  std::thread sendThread(send);
-  std::thread receiveThread(receive);
-  std::thread logicThread(logic);
+  renderThread = std::thread(render);
+  deleteThread = std::thread(del);
+  sendThread = std::thread(send);
+  receiveThread = std::thread(receive);
+  logicThread = std::thread(logic);
 
   renderThread.detach();
   deleteThread.detach();
@@ -123,8 +124,6 @@ void ThreadHandler::draw()
   float lastFrame;
   //PlayerWorld.drawer->createDirectionalLight(glm::vec3(-0.0f,-1.0f,-0.0001f),glm::vec3(0.8f,0.8f,0.8f));
   PlayerWorld.drawer->updateDirectionalLight(glm::vec3(-0.5,-1.0f,-0.5f),glm::vec3(0.2f),glm::vec3(0.5f),glm::vec3(1.0f));
-  SkyBox skyBox("../assets/alps");
-
 
   PlayerWorld.drawer->addCube(glm::vec3(0,50,0));
   PlayerWorld.drawer->addCube(glm::vec3(0,0,0));

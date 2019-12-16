@@ -1,31 +1,60 @@
-#version 330 core
-layout(location = 0) out vec4 color;
+#version 430 core
 
-in VS_OUT
-{
-  vec2 TexCoord;
-  vec2 TexCells;
-  vec2 TexOrigin;
-} vs_out;
+layout (location = 0) out vec3 gPosition;
+layout (location = 1) out vec3 gNormal;
+layout (location = 2) out vec4 gColorSpec;
 
-uniform sampler2D curTexture;
+uniform sampler2D textureAtlas;
 uniform vec3 objectColor;
 
 uniform int textureAtlasWidthInCells;
 uniform int textureAtlasHeightInCells;
-vec4 getTexture()
+uniform float opacity;
+float cellWidth = 1.0f/textureAtlasWidthInCells;
+float cellHeight = 1.0f/textureAtlasHeightInCells;
+
+#include "gBuffer.h"
+
+in VS_OUT vs_out;
+
+
+vec3 getWeights()
+{
+  vec3 absNorm = abs(normalize(vs_out.FlatNormal));
+  return absNorm/(absNorm.x+absNorm.y+absNorm.z);
+}
+
+
+vec2 getTextureCoordinates(vec2 texPos,int id)
 {
   vec2 temp;
-  temp.x = mod(vs_out.TexCoord.x*vs_out.TexCells.x,1.0f/textureAtlasWidthInCells)+vs_out.TexOrigin.x;
-  temp.y = mod(vs_out.TexCoord.y*vs_out.TexCells.y,1.0f/textureAtlasHeightInCells)+vs_out.TexOrigin.y;
-  return texture(curTexture,temp).rgba;
+  temp.x = mod(texPos.x,cellWidth)+vs_out.TexOrigins[id].x;
+  temp.y = mod(texPos.y,cellHeight)+vs_out.TexOrigins[id].y;
+
+  return temp;
+}
+
+vec3 getTextureAlbedo(int id)
+{
+  vec2 t1 = getTextureCoordinates(vs_out.LocalPos.yz,id);
+  vec2 t2 = getTextureCoordinates(vs_out.LocalPos.xz,id);
+  vec2 t3 = getTextureCoordinates(vs_out.LocalPos.xy,id);
+  vec3 weights = getWeights();
+  vec3 albedo = weights.x*texture(textureAtlas,t1).rgb
+              + weights.y*texture(textureAtlas,t2).rgb
+              + weights.z*texture(textureAtlas,t3).rgb;
+  return albedo/3.0f;
+
 }
 
 void main()
 {
-  vec4 text = getTexture();
-  vec3 objColor = objectColor;
-  vec3 finColor = objColor*text.rgb;
-  color = vec4(finColor,1.0f);
+  vec3 albedo = objectColor*(vs_out.TexWeights.x*getTextureAlbedo(0)
+                           + vs_out.TexWeights.y*getTextureAlbedo(1)
+                           + vs_out.TexWeights.z*getTextureAlbedo(2));
+
+  gPosition = vs_out.FragPos;
+  gNormal = vs_out.Normal;
+  gColorSpec = vec4(albedo,opacity*vs_out.alpha);
 
 }

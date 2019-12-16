@@ -14,55 +14,48 @@ using namespace std;
 #include <mutex>
 #include <condition_variable>
 class RWLock {
+private:
+    std::mutex shared;
+    std::condition_variable readerQ,writerQ;
+    int active_readers, waiting_writers,active_writers;
 public:
-    RWLock()
-    : shared()
-    , readerQ(), writerQ()
-    , active_readers(0), waiting_writers(0), active_writers(0)
+    RWLock() : shared(), readerQ(), writerQ(),
+               active_readers(0), waiting_writers(0), active_writers(0)
     {}
 
-    void ReadLock() {
-        std::unique_lock<std::mutex> lk(shared);
-        while( waiting_writers != 0 )
-            readerQ.wait(lk);
-        ++active_readers;
-        lk.unlock();
+    void readLock()
+    {
+      std::unique_lock<std::mutex> lk(shared);
+      while( waiting_writers != 0 ) readerQ.wait(lk);
+      ++active_readers;
+      lk.unlock();
     }
 
-    void ReadUnlock() {
-        std::unique_lock<std::mutex> lk(shared);
-        --active_readers;
-        lk.unlock();
-        writerQ.notify_one();
+    void readUnlock()
+    {
+      std::unique_lock<std::mutex> lk(shared);
+      --active_readers;
+      lk.unlock();
+      writerQ.notify_one();
     }
 
-    void WriteLock() {
-        std::unique_lock<std::mutex> lk(shared);
-        ++waiting_writers;
-        while( active_readers != 0 || active_writers != 0 )
-            writerQ.wait(lk);
-        ++active_writers;
-        lk.unlock();
+    void writeLock() {
+      std::unique_lock<std::mutex> lk(shared);
+      ++waiting_writers;
+      while( active_readers != 0 || active_writers != 0 )  writerQ.wait(lk);
+      ++active_writers;
+      lk.unlock();
     }
 
-    void WriteUnlock() {
-        std::unique_lock<std::mutex> lk(shared);
-        --waiting_writers;
-        --active_writers;
-        if(waiting_writers > 0)
-            writerQ.notify_one();
-        else
-            readerQ.notify_all();
-        lk.unlock();
+    void writeUnlock() {
+      std::unique_lock<std::mutex> lk(shared);
+      --waiting_writers;
+      --active_writers;
+      if(waiting_writers > 0) writerQ.notify_one();
+      else readerQ.notify_all();
+      lk.unlock();
     }
 
-private:
-    std::mutex              shared;
-    std::condition_variable readerQ;
-    std::condition_variable writerQ;
-    int                     active_readers;
-    int                     waiting_writers;
-    int                     active_writers;
 };
 
 
@@ -104,18 +97,18 @@ class Map3D
 template <class T>
 void Map3D<T>::add(const glm::ivec3 &pos,T data)
 {
-  lock.ReadLock();
+  lock.writeLock();
   auto itr = addToList(data);
   Node tmp = {itr,data};
   map3D[pos.x][pos.y][pos.z] = tmp;
   size++;
-  lock.ReadUnlock();
+  lock.writeUnlock();
 }
 
 template <class T>
 bool Map3D<T>::exists(const glm::ivec3 &pos)
 {
-  lock.ReadLock();
+  lock.readLock();
   if(map3D.count(pos.x) == 1)
   {
     auto &xMaps = map3D[pos.x];
@@ -123,19 +116,19 @@ bool Map3D<T>::exists(const glm::ivec3 &pos)
     {
       if(xMaps[pos.y].count(pos.z) == 1)
       {
-        lock.ReadUnlock();
+        lock.readUnlock();
         return true;
       }
     }
   }
-  lock.ReadUnlock();
+  lock.readUnlock();
   return false;
 }
 
 template <class T>
 T Map3D<T>::get(const glm::ivec3 &pos)
 {
-  lock.ReadLock();
+  lock.readLock();
   if(map3D.count(pos.x) == 1)
    {
      auto &xMaps = map3D[pos.x];
@@ -145,19 +138,19 @@ T Map3D<T>::get(const glm::ivec3 &pos)
        if(yMaps.count(pos.z) == 1)
        {
          T tmp = yMaps[pos.z].data;
-         lock.ReadUnlock();
+         lock.readUnlock();
          return tmp;
        }
      }
    }
-  lock.ReadUnlock();
+  lock.readUnlock();
   return NULL;
 }
 
 template <class T>
 void Map3D<T>::del(const glm::ivec3 &pos)
 {
-  lock.WriteLock();
+  lock.writeLock();
   auto &xMaps = map3D[pos.x];
   auto &yMaps = xMaps[pos.y];
   auto &node  = yMaps[pos.z];
@@ -174,13 +167,13 @@ void Map3D<T>::del(const glm::ivec3 &pos)
   }
   size--;
 
-  lock.WriteUnlock();
+  lock.writeUnlock();
 }
 
 template <class T>
 std::shared_ptr<std::list<T>> Map3D<T>::findAll(const glm::ivec3 &min,const glm::ivec3 &max)
 {
-  lock.ReadLock();
+  lock.readLock();
   std::shared_ptr<std::list<T>> partList(new std::list<T>);
   for(auto itx = map3D.lower_bound(min.x); itx->first <= max.x && itx !=map3D.end();++itx)
   {
@@ -192,23 +185,25 @@ std::shared_ptr<std::list<T>> Map3D<T>::findAll(const glm::ivec3 &min,const glm:
       }
     }
   }
-  lock.ReadUnlock();
+  lock.readUnlock();
   return partList;
 }
 
 template <class T>
 void Map3D<T>::print()
 {
+  lock.readLock();
   for(auto itx = map3D.begin();itx != map3D.end();++itx)
   {
     std::cout << itx->first << ":\n";
     for(auto ity = itx->second.begin();ity != itx->second.end();++ity)
     {
       std::cout << "  " << ity->first << ":\n";
-        for(auto itz = ity->second.begin();itz != ity->second.end();++itz)
-        {
-          std::cout << "    " << itz->first << "\n";
-        }
+      for(auto itz = ity->second.begin();itz != ity->second.end();++itz)
+      {
+        std::cout << "    " << itz->first << "\n";
+      }
     }
   }
+  lock.readUnlock();
 }
