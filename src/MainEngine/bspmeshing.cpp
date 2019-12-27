@@ -1098,7 +1098,7 @@ void BSP::build()
   tIndices.clear();
   lightList.clear();
   //oVertices.reserve(200000);
-//  oIndices.reserve(100000);
+  //oIndices.reserve(100000);
 
 
   const int lod = 2;
@@ -1362,7 +1362,7 @@ void BSP::build()
             }
           }
           */
-          //Normal rendering
+          //Normal rendering 
           for(int i=0;i<ntris;i++)
           {
             glm::dvec3 normal = glm::cross(tris[i].p[0].pos- tris[i].p[1].pos,tris[i].p[0].pos - tris[i].p[2].pos);
@@ -1378,6 +1378,11 @@ void BSP::build()
               int id = addVertex(vertex);
               oIndices.push_back(id);
             }
+
+            glm::dvec3 v1 = glm::dvec3(tris[i].p[0].pos) + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
+            glm::dvec3 v2 = glm::dvec3(tris[i].p[1].pos) + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
+            glm::dvec3 v3 = glm::dvec3(tris[i].p[2].pos) + glm::dvec3(chunkLocalPos) + subCubeLookup[subCubes]/(double)lod;
+            collisionMesh.addTriangle(btVector3(v1.x,v1.y,v1.z),btVector3(v2.x,v2.y,v2.z),btVector3(v3.x,v3.y,v3.z));
           }
         }
       }

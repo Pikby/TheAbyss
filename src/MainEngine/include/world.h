@@ -86,7 +86,7 @@ public:
 
   void renderWorld(const glm::vec3& pos);
 
-  void buildWorld(char threadNumb);
+  void buildWorld();
   bool chunkExists(const glm::ivec3 &pos);
 
   void addPlayer(const glm::vec3 &pos, uint8_t id);
@@ -103,7 +103,7 @@ public:
   void addBlock(const glm::ivec3 &pos, uint8_t id);
   void updateBlock(const glm::ivec3 &pos);
   void drawPreviewBlock(const glm::ivec3 &pos);
-  void delScan(const glm::vec3& pos);
+  void delScan(const glm::vec3 &pos);
   void generateChunkFromString(const glm::ivec3 &pos,const char* val);
 };
 extern World PlayerWorld;

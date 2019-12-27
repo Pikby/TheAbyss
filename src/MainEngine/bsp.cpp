@@ -377,6 +377,7 @@ int BSP::addVertex(const VertexData &vertex)
   curBuffer->push_back(vertex.pos.y);
   curBuffer->push_back(vertex.pos.z);
 
+
   {
     uint8_t normx = vertex.norm.x*127+128;
     uint8_t normy = vertex.norm.y*127+128;
@@ -583,7 +584,7 @@ void BSP::drawOpaque(const glm::vec3 &pos)
 {
 
 
-
+ 
   if(oIndicesSize != 0)
   {
     glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-pos);

@@ -17,16 +17,7 @@
 #include "../Character/include/gui.h"
 #include "../headers/shaders.h"
 
-void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
-                                GLsizei length, const GLchar* message,const void* userParam )
-{
-  if(severity == GL_DEBUG_SEVERITY_LOW || severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
-  fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-            type, severity, message );
-
-}
-
+void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message,const void* userParam );
 
 
 int main()
@@ -42,12 +33,7 @@ int main()
   Settings::set("windowWidth",std::to_string(winWidth));
   Settings::set("windowHeight",std::to_string(winHeight));
 
-  glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-  glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-  glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-  glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-
-  GLFWwindow* window = ThreadHandler::createWindow(winWidth,winHeight);
+  GLFWwindow* window = ThreadHandler::createWindow(mode);
   glfwMakeContextCurrent(window);
   glfwSetKeyCallback(window, GUI::GLFWKeyCallBack);
   glfwSetCharCallback(window, GUI::GLFWCharCallBack);
@@ -66,14 +52,12 @@ int main()
   glViewport(0, 0, winWidth, winHeight);
 
 
-
-
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  glEnable              ( GL_DEBUG_OUTPUT );
-  glDebugMessageCallback( MessageCallback, 0 );
+  glEnable(GL_DEBUG_OUTPUT);
+  glDebugMessageCallback(MessageCallback, 0);
 
   //Cull face unrenders the back side of polygons
   glEnable(GL_CULL_FACE);
@@ -82,8 +66,6 @@ int main()
 
   Shader::setShaderDirectory("../src/Shaders/");
   GUI::initGUI(glm::vec2(winWidth,winHeight),Settings::get("userName"));
-
-  Settings::print();
   while(!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
@@ -93,4 +75,14 @@ int main()
   }
   glfwTerminate();
   Settings::save();
+}
+
+void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                                GLsizei length, const GLchar* message,const void* userParam )
+{
+  if(severity == GL_DEBUG_SEVERITY_LOW || severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
+  fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+            type, severity, message );
+
 }

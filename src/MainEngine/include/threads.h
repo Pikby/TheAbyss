@@ -12,7 +12,7 @@ private:
 public:
   static void dispatchThreads();
   static void endThreads();
-  static GLFWwindow* createWindow(int width, int height);
+  static GLFWwindow* createWindow(const GLFWvidmode* mode);
   static void enableCursor();
   static void disableCursor();
   static void logic();
@@ -22,9 +22,10 @@ public:
   static void mainBuild();
   static void receive();
   static void send();
-  static void build(char i);
+  static void build();
   static void initWorld(const std::string& ip,const std::string& userName);
   static void closeGame();
+
 };
 
 #ifdef THREADIMPLEMENTATION

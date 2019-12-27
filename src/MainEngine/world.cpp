@@ -1,8 +1,4 @@
 
-#define GLEW_STATIC
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
 #include <thread>
 #include <chrono>
 
@@ -20,6 +16,8 @@
 #include "include/bsp.h"
 #include "include/drawer.h"
 #include "include/messenger.h"
+#include "include/timer.h"
+
 
 #include "../Settings/settings.h"
 #include "../TextureLoading/textureloading.h"
@@ -321,10 +319,9 @@ void World::findChunkToRequest(const float mainx,const float mainy,const float m
 }
 void World::renderWorld(const glm::vec3& pos)
 {
-  double lastFrame = 0;
-  double currentFrame = 0;
-  double ticksPerSecond = 500;
-  double tickRate = 1.0f/ticksPerSecond;
+  Timer timer(500);
+
+
   auto requestChunk = [&](int x, int y, int z)
   {
     int xchunk = round(pos.x);
@@ -335,12 +332,7 @@ void World::renderWorld(const glm::vec3& pos)
     zchunk/= CHUNKSIZE;
     if(chunkExists(pos+glm::vec3(xchunk+x,ychunk+y,zchunk+z))) return;
     messenger->createChunkRequest(xchunk+x,ychunk+y,zchunk+z);
-    lastFrame = currentFrame;
-    currentFrame = glfwGetTime();
-    double deltaFrame = currentFrame-lastFrame;
-    int waitTime = (tickRate-deltaFrame)*1000;
-    std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
-    currentFrame = glfwGetTime();
+    timer.wait();
   };
 
   int z = 0;
@@ -373,7 +365,7 @@ void World::renderWorld(const glm::vec3& pos)
   }
 }
 
-void World::buildWorld(char threadNumb)
+void World::buildWorld()
 {
   buildQueue.waitForData();
   while(!buildQueue.empty())

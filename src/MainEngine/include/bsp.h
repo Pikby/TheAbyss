@@ -7,6 +7,8 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include <bullet/btBulletDynamicsCommon.h>
+
 #include <memory>
 #include <atomic>
 #include <mutex>
@@ -22,38 +24,12 @@
 class Shader;
 
 
-typedef unsigned char uint8_t;
 #define CHUNKSIZE 32
 //Class which holds the data for each individual chunk
 class BSPNode;
 enum AmbientOcclusion {NOAO = 0, SINGLE = 1, CONNECTED = 2, FULLCOVER = 3};
 enum TextureSides {BOTTOMTS  = 0,TOPTS = 1 << 6, RIGHTTS = 1 << 7, LEFTTS = 0};
 
-
-
-
-
-struct BlockFace
-{
-  char faceData;
-  void setFace(Faces f)
-  {
-    faceData |= f;
-  }
-  void delFace(Faces f)
-  {
-    faceData &= ~f;
-  }
-  bool getFace(Faces f)
-  {
-    return ((faceData & f) != 0);
-  }
-  bool isEmpty()
-  {
-    return (faceData == 0);
-  }
-  BlockFace(){faceData = 0;}
-};
 
 struct FaceData
 {
@@ -85,6 +61,9 @@ struct Light
   double radius;
 };
 
+
+
+
 class BSP
 {
   private:
@@ -111,7 +90,7 @@ class BSP
     void addIndices(RenderType renderType,int index1, int index2, int index3, int index4);
     void setupBufferObjects(RenderType type);
 
-
+    btTriangleMesh collisionMesh;
   public:
     static void initializeBSPShader(const glm::vec2& textureAtlasDimensions);
     static void updateMatrices(Camera& camera);
@@ -136,6 +115,9 @@ class BSP
     uint8_t getBlock(const glm::ivec3 &pos);
     void delBlock(const glm::ivec3 &pos);
 
+    void createPhysicsMesh();
+
+
     void build();
     void drawOpaque(const glm::vec3 &viewPos);
     void drawTranslucent(const glm::vec3 &viewPos);
@@ -152,6 +134,8 @@ class BSPNode
                               backChunk = NULL,topChunk = NULL,bottomChunk = NULL;
     std::recursive_mutex BSPMutex;
     glm::ivec3 chunkPos;
+
+
   public:
     static int totalChunks;
 

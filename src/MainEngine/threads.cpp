@@ -11,6 +11,8 @@
 #include <thread>
 #include <chrono>
 
+#include <bullet/btBulletDynamicsCommon.h>
+
 #include "../headers/shaders.h"
 
 #define THREADIMPLEMENTATION
@@ -18,7 +20,7 @@
 #include "include/world.h"
 #include "include/drawer.h"
 #include "include/messenger.h"
-
+#include "include/timer.h"
 
 #include "../Character/include/mainchar.h"
 #include "../Character/include/gui.h"
@@ -31,10 +33,13 @@
 World PlayerWorld;
 
 
-GLFWwindow* ThreadHandler::createWindow(int width, int height)
+GLFWwindow* ThreadHandler::createWindow(const GLFWvidmode* mode)
 {
   //Initial windows configs
-
+  glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+  glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+  glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+  glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
   glfwWindowHint(GLFW_SAMPLES, 1);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,4);
@@ -42,16 +47,13 @@ GLFWwindow* ThreadHandler::createWindow(int width, int height)
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   //Create the window
-  window = glfwCreateWindow(width, height, "The Abyss", glfwGetPrimaryMonitor(), nullptr);
+  window = glfwCreateWindow(mode->width, mode->height, "The Abyss", glfwGetPrimaryMonitor(), nullptr);
   if(window == NULL)
   {
     std::cout << "Window creation failed\n";
+    throw -1;
   }
-  int error = glGetError();
-  if(error != 0)
-  {
-    std::cout << "OPENGL ERRORa" << error << ":" << std::hex << error << "\n";
-  }
+
 
 
   return window;
@@ -89,9 +91,7 @@ void ThreadHandler::dispatchThreads()
   logicThread.detach();
 
   std::cout << "Render threads created \n";
-  std::thread buildThread(build,0);
-  //std::thread buildThread2(build,1);
-  //buildThread2.detach();
+  std::thread buildThread(build);
   buildThread.detach();
 }
 
@@ -119,60 +119,33 @@ void ThreadHandler::draw()
   glfwMakeContextCurrent(window);
 
 
-
-  float deltaTime;
-  float lastFrame;
-  //PlayerWorld.drawer->createDirectionalLight(glm::vec3(-0.0f,-1.0f,-0.0001f),glm::vec3(0.8f,0.8f,0.8f));
   PlayerWorld.drawer->updateDirectionalLight(glm::vec3(-0.5,-1.0f,-0.5f),glm::vec3(0.2f),glm::vec3(0.5f),glm::vec3(1.0f));
-
   PlayerWorld.drawer->addCube(glm::vec3(0,50,0));
   PlayerWorld.drawer->addCube(glm::vec3(0,0,0));
-
   PlayerWorld.drawer->addLight(glm::vec3(0,50,0),glm::vec3(1.0f,1.0f,1.0f));
   PlayerWorld.drawer->addLight(glm::vec3(0,0,0),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(1.0f,1.0f,1.0f),glm::vec3(0.5f,0.5f,0.5f),1.0,0.045,0.0075);
-  bool show_demo_window = true;
-  bool show_another_window = false;
-  //PlayerWorld.addLight(glm::vec3(10,50,10));
+
+
   glm::vec3 terrainColor = glm::vec3(1.0f);
   float sunX=0.01,sunZ=0.01;
   bool shadowsOn = true;
   while(!glfwWindowShouldClose(window) && threadsOn)
   {
 
-    static const char* current_item = "1.0";
-    static const char* old_item = "1.0";
-    if(current_item!=old_item)
-    {
-      old_item = current_item;
-      std::cout << "Updating to " << std::stof(current_item) << "\n";
-      //PlayerWorld.drawer->updateAntiAliasing(std::stof(current_item));
-    }
     PlayerWorld.drawer->setTerrainColor(terrainColor);
     glm::vec3 dirLight(0.1,-1.0f,0.1);
     glfwPollEvents();
     MainChar::update();
 
     PlayerWorld.drawer->updateDirectionalLight(dirLight,glm::vec3(0.8f,0.8f,0.8f));
-
     PlayerWorld.drawnChunks = 0;
     PlayerWorld.drawer->chunksToDraw = NULL;
     PlayerWorld.deleteChunksFromQueue();
 
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-    //PlayerWorld.drawer->updateCameraMatrices(MainChar::getCamera());
-
-    float findstart = glfwGetTime();
     PlayerWorld.calculateViewableChunks();
-    float findend = glfwGetTime();
-
-    float directstart = glfwGetTime();
-    //if(shadowsOn) PlayerWorld.drawer->renderDirectionalShadows();
-    float directend = glfwGetTime();
     PlayerWorld.drawer->renderGBuffer();
-    //glDisable(GL_BLEND);
     PlayerWorld.drawer->drawFinal();
     GUI::drawGUI();
     glfwSwapBuffers(window);
@@ -183,21 +156,10 @@ void ThreadHandler::draw()
 
 void ThreadHandler::render()
 {
-  double lastFrame = 0;
-  double currentFrame = 0;
-  double ticksPerSecond = 27000;
-  double tickRate = 1.0f/ticksPerSecond;
+  Timer timer(27000);
   while(!glfwWindowShouldClose(window) && threadsOn)
   {
-    lastFrame = currentFrame;
-    currentFrame = glfwGetTime();
-    //std::cout << currentFrame << ':' << lastFrame << "\n";
-    double deltaFrame = currentFrame-lastFrame;
-
-    int waitTime = (tickRate-deltaFrame)*1000;
-    //std::cout << deltaFrame << ":" << waitTime ;
-    //std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
-    currentFrame = glfwGetTime();
+    timer.wait();
     PlayerWorld.renderWorld(MainChar::getPosition());
   }
 
@@ -206,21 +168,10 @@ void ThreadHandler::render()
 
 void ThreadHandler::del()
 {
-  double lastFrame = 0;
-  double currentFrame = 0;
-  double ticksPerSecond = 0.2f;
-  double tickRate = 1.0f/ticksPerSecond;
+  Timer timer(0.2);
   while(!glfwWindowShouldClose(window) && threadsOn)
   {
-    lastFrame = currentFrame;
-    currentFrame = glfwGetTime();
-    //std::cout << currentFrame << ':' << lastFrame << "\n";
-    double deltaFrame = currentFrame-lastFrame;
-
-    int waitTime = (tickRate-deltaFrame)*1000;
-    //std::cout << deltaFrame << ":" << waitTime ;
-    std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
-    currentFrame = glfwGetTime();
+    timer.wait();
     PlayerWorld.delScan(MainChar::getPosition());
   }
   std::cout << "Delete Thread Done\n";
@@ -228,27 +179,25 @@ void ThreadHandler::del()
 
 void ThreadHandler::logic()
 {
-  double lastFrame = 0;
-  double currentFrame = 0;
-  double ticksPerSecond = 60;
-  double tickRate = 1.0f/ticksPerSecond;
+
+
+  btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
+  ///use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
+  btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
+  ///btDbvtBroadphase is a good general purpose broadphase. You can also try out btAxis3Sweep.
+  btBroadphaseInterface* overlappingPairCache = new btDbvtBroadphase();
+  ///the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
+  btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver;
+  btDiscreteDynamicsWorld* dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+
+  dynamicsWorld->setGravity(btVector3(0, -10, 0));
+
+
+  Timer timer(60);
   while(!glfwWindowShouldClose(window) && threadsOn)
   {
-    lastFrame = currentFrame;
-    currentFrame = glfwGetTime();
-    //std::cout << currentFrame << ':' << lastFrame << "\n";
-    double deltaFrame = currentFrame-lastFrame;
-
-    int waitTime = (tickRate-deltaFrame)*1000;
-    //std::cout << deltaFrame << ":" << waitTime ;
-    std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
-    currentFrame = glfwGetTime();
-
+    timer.wait();
     //DO the game logic
-
-
-
-
 
     static double lastPingTime = 0;
 
@@ -327,9 +276,6 @@ void ThreadHandler::receive()
         {
           char* buf = new char[msg.length];
           PlayerWorld.messenger->receiveMessage(buf,msg.length);
-          //std::thread chunkThread(&PlayerWorld.generateChunkFromString,newWorld,msg.x.i,msg.y.i,msg.z.i,buf);
-          //chunkThread.detach();
-
           PlayerWorld.generateChunkFromString(glm::ivec3(msg.x.i,msg.y.i,msg.z.i),buf);
         }
         break;
@@ -405,11 +351,11 @@ void ThreadHandler::receive()
   std::cout << "RECEIVE THREAD DONE\n";
 }
 
-void ThreadHandler::build(char threadNumb)
+void ThreadHandler::build()
 {
   while(!glfwWindowShouldClose(window)  && threadsOn)
   {
-    PlayerWorld.buildWorld(threadNumb);
+    PlayerWorld.buildWorld();
   }
   std::cout << "Ending build thread\n";
 }

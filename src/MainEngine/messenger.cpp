@@ -20,27 +20,27 @@
 #include "include/world.h"
 #include "include/messenger.h"
 
-int connect_wait (
-	int sockno,
-	struct sockaddr * addr,
-	size_t addrlen,
-	struct timeval * timeout)
+int connect_wait (int sockno,	struct sockaddr * addr,	size_t addrlen,	struct timeval * timeout)
 {
 	int res, opt;
 
 	// get socket flags
-	if ((opt = fcntl (sockno, F_GETFL, NULL)) < 0) {
+	if ((opt = fcntl (sockno, F_GETFL, NULL)) < 0)
+  {
 		return -1;
 	}
 
 	// set socket non-blocking
-	if (fcntl (sockno, F_SETFL, opt | O_NONBLOCK) < 0) {
+	if (fcntl (sockno, F_SETFL, opt | O_NONBLOCK) < 0)
+  {
 		return -1;
 	}
 
 	// try to connect
-	if ((res = connect (sockno, addr, addrlen)) < 0) {
-		if (errno == EINPROGRESS) {
+	if ((res = connect (sockno, addr, addrlen)) < 0)
+  {
+		if (errno == EINPROGRESS)
+    {
 			fd_set wait_set;
 
 			// make file descriptor set with socket
@@ -52,35 +52,42 @@ int connect_wait (
 		}
 	}
 	// connection was successful immediately
-	else {
+	else
+  {
 		res = 1;
 	}
 
 	// reset socket flags
-	if (fcntl (sockno, F_SETFL, opt) < 0) {
+	if (fcntl (sockno, F_SETFL, opt) < 0)
+  {
 		return -1;
 	}
 
 	// an error occured in connect or select
-	if (res < 0) {
+	if (res < 0)
+  {
 		return -1;
 	}
 	// select timed out
-	else if (res == 0) {
+	else if (res == 0)
+  {
 		errno = ETIMEDOUT;
 		return 1;
 	}
 	// almost finished...
-	else {
+	else
+  {
 		socklen_t len = sizeof (opt);
 
 		// check for errors in socket layer
-		if (getsockopt (sockno, SOL_SOCKET, SO_ERROR, &opt, &len) < 0) {
+		if (getsockopt (sockno, SOL_SOCKET, SO_ERROR, &opt, &len) < 0)
+    {
 			return -1;
 		}
 
 		// there was an error
-		if (opt) {
+		if (opt)
+    {
 			errno = opt;
 			return -1;
 		}
