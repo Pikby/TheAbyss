@@ -8,7 +8,7 @@ class ThreadHandler
 private:
   static GLFWwindow* window;
   static bool threadsOn;
-  static std::thread renderThread,deleteThread,sendThread,receiveThread,logicThread;
+  static std::thread renderThread,deleteThread,sendThread,receiveThread,logicThread,buildThread;
 public:
   static void dispatchThreads();
   static void endThreads();
@@ -33,7 +33,7 @@ GLFWwindow* ThreadHandler::window;
 bool ThreadHandler::threadsOn;
 
 std::thread ThreadHandler::renderThread,ThreadHandler::deleteThread,ThreadHandler::sendThread,
-            ThreadHandler::receiveThread,ThreadHandler::logicThread;
+            ThreadHandler::receiveThread,ThreadHandler::logicThread,ThreadHandler::buildThread;
 
 
 #endif

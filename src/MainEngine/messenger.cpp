@@ -401,7 +401,7 @@ void Messenger::sendMessage(const void* buffer, int length)
 {
   uint8_t* buf = (uint8_t*)buffer;
   int totalSent = 0;
-  while(totalSent<length)
+  while(totalSent<length) 
   {
     int curSent = send(fd,buf+totalSent,length-totalSent,0);
     if( curSent == -1)

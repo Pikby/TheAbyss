@@ -78,6 +78,18 @@ void World::initWorld()
 
 void World::destroyWorld()
 {
+  auto list = BSPmap.getFullList();
+  for(auto itr = list.begin();itr != list.end();++itr)
+  {
+    (*itr)->del();
+    (*itr)->disconnect();
+  }
+
+  BSPmap.deleteAll();
+  drawer = std::make_unique<Drawer>();
+  messenger = std::make_unique<Messenger>();
+  buildQueue.clearQueue();
+  chunkDeleteQueue.clearQueue();
 
 
 }
@@ -367,9 +379,11 @@ void World::renderWorld(const glm::vec3& pos)
 
 void World::buildWorld()
 {
-  buildQueue.waitForData();
+  //buildQueue.waitForData();
   while(!buildQueue.empty())
   {
+
+
     std::shared_ptr<BSPNode> chunk = buildQueue.getAndPop();
     chunk->build();
   }

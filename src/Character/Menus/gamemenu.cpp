@@ -21,6 +21,7 @@ void initPauseMenu()
   {
     GUI::setMenu(GUI::mainMenu.get());
     ThreadHandler::endThreads();
+    PlayerWorld.destroyWorld();
   });
 
 

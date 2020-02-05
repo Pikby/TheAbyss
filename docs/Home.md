@@ -1,12 +1,21 @@
-So, this project doesn't really have a name yet but here is some documentation for consistency as there is alot to cover
-Essentially, this project is a am attempt to recreate a minecraft like voxel engine from the ground up in C++.
+# The Abyss
+Welcome to the Docs of the abyss
+* Go [Here](GUI.md) for information on the GUI implementation.
+* Go [Here](MainEngine.md) for the overall engine implementation.
+* Go [Here](Meshing.md) for the meshing implementation.
+* Go [Here](Threads.md) for thread overview.
 
+
+Finally a todo list can be found [Here](TODO.md)
+
+The makefile for this project can be found [Here](../build/Makefile)
 ## External Libraries Used:
 * ### Graphics Rendering:
   * glfw3
   * GLEW
   * freetype2 for text rendering
   * stb_image for texture loading
+  * byBullet for physics
 * ### Math:
   * glm
 * ### Others:
@@ -16,6 +25,4 @@ Essentially, this project is a am attempt to recreate a minecraft like voxel eng
 Enter the build folder and use make linux for a linux build, and make server for the server linux build
 
 For compiling to Linux, make sure that all the mentioned dependencies are installed
-For cross compiling from Linux to Windows, MXE is used
-There currently is a setup for compiling on windows, although it should not be that difficult
-
+~~For cross compiling from Linux to Windows, MXE is used~~ Broken ATM

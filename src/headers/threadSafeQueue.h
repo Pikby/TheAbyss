@@ -12,6 +12,12 @@ private:
   std::condition_variable cv;
 
 public:
+  void clearQueue()
+  {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    queue = std::deque<T>();
+  }
+
   bool empty()
   {
     std::lock_guard<std::mutex> lock(queueMutex);

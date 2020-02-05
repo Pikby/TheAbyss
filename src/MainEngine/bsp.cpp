@@ -34,6 +34,7 @@ Shader BSP::tShader, BSP::oShader;
 BSPNode::~BSPNode()
 {
   totalChunks--;
+
 }
 
 
@@ -145,6 +146,40 @@ uint8_t BSPNode::getBlockOOB(const glm::ivec3 &pos)
     return check(frontChunk,glm::ivec3(0,0,1));
   }
   else return getBlock(pos);
+}
+
+uint8_t BSPNode::getBlockMetadataOOB(const glm::ivec3 &pos)
+{
+  //std::lock_guard<std::mutex> lock(BSPMutex);
+  auto check = [&](std::shared_ptr<BSPNode> chunk,const glm::ivec3 &norm)
+  {
+    return chunk != NULL ? chunk->getBlockMetadataOOB(pos+CHUNKSIZE*norm) : 0;
+  };
+  if(pos.x >= CHUNKSIZE)
+  {
+    return check(rightChunk,glm::ivec3(-1,0,0));
+  }
+  else if(pos.x < 0)
+  {
+    return check(leftChunk,glm::ivec3(1,0,0));
+  }
+  else if(pos.y >= CHUNKSIZE)
+  {
+    return check(topChunk,glm::ivec3(0,-1,0));
+  }
+  else if(pos.y < 0)
+  {
+    return check(bottomChunk,glm::ivec3(0,1,0));
+  }
+  else if(pos.z >= CHUNKSIZE)
+  {
+    return check(backChunk,glm::ivec3(0,0,-1));
+  }
+  else if(pos.z < 0)
+  {
+    return check(frontChunk,glm::ivec3(0,0,1));
+  }
+  else return curBSP.getBlockMetadata(pos);
 }
 
 bool BSPNode::blockExists(const glm::ivec3 &pos)
@@ -271,12 +306,11 @@ void BSP::setTerrainColor(const glm::vec3& color)
 BSP::BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent) : parent(Parent)
 {
   //blockOrigin = chunkLocalPos + CHUNKSIZE*(parent->chunkPos);
-  modelMat = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*pos));
 
   using namespace std;
   const int numbOfBlocks = CHUNKSIZE*CHUNKSIZE*CHUNKSIZE;
   int i = 0;
-  char curId = 0;
+  uint8_t curId = 0;
   unsigned short curLength = 0;
   unsigned int index=0;
 
@@ -295,14 +329,20 @@ BSP::BSP(const char* data,const glm::ivec3 &pos,BSPNode* Parent) : parent(Parent
       if(i+j>numbOfBlocks)
       {
         std::cout << "ERROR CORRUPTED CHUNK AT " << glm::to_string(parent->getPosition()) <<"\n";
-        delete[] data;
         return;
       }
-      worldArray[i+j] = curId;
+
+      if(curId != 0)
+      {
+        worldArray[i+j] = curId | 0b1111111100000000;
+      }
+      else
+      {
+        worldArray[i+j] = curId | 0x0000;
+      }
     }
     i+= curLength;
   }
-  delete[] data;
 
 }
 
@@ -351,12 +391,14 @@ void BSP::addIndices(RenderType renderType,int index1, int index2, int index3, i
   curBuffer->push_back(index4);
   curBuffer->push_back(index1);
   curBuffer->push_back(index3);
+
+
+
 }
 
 
 int BSP::addVertex(const VertexData &vertex)
 {
-
   std::vector<float>* curBuffer;
   if(vertex.renderType == OPAQUE)
   {
@@ -418,6 +460,7 @@ int BSP::addVertex(const VertexData &vertex)
   curBuffer->push_back(1);
 
 
+
   return numbVert;
 }
 
@@ -441,9 +484,9 @@ RenderType BSP::blockVisibleType(const glm::ivec3 &pos)
   return ItemDatabase::blockDictionary[getBlock(pos)].visibleType;
 }
 
-void BSP::addBlock(const glm::ivec3 &pos, char id)
+void BSP::addBlock(const glm::ivec3 &pos, uint8_t id, uint8_t type)
 {
-  worldArray.set(pos,id);
+  worldArray.set(pos, id | type << 8);
 }
 
 void BSP::addToLightList(const glm::ivec3 &localPos,const Light& light)
@@ -482,13 +525,23 @@ inline void BSP::delBlock(const glm::ivec3 &pos)
 
 uint8_t BSP::getBlock(const glm::ivec3 &pos)
 {
-  return worldArray.get(pos);
+  return worldArray.get(pos) & 0xFF;
+}
+
+uint8_t BSP::getBlockMetadata(const glm::ivec3 &pos)
+{
+  return (worldArray.get(pos) >> 8) & 0xFF;
 }
 
 
+void BSP::physicsStep(btDiscreteDynamicsWorld* dynamicsWorld)
+{
+
+}
 
 void BSP::setupBufferObjects(RenderType type)
 {
+
   std::vector<float>* curVert;
   std::vector<uint>* curInd;
   uint *VBO;
@@ -560,12 +613,17 @@ void BSP::setupBufferObjects(RenderType type)
     geometryChanged = true;
 
   }
-  curVert->clear();
-  curInd->clear();
+  //curVert->clear();
+  //curInd->clear();
+
+
+  //curVert->shrink_to_fit();
+  //curInd->shrink_to_fit();
 }
 
 void BSP::render()
 {
+
   setupBufferObjects(OPAQUE);
   setupBufferObjects(TRANSLUCENT);
 }
@@ -584,7 +642,7 @@ void BSP::drawOpaque(const glm::vec3 &pos)
 {
 
 
- 
+
   if(oIndicesSize != 0)
   {
     glm::mat4 model = glm::translate(glm::mat4(1.0f),glm::vec3(CHUNKSIZE*parent->getPosition())-pos);

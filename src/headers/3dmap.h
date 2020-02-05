@@ -82,6 +82,13 @@ class Map3D
     {
       size = 0;
     }
+    void deleteAll()
+    {
+      lock.writeLock();
+      map3D = map<int, map<int, map<int, Node>>>();
+      fullList = std::list<T>();
+      lock.writeUnlock();
+    }
     unsigned int getSize(){return size;}
     bool exists(const glm::ivec3 &pos);
     T get(const glm::ivec3 &pos);

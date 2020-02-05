@@ -21,6 +21,8 @@
 #include "include/drawer.h"
 #include "include/messenger.h"
 #include "include/timer.h"
+#include "include/bsp.h"
+
 
 #include "../Character/include/mainchar.h"
 #include "../Character/include/gui.h"
@@ -73,6 +75,14 @@ void ThreadHandler::disableCursor()
 void ThreadHandler::endThreads()
 {
   threadsOn=false;
+  renderThread.join();
+  deleteThread.join();
+  sendThread.join();
+  receiveThread.join();
+  logicThread.join();
+  buildThread.join();
+
+  std::cout << "All thread ended\n";
 }
 
 void ThreadHandler::dispatchThreads()
@@ -83,16 +93,12 @@ void ThreadHandler::dispatchThreads()
   sendThread = std::thread(send);
   receiveThread = std::thread(receive);
   logicThread = std::thread(logic);
+  buildThread = std::thread(build);
 
-  renderThread.detach();
-  deleteThread.detach();
-  sendThread.detach();
-  receiveThread.detach();
-  logicThread.detach();
+
 
   std::cout << "Render threads created \n";
-  std::thread buildThread(build);
-  buildThread.detach();
+
 }
 
 
@@ -151,6 +157,7 @@ void ThreadHandler::draw()
     glfwSwapBuffers(window);
   }
   PlayerWorld.buildQueue.notify_one();
+  std::cout << "TOtalchunks: " << BSPNode::totalChunks << "\n";
   std::cout << "Draw thread done\n";
 }
 
@@ -179,8 +186,8 @@ void ThreadHandler::del()
 
 void ThreadHandler::logic()
 {
-
-
+  Timer timer(60);
+/*
   btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
   ///use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
   btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
@@ -193,13 +200,44 @@ void ThreadHandler::logic()
   dynamicsWorld->setGravity(btVector3(0, -10, 0));
 
 
-  Timer timer(60);
+
+
+  {
+		//create a dynamic rigidbody
+
+		//btCollisionShape* colShape = new btBoxShape(btVector3(1,1,1));
+		btCollisionShape* colShape = new btSphereShape(btScalar(1.));
+		collisionShapes.push_back(colShape);
+
+		/// Create Dynamic Objects
+		btTransform startTransform;
+		startTransform.setIdentity();
+
+		btScalar mass(1.f);
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0, 0, 0);
+		if (isDynamic)
+			colShape->calculateLocalInertia(mass, localInertia);
+
+		startTransform.setOrigin(btVector3(2, 10, 0));
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape, localInertia);
+		btRigidBody* body = new btRigidBody(rbInfo);
+
+		dynamicsWorld->addRigidBody(body);
+	}
+  */
   while(!glfwWindowShouldClose(window) && threadsOn)
   {
     timer.wait();
-    //DO the game logic
-
     static double lastPingTime = 0;
+
+
 
     if(glfwGetTime() - lastPingTime > 1)
     {
@@ -277,6 +315,7 @@ void ThreadHandler::receive()
           char* buf = new char[msg.length];
           PlayerWorld.messenger->receiveMessage(buf,msg.length);
           PlayerWorld.generateChunkFromString(glm::ivec3(msg.x.i,msg.y.i,msg.z.i),buf);
+          delete[] buf;
         }
         break;
       case(1):
@@ -348,6 +387,7 @@ void ThreadHandler::receive()
         std::cout << "Receiving unknown opcode " << (int)msg.opcode << "\n";
     }
   }
+  PlayerWorld.messenger->messageQueue.notify_one();
   std::cout << "RECEIVE THREAD DONE\n";
 }
 
