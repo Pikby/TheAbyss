@@ -15,7 +15,7 @@ Chunk data is stored as 2 byte integers, with the first byte being used for id a
 Vertex data is encoded as such:
 
 || Position xyz | Blended Normal Vector | Absolute Normal Vector | TextureIds |Legacy| Total Size|
-| :---:  | :---        |:--- | :---| :---| :--- |:--- | :--- | :--- | :--- |
+| :---:  | :--- |:--- | :---| :---| :--- | ---|
 |Size in bits| 32+32+32     | 32 | 32 | 32  | 32  | 224 bits|
 
 This data is then sent to the [gBuffer Vertex Shader](../src/Shaders/BSPShaders/gBuffer.vs) and dccoded for use in the [gBuffer Fragment Shader](../src/Shaders/BSPShaders/gBuffer.fs)
@@ -45,10 +45,10 @@ Furthermore, each chunk has access to 6 pointers to their respective neighbours
 # Worlds
 A [World](../src/MainEngine/include/world.h) is a data type which is used to combine a string of chunks and entities in order to create a world that can be drawn. The world is broken up into 3 classes, the main class known as World which has access to functions such as deleting and removing blocks defined in world space by finding the chunk they're located in, translating the world space coordinates to a local space coordinate, and modifying the given block inside of the given chunk.
 
-##Drawer
+## Drawer
 The [Drawer](../src/MainEngine/include/drawer.h) is responsible for drawing all the chunks and entities in the world, as well as dealing with any effects such as shadows.
 
-##Messenger
+## Messenger
 The [Messenger](../src/MainEngine/include/messenger.h) is responsible for all inter-server communications such as basic connection, chunk receiving, and player movement.
 
 ### Implementation
